@@ -78,6 +78,7 @@ function render_topics_subtopics($node) {
     asort($topics);
     if(!empty($topics)) {
       ?>
+      <div class="topics">
       <table>
       <tr>
       <td style="vertical-align: middle; width: 35px;">
@@ -96,6 +97,7 @@ function render_topics_subtopics($node) {
       </td>
       </tr>
       </table>
+      </div>
       <?php
     }
   }
@@ -117,6 +119,7 @@ function render_tags($node) {
     ksort($tags);
     if(!empty($tags)) {
       ?>
+      <div class="tags">
       <table>
       <tr>
       <td style="vertical-align: middle; width: 35px;">
@@ -134,6 +137,7 @@ function render_tags($node) {
       </td>
       </tr>
       </table>
+      </div>
       <?php
     }
   }

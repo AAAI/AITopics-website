@@ -249,13 +249,14 @@
             print render(field_view_value('node', $node, 'body', $summary[0], 'full')); ?>
     </div>
 
-    <div style="text-align: center; margin: 2em;">
-      <?php if(!empty($field_embedding)) { echo $field_embedding[0]['value']; } ?>
-    </div>
+
+    <?php if(!empty($field_embedding)) {
+        echo '<div style="text-align: center; margin: 2em;">';
+        echo $field_embedding[0]['value'];
+        echo '</div>';
+    } ?>
 
     <?php if(isset($field_original_link)) { display_links($field_original_link, $field_link); } ?>
-
-    <?php if(isset($service_links_rendered)) { echo $service_links_rendered; } ?>
 
     <div class="metadata">
       <?php if(!empty($field_publication_date)): ?>
@@ -289,24 +290,20 @@
       <?php endif; ?>
     </div>
 
-    <div style="width: 50%; float: left">
-    <div class="topics">
+    <?php if(isset($service_links_rendered)) { echo $service_links_rendered; } ?>
+
+    <div class="topics-container">
     <?php if(isset($node)) { render_topics_subtopics($node); } ?>
     </div>
-    </div>
-    <div style="width: 50%; float: right">
-    <?php if(!empty($field_tags)): ?>
-    <div class="tags">
-      <?php render_tags($node); ?>
-    </div>
-    <?php endif; ?>
+    <div class="tags-container">
+    <?php if(isset($node)) { render_tags($node); } ?>
     </div>
 
   </div>
 
 </div>
 
-<?php endif; // end teaser if ?>
+<?php endif; // end full node ?>
 
 <?php elseif($type == "task"): ?>
 

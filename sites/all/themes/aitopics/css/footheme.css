@@ -9,7 +9,34 @@
  */
 
 /* Layout fixes */
+@media only screen and (min-width:769px) {
+    .grid-item-left {
+        float: left;
+        width: 48%;
+    }
+    
+    .grid-item-right {
+        float: right;
+        width: 48%;
+    }
+
+    div.topics-container {
+        width: 50%;
+        float: left;
+    }
+    
+    div.tags-container {
+        width: 50%;
+        float: right;
+    }
+    
+}
+
 @media only screen and (min-width:481px) and (max-width:768px) {
+    .one-sidebar .sidebar {
+        width: 100% !important;
+    }
+
   #branding,
   .region-header {
     float: left !important;
@@ -20,9 +47,19 @@
   .mbp-r #menu-bar .menu-wrapper {
     float: none;
   }
+
+  .grid-item-left,
+  .grid-item-right {
+      float: none;
+      width: 100%;
+  }
 }
 
 @media only screen and (max-width: 480px) and (min-width: 321px) {
+    .one-sidebar .sidebar {
+        width: 100% !important;
+    }
+
   #branding,
   .region-header {
     float: left !important;
@@ -30,15 +67,61 @@
     width: 100%;
     clear: both;
   }
+
+  .grid-item-left,
+  .grid-item-right {
+      float: none;
+      width: 100%;
+  }
+
+  #menu-bar .menu-wrapper > ul > li {
+      float: left !important;
+  }
+
+  .vertical-tabs ul.vertical-tabs-list {
+      margin: 0;
+      float: none;
+      width: 100%;
+  }
+
+  div.vertical-tabs {
+      margin: 0;
+  }
+
+  .article ul.links li {
+      float: none;
+  }
+
+  .service-links {
+      float: none !important;
+      width: 100% !important;
+      margin-top: 20px;
+  }
+
+  div.topics-container,
+  div.tags-container {
+      width: 100%;
+      float: none;
+  }
 }
 
 @media only screen and (max-width: 320px) {
+    .one-sidebar .sidebar {
+        width: 100% !important;
+    }
+
   #branding,
   .region-header {
     float: left !important;
     max-height: 1000px;
     width: 100%;
     clear: both;
+  }
+
+  .grid-item-left,
+  .grid-item-right {
+      float: none;
+      width: 100%;
   }
 }
 
@@ -380,6 +463,11 @@ blockquote p {
     line-height: 1.8em;
 }
 
+#main-content .article-full {
+    margin: 0;
+    padding: 0;
+}
+
 /* Search */
 
 #search-block-form {
@@ -650,12 +738,12 @@ table.cols-2 > tbody > tr > td {
 
 .nodetype .tags {
     clear: both;
-    padding-top: 15px;
+    margin-top: 15px;
 }
 
 .nodetype .topics {
     clear: both;
-    padding-top: 15px;
+    margin-top: 15px;
 }
 
 #block-webform-client-block-624 {
@@ -747,5 +835,4 @@ table.cols-2 > tbody > tr > td {
 .block .menu li.leaf {
     margin: 0.25em 0.75em;
 }
-
 
