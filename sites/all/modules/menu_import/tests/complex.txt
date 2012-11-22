@@ -1,0 +1,7 @@
+Page1|http://drupal.org/
+* Page2|<front>|This is a menu link description.
+** Page3 | admin/content | Whitespaces allowed.
+Page4|| By default links to front page if no/invalid path specified.
+* Page5|||disabled
+* Page6|||expanded,disabled
+** Page7

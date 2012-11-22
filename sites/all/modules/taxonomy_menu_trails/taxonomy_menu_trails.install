@@ -1,0 +1,182 @@
+<?php
+
+/**
+ * @file
+ * Install, uninstall and update functions for taxonomy_menu_trails.
+ * 
+ * @author Dmitriy.trt      <http://drupal.org/user/329125>
+ */
+
+/**
+ * Implements hook_uninstall()
+ */
+function taxonomy_menu_trails_uninstall() {
+  db_delete('variable')
+    ->condition('name', 'taxonomy_menu_trails_%', 'LIKE')
+    ->execute();
+}
+
+function taxonomy_menu_trails_update_6101() {
+  $types = array_filter(variable_get('taxonomy_menu_trails_node_types', array()));
+  foreach ($types as $key => $type) {
+    unset($types[$key]);
+    $type_vocs = taxonomy_get_vocabularies($type);
+    if (!empty($type_vocs)) {
+      foreach ($type_vocs as $vid => $voc) {
+        $type_vocs[$vid] = $vid;
+      }
+      $types[$key] = $type_vocs;
+    }
+  }
+  variable_set('taxonomy_menu_trails_node_types', $types);
+  return array();
+}
+
+/**
+ * Convert module settings from D6 to D7 format
+ */
+function taxonomy_menu_trails_update_7100() {
+  //Get old settings
+  $only_without_menu = variable_get('taxonomy_menu_trails_only_without_menu', TRUE);
+  $old_selection_method = variable_get('taxonomy_menu_trails_selection_method', 'first');
+  $tm_integration = variable_get('taxonomy_menu_trails_integration_with_tm', module_exists('taxonomy_menu'));
+  $node_types = variable_get('taxonomy_menu_trails_node_types', array());
+  $paths_ui = variable_get('taxonomy_menu_trails_node_paths_ui', '');
+  
+  //Convert to new format
+  switch ($old_selection_method) {
+    case 'last':
+    case 'last-with-menu':
+      $selection_method = 'last';
+      break;
+    case 'deepest-in-lineage':
+      $selection_method = 'deepest-in-menu';
+      break;
+    default:
+      $selection_method = 'first';
+      break;
+  }
+
+  module_load_include('module', 'taxonomy_menu_trails');
+  module_load_include('admin.inc', 'taxonomy_menu_trails');
+
+  $new_vars = array();
+  //Re-compile custom path patterns, they will be the same for all node types
+  $regexps = _taxonomy_menu_trails_compile_path_patterns($paths_ui, 'node');
+  $all_regexps = array();
+  foreach ($node_types as $type => $vocs) {
+    $instances = array();
+    foreach ($vocs as $vid) {
+      $field_name = 'taxonomy_vocabulary_' . $vid;
+      $instances[$field_name] = $field_name;
+    }
+    _taxonomy_menu_trails_sort_by_weight($instances, 'node', $type);
+    if (!empty($instances)) {
+      $new_vars['taxonomy_menu_trails_node_' . $type] = array(
+        'selection_method' => $selection_method,
+        'only_without_menu' => $only_without_menu,
+        'tm_integration' => $tm_integration,
+        'instances' => $instances,
+        'paths_ui' => $paths_ui,
+      );
+      if (!empty($regexps)) {
+        //Add regexps to the index
+        $all_regexps['node'][$type] = $regexps;
+      }
+    }
+  }
+  $new_vars['taxonomy_menu_trails__path_regexps'] = $all_regexps;
+
+  //Save new vars
+  foreach ($new_vars as $name => $var) {
+    variable_set($name, $var);
+  }
+  
+  //Clean up
+  $old_vars = array(
+    'taxonomy_menu_trails_only_without_menu',
+    'taxonomy_menu_trails_selection_method',
+    'taxonomy_menu_trails_integration_with_tm',
+    'taxonomy_menu_trails_node_types',
+    'taxonomy_menu_trails_node_paths_ui',
+    'taxonomy_menu_trails_node_paths',
+  );
+  foreach ($old_vars as $name) {
+    if (!isset($new_vars[$name])) {
+      variable_del($name);
+    }
+  }
+}
+
+/**
+ * Convert breadcrumb settings from early 7.x-2.x-dev versions to current
+ * format.
+ */
+function taxonomy_menu_trails_update_7101() {
+  module_load_include('module', 'taxonomy_menu_trails');
+
+  $types = node_type_get_types();
+  foreach ($types as $type) {
+    list($settings, $var_name) = _taxonomy_menu_trails_get_settings('node', $type->type, FALSE);
+    if (!empty($settings['set_breadcrumb'])
+        && is_numeric($settings['set_breadcrumb'])
+        && $settings['set_breadcrumb'] == 1) {
+      $settings['set_breadcrumb'] = 'if_empty';
+      variable_set($var_name, $settings);
+    }
+  }
+}
+
+/**
+ * Convert flag which enables integration with Taxonomy Menu to term path type.
+ */
+function taxonomy_menu_trails_update_7201() {
+  module_load_include('module', 'taxonomy_menu_trails');
+
+  $types = node_type_get_types();
+  foreach ($types as $type) {
+    list($settings, $var_name) = _taxonomy_menu_trails_get_settings('node', $type->type, FALSE);
+    if (isset($settings['tm_integration'])) {
+      if (!empty($settings['tm_integration']) && $settings['term_path'] == 'default') {
+        $settings['term_path'] = 'tm';
+      }
+      unset($settings['tm_integration']);
+      variable_set($var_name, $settings);
+    }
+  }
+}
+
+/**
+ * Implements hook_requirements().
+ * 
+ * Checks for required API function added in Drupal 7.9 release.
+ *
+ * @param string $phase
+ *
+ * @return array
+ */
+function taxonomy_menu_trails_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+
+  // Include menu.inc, code was copied from _drupal_bootstrap_full().
+  require_once DRUPAL_ROOT . '/' . variable_get('menu_inc', 'includes/menu.inc');
+  
+  if (!function_exists('menu_tree_set_path')) {
+    $requirements['taxonomy_menu_trails_drupal_api'] = array(
+      'title' => $t('Taxonomy Menu Trails - Drupal API'),
+      'value' => $t('Required functions not implemented'),
+      'description' => $t('Module requires at least Drupal 7.9 or patched core with defined menu_tree_set_path() function.'),
+      'severity' => REQUIREMENT_ERROR,
+    );
+  }
+  else {
+    $requirements['taxonomy_menu_trails_drupal_core'] = array(
+      'title' => $t('Taxonomy Menu Trails - Drupal API'),
+      'value' => $t('OK'),
+      'severity' => REQUIREMENT_OK,
+    );
+  }
+
+  return $requirements;
+}

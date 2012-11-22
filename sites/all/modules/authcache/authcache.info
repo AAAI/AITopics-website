@@ -1,0 +1,25 @@
+name = Authcache
+description = Authenticated User Page Caching for logged-in and anonymous users.
+package = Caching
+core = 7.x
+
+files[] = authcache.inc
+files[] = authcache.helpers.inc
+files[] = authcache.admin.inc
+files[] = authcache.install
+files[] = authcache.module
+
+
+; Information added by drupal.org packaging script on 2011-02-25
+version = "7.x-1.x-dev"
+core = 7.x
+project = "authcache"
+datestamp = "1298618860"
+
+
+; Information added by drupal.org packaging script on 2012-07-24
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "authcache"
+datestamp = "1343089534"
+

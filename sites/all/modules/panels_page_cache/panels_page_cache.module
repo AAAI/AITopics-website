@@ -1,0 +1,15 @@
+<?php
+/**
+ * @file panels_page_cache.module
+ *
+ * Core functionality for the panels page cache module.
+ */
+
+/**
+ * Implementation of hook_ctools_plugin_directory(). 
+ */
+function panels_page_cache_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'page_manager' || $module == 'panels' || $module == 'ctools') {
+    return 'plugins/' . $plugin;
+  }
+}

@@ -1,0 +1,64 @@
+<?php
+
+/**
+ * Implements hook_menu() to set up the URLs (menu entries) for the
+ * form examples.
+ */
+function multiselect_fapi_example_menu() {
+  $items = array();
+  $items['multiselect_fapi_example'] = array(
+    'title' => 'Form API Example of Multiselect Widget',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('multiselect_fapi_example_display'),
+    'access callback' => TRUE,
+    'description' => 'Simple form with a multiselect widget and a submit button. Saves to the variables table.',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+/**
+ * Implementation of FAPI form.
+ */
+function multiselect_fapi_example_display($form, &$form_state) {
+  $form = array();
+  $form['description'] = array(
+    '#type' => 'item',
+    '#title' => t('Simple form with a multiselect widget and a submit button. Saves to the variables table.'),
+  );
+  $form['multiselector'] = array(
+    '#type' => 'multiselect',
+    '#title' => t('Here is the multiselect'),
+    '#options' => array(
+      'title' => t('Titles only'),
+      'teaser' => t('Titles plus teaser'),
+      'fulltext' => t('Full text'),
+      '1' => t('Option 1'),
+      '2' => t('Option 2'),
+      '3' => t('Option 3'),
+      '4' => t('Option 4'),
+      '5' => t('Option 5'),
+      '6' => t('Option 6'),
+      '7' => t('Option 7'),
+      '8' => t('Option 8'),
+      '9' => t('Option 9'),
+      '10' => t('Option 10'),
+      '11' => t('Option 11'),
+      '12' => t('Option 12'),
+    ),
+    '#default_value' => _multiselect_fapi_example_options(),
+    '#multiple' => TRUE,
+    '#size' => 15,
+    '#required' => TRUE,
+  );
+  $form = system_settings_form($form);
+  return $form;
+}
+
+/**
+ * Function to get the value stored for the multiselect field from the variables table.
+ * Will return default values if nothing has yet been stored.
+ */
+function _multiselect_fapi_example_options() {
+  return variable_get('multiselector', array('fulltext', 'title', '4', '8'));
+}

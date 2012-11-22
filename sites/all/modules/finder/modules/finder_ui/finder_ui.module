@@ -1,0 +1,128 @@
+<?php
+
+/**
+ * @file
+ * The Finder UI module.
+ *
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function finder_ui_menu() {
+  $items = array();
+  $items['admin/structure/finder/list/%finder/item/%/%ctools_js'] = array(
+    'file' => 'item.inc',
+    'file path' => drupal_get_path('module', 'finder_ui') . '/includes',
+    'title' => 'Edit finder item',
+    'page callback' => 'finder_ui_item_page',
+    'page arguments' => array(4, 6, 7),
+    'access arguments' => array('administer finder'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/structure/finder/list/%finder/element/%/%ctools_js'] = array(
+    'file' => 'element.inc',
+    'file path' => drupal_get_path('module', 'finder_ui') . '/includes',
+    'title' => 'Edit finder element',
+    'page callback' => 'finder_ui_element_page',
+    'page arguments' => array(4, 6, 7),
+    'access arguments' => array('administer finder'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/structure/finder/list/%finder/delete-element/%/%ctools_js'] = array(
+    'file' => 'element.inc',
+    'file path' => drupal_get_path('module', 'finder_ui') . '/includes',
+    'title' => 'Delete finder element',
+    'page callback' => 'finder_ui_element_delete_page',
+    'page arguments' => array(4, 6, 7),
+    'access arguments' => array('administer finder'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/structure/finder/list/%finder/element-item/%/%/%ctools_js'] = array(
+    'file' => 'element-item.inc',
+    'file path' => drupal_get_path('module', 'finder_ui') . '/includes',
+    'title' => 'Edit finder element item',
+    'page callback' => 'finder_ui_element_item_page',
+    'page arguments' => array(4, 6, 7, 8),
+    'access arguments' => array('administer finder'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/structure/finder/list/%finder/field/%/%/%ctools_js'] = array(
+    'file' => 'field.inc',
+    'file path' => drupal_get_path('module', 'finder_ui') . '/includes',
+    'title' => 'Edit finder element field',
+    'page callback' => 'finder_ui_field_page',
+    'page arguments' => array(4, 6, 7, 8),
+    'access arguments' => array('administer finder'),
+    'type' => MENU_CALLBACK,
+  );
+  $finders = finder_load_all(TRUE);
+  if (!empty($finders)) {
+    foreach ($finders as $finder) {
+      $items[$finder->path . '/finder-ui'] = array(
+        'title' => 'Edit',
+        'page callback' => 'drupal_goto',
+        'page arguments' => array('admin/structure/finder/list/' . $finder->name . '/edit'),
+        'access arguments' => array('administer finder'),
+        'type' => MENU_LOCAL_ACTION,
+      );
+    }
+  }
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function finder_ui_permission() {
+  return array(
+    'administer finder' => array(
+      'title' => t('Administer finder'),
+      'description' => t('Create and edit finders.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function finder_ui_theme() {
+  $theme = array(
+    'finder_ui_elements_table' => array(
+      'file' => 'theme.inc',
+      'path' => drupal_get_path('module', 'finder_ui') . '/includes',
+      'render element' => 'element',
+    ),
+  );
+  return $theme;
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function finder_ui_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && $plugin == 'export_ui') {
+    return "plugins/$plugin";
+  }
+}
+
+/**
+ * Implements hook_hook_info().
+ */
+function finder_ui_hook_info() {
+  $hooks = array();
+  if (module_exists('i18n_string')) {
+    $i18n_string_hooks = array(
+      'locale',
+      'finder_render',
+      'finder_presave',
+      'finder_delete',
+    );
+    foreach ($i18n_string_hooks as $hook) {
+      $hooks[$hook] = array(
+        'group' => 'i18n_string',
+      );
+    }
+  }
+  return $hooks;
+}

@@ -1,0 +1,5 @@
+name = Feedback webform
+description = Injects the node path of the feedback form that was submitted
+package = AITopics
+core = 7.x
+files[] = feecback_webform.module

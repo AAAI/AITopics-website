@@ -1,0 +1,47 @@
+diff --git a/term_merge.module b/term_merge.module
+index 0504a9f..41fd588 100644
+--- a/term_merge.module
++++ b/term_merge.module
+@@ -440,14 +440,14 @@ function _term_merge_insert_field_values($update_data, &$context) {
+   $target_merged = FALSE;
+   foreach ($update_data['data'] as $i => &$update_data_arr) {
+     $update_data_arr = array_reverse($update_data_arr);
+-		
++
+     $field_lang = field_language('node', $entity, $update_data_arr['field_name']);
+     $field_values = &$entity->{$update_data_arr['field_name']}[$field_lang];
+     foreach ($field_values as $i => $value) {
+       if ($value['tid'] == $update_data_arr['source_tid']) {
+ 
+         if (!$target_merged) {
+-          $field_values[$i]['tid'] = $update_data_arr['dest_tid']->tid;
++          $field_values[$i]['tid'] = $update_data_arr['dest_tid'];
+           $target_merged = TRUE;
+         }
+         // Any more occurrences of the source tid will simply be removed.
+@@ -458,7 +458,7 @@ function _term_merge_insert_field_values($update_data, &$context) {
+ 
+         // If target tid is one of the source tids, remove it from the array
+         // of terms that will be removed at the end of the process.
+-        if($update_data_arr['source_tid']== $update_data_arr['dest_tid']->tid) {
++        if ($update_data_arr['source_tid'] == $update_data_arr['dest_tid']) {
+           foreach ($context['results']['merged_terms_delete'] as $i => $merged_term) {
+             if ($merged_term == $update_data_arr['source_tid']) {
+               array_splice($context['results']['merged_terms_delete'], $i, 1);
+@@ -467,7 +467,7 @@ function _term_merge_insert_field_values($update_data, &$context) {
+         }
+ 
+         $context['results'][] = 'Merged ' . $update_data_arr['source_tid'] . ' with '
+-        . $update_data_arr['dest_tid']->tid . ' in ' . $update_data_arr['field_name']
++        . $update_data_arr['dest_tid'] . ' in ' . $update_data_arr['field_name']
+         . ' of ' . $entity_type . ' ' . $entity_id;
+ 
+         break;
+@@ -485,6 +485,7 @@ function _term_merge_insert_field_values($update_data, &$context) {
+   // Save the new field values if something has changed.
+   if ($target_merged) {
+     field_attach_update($entity_type, $entity);
++    taxonomy_node_update($entity);
+   }
+ }
+ 

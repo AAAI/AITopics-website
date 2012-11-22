@@ -1,0 +1,125 @@
+<?php
+/**
+ * @file
+ * Module's main file, general definitions and hooks.
+ */
+
+/**
+ * Implementation of hook_help().
+ */
+function menu_import_help($path, $arg) {
+  $output = '';
+
+  switch ($path) {
+    case 'admin/help#menu_import':
+      $output .= '<p>';
+      $output .= t('Menu Import module allows you to import a menu hierarchy from an indented (by dash or asterix symbol) text file. This can be used to either arrange pre-existing content or stub out an arrangement with new nodes containing initial content.');
+      $output .= '</p><p>';
+      $output .= t('Text files are expected to have the following structure:');
+      $output .= '</p><code>Main page<br />-Sub-page 1<br />-Sub-page 2<br />--Sub-sub-page 3</code>';
+      break;
+  }
+
+  return $output;
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function menu_import_menu() {
+  $items = array();
+
+  $items['admin/structure/menu/import'] = array(
+    'title' => 'Import menu',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('menu_import_form'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 10,
+    'access arguments' => array('import menu from file'),
+    'file' => 'includes/admin.inc',
+  );
+
+  $items['admin/structure/menu/export'] = array(
+    'title' => 'Export menu',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('menu_import_export_form'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 11,
+    'access arguments' => array('import menu from file'),
+    'file' => 'includes/export.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_permission().
+ */
+function menu_import_permission() {
+  $perms['import menu from file'] = array(
+    'title' => t('Import menu from file'),
+  );
+  return $perms;
+}
+
+/**
+ * Import menu from text file.
+ *
+ * @param $uri
+ *   uri of the uploaded file.
+ * @param $menu_name
+ *   iternal name of the menu.
+ * @param $options
+ *   An associative array of import options. See menu_import_save_menu for reference.
+ * @see menu_import_save_menu
+ *
+ * @return array
+ *   An associative array of result.
+ *   - error: in case of error, this will contain an array of error messages;
+ *   - deleted_nodes: count of nodes deleted;
+ *   - matched_nodes: count of nodes matched;
+ *   - new_nodes: count of nodes created;
+ *   - unknown_links: count of menu items with internal links (not nodes);
+ *   - external_links: count of menu items with external links.
+ */
+function menu_import_file($uri, $menu_name, array $options) {
+  module_load_include('inc', 'menu_import', 'includes/import');
+  $menu = menu_import_parse_menu_from_file($uri, $menu_name, $options);
+  // Stop import on any errors.
+  if ($menu['errors']) {
+    return array('errors' => $menu['errors']);
+  }
+
+  $result = menu_import_save_menu($menu, $options);
+
+  if (!empty($menu['warnings'])) {
+    $result['warnings'] = $menu['warnings'];
+  }
+
+  return $result;
+}
+
+/**
+ * Import menu from text variable.
+ *
+ * @param $text
+ *   string containing the menu structure.
+ *
+ * @see menu_import_file().
+ */
+function menu_import_string($text, $menu_name, array $options) {
+  module_load_include('inc', 'menu_import', 'includes/import');
+  $menu = menu_import_parse_menu_from_string($text, $menu_name, $options);
+  // Stop import on any errors.
+  if ($menu['errors']) {
+    return array('errors' => $menu['errors']);
+  }
+
+  $result = menu_import_save_menu($menu, $options);
+
+  if (!empty($menu['warnings'])) {
+    $result['warnings'] = $menu['warnings'];
+  }
+
+  return $result;
+}

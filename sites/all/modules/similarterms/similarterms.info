@@ -1,0 +1,13 @@
+name = Similar By Terms
+core = 7.x
+description = "Display a block of other content that is similar by keywords (taxonomy terms)."
+
+files[] = similarterms.module
+files[] = similarterms.install
+
+; Information added by drupal.org packaging script on 2011-08-21
+version = "7.x-1.0-beta3"
+core = "7.x"
+project = "similarterms"
+datestamp = "1313938321"
+

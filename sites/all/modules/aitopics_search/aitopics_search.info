@@ -1,0 +1,4 @@
+name = AITopics search
+description = Search features specific to AITopics
+core = 7.x
+package = AITopics

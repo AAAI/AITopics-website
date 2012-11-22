@@ -1,0 +1,418 @@
+<?php
+
+/**
+ * @file
+ * The finder module.
+ *
+ * Finder allows Drupal site administrators to create flexible search forms to
+ * find objects such as Nodes or Users based on the values of a field.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function finder_menu() {
+  $items = array();
+  $items['finder_ajax/%finder/%'] = array(
+    'title' => 'Finder Ajax',
+    'page callback' => 'finder_ajax',
+    'page arguments' => array(1, 2),
+    'access arguments' => array('use finder'),
+    'type' => MENU_CALLBACK,
+  );
+  $finders = finder_load_all(TRUE);
+  if (is_array($finders)) {
+    foreach ($finders as $finder) {
+      $items[$finder->path] = array(
+        'title' => $finder->title,
+        'page callback' => 'finder_page',
+        'page arguments' => array($finder->name),
+        'access arguments' => array('use finder'),
+        'type' => MENU_CALLBACK,
+        'description' => $finder->description,
+      );
+    }
+  }
+  finder_plugin_hooks('menu', $items);
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function finder_permission() {
+  $permissions = array(
+    'use finder' => array(
+      'title' => t('Use finder'),
+      'description' => t('Use finder forms.'),
+    ),
+  );
+  finder_plugin_hooks('permission', $permissions);
+  return $permissions;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function finder_theme() {
+  $finder_themes = array(
+    'finder_results',
+  );
+  foreach ($finder_themes as $finder_theme) {
+    $theme[$finder_theme] = array(
+      'file' => 'theme.inc',
+      'path' => drupal_get_path('module', 'finder') . '/includes',
+      //'render element' => 'finder',
+      'variables' => array(
+        'finder' => NULL,
+      ),
+    );
+  }
+  finder_plugin_hooks('theme', $theme);
+  return $theme;
+}
+
+/**
+ * Implements hook_forms().
+ */
+function finder_forms($form_id, $args) {
+  $forms = array();
+  if (strpos($form_id, 'finder_form_') === 0) {
+    $forms[$form_id] = array(
+      'callback' => 'finder_form',
+      'callback arguments' => $args,
+    );
+  }
+  return $forms;
+}
+
+/**
+ * Menu callback; view a finder page.
+ *
+ * @param $finder_id
+ *   The finder ID.
+ * @return
+ *   Themed output of a finder page.
+ */
+function finder_page($finder_name) {
+  if ($finder = finder_load($finder_name)) {
+    return $finder->page();
+  }
+}
+
+/**
+ * Menu callback; get finder ajax output.
+ *
+ * @param $finder_id
+ *   The finder ID.
+ * @param $display
+ *   The type of display ('page', or 'block).
+ * @param
+ *   Any number of additional params to convert into $_GET['q'].
+ * @return
+ *   Finder ajax output.
+ */
+function finder_ajax($form, $form_state) {
+  finder_inc('build');
+
+  // Get the finder.
+  $finder = $form_state['finder'];
+
+  // Force the json'd finder output to hide args.
+  $finder->settings['url'] = 'disabled';
+
+  // Set the display mode which was worked out on the last form load.
+  $finder->display = $form_state['ajax_display'];
+
+  // Inform any scripts that we're in an ajax context.
+  $finder->ajax = TRUE;
+
+  // Set the form state in the static cache.
+  finder_form_state($finder, $form_state);
+
+  // Render the finder output.
+  return $finder->render();
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function finder_block_info() {
+  $finders = finder_load_all(TRUE);
+  $blocks = array();
+  foreach ($finders as $finder) {
+    if ($finder->block) {
+      $blocks[$finder->name] = array(
+        'info' => t('Finder') . ': ' . check_plain($finder->title),
+        'cache' => 'BLOCK_NO_CACHE',
+      );
+    }
+  }
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function finder_block_view($delta = '') {
+  $block = array();
+  if (user_access('use finder')) {
+    $finder = finder_load($delta);
+    if ($finder) {
+      $block = $finder->block();
+    }
+  }
+  return $block;
+}
+
+/**
+ * Implements hook_cron().
+ */
+function finder_cron() {
+  $finders = finder_load_all(TRUE);
+  foreach ($finders as $finder) {
+    $finder->choice_repopulate();
+  }
+}
+
+/**
+ * Implements hook_ctools_plugin_type().
+ */
+function finder_ctools_plugin_type() {
+  $plugins['element_handler'] = array(
+    'load themes' => TRUE,
+  );
+  return $plugins;
+}
+
+/**
+ * Implements hook_ctools_plugin_api().
+ */
+function finder_ctools_plugin_api($module, $api) {
+  if ($module == 'finder' && $api == 'finder_default') {
+    return array(
+      'version' => 2,
+      'path' => drupal_get_path('module', 'finder') . '/plugins/finder_default',
+    );
+  }
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function finder_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'finder') {
+    return "plugins/$plugin";
+  }
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function finder_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'finder') . '/views',
+  );
+}
+
+/**
+ * Implements hook_views_query_alter().
+ */
+function finder_views_query_alter($view, &$query) {
+  if (isset($view->finder_results_display)) {
+    finder_build_display_query($view->display_handler);
+  }
+}
+
+/**
+ * Load a finder include file.
+ *
+ * @param $file
+ *   The name of the file in the includes directory without the extension.
+ * @param $module
+ *   The module name if it is not 'finder'.
+ */
+function finder_inc($file, $module = 'finder') {
+  return ctools_include($file, $module);
+}
+
+/**
+ * Get a list of possible element types.
+ *
+ * @return
+ *   An array of element handlers from CTools plugins.
+ */
+function finder_element_handlers() {
+  ctools_include('plugins');
+  return ctools_get_plugins('finder', 'element_handler');
+}
+
+/**
+ * Export CRUD callback to load a finder.
+ *
+ * @param $name
+ *   The finder name.
+ * @param $reset
+ *   Whether to reset the internal cache for finder objects.
+ * @return
+ *   The loaded finder object, or FALSE on failure.
+ */
+function finder_load($name, $reset = FALSE) {
+  $result = finder_load_multiple(array($name), $reset);
+  if (!empty($result[$name])) {
+    return $result[$name];
+  }
+  return FALSE;
+}
+
+/**
+ * Export CRUD callback to load multiple finders.
+ *
+ * @param $names
+ *   An array of finder names.
+ * @param $reset
+ *   Whether to reset the internal cache for finder objects.
+ * @return
+ *   An array of loaded finder objects.
+ */
+function finder_load_multiple($names = NULL, $reset = FALSE) {
+  ctools_include('export');
+  if ($reset) {
+    drupal_static_reset('ctools_export_load_object_all');
+  }
+  $type = $names ? 'names' : 'all';
+
+  $results = ctools_export_load_object('finder', $type, $names);
+  $results = array_filter($results);
+
+  if (!empty($results)) {
+    module_invoke_all('finder_load', $results);
+  }
+
+  return $results;
+}
+
+/**
+ * Export CRUD callback to load all finders.
+ *
+ * @param $reset
+ *   Whether to reset the internal cache for finder objects.
+ * @return
+ *   An array of loaded finder objects.
+ */
+function finder_load_all($reset = FALSE) {
+  return finder_load_multiple(NULL, $reset);
+}
+
+/**
+ * Export CRUD callback to save a finder.
+ *
+ * @param &$finder
+ *   The finder object.
+ */
+function finder_save(&$finder) {
+  return $finder->save();
+}
+
+/**
+ * Export CRUD callback to delete a finder.
+ *
+ * @param &$finder
+ *   The finder object.
+ */
+function finder_delete(&$finder) {
+  return $finder->delete(TRUE);
+}
+
+/**
+ * Export CRUD callback to export a finder.
+ *
+ * @param &$finder
+ *   The finder object.
+ * @param $indent
+ *   The indent param to pass to ctools_export_object().
+ * @return
+ *   The return value of ctools_export_object().
+ */
+function finder_export(&$finder, $indent = '') {
+  $finder->additions = array();
+  $finder->additions2 = array();
+  module_invoke_all('finder_export', $finder);
+  return ctools_export_object('finder', $finder, $indent, NULL, $finder->additions, $finder->additions2);
+}
+
+/**
+ * Export CRUD callback to import a finder.
+ *
+ * A version of ctools_export_crud_import().
+ *
+ * @param $code
+ *   The string of import code.
+ */
+function finder_import($code) {
+  $schema = ctools_export_get_schema('finder');
+  $export = $schema['export'];
+
+  ob_start();
+  eval($code);
+  ob_end_clean();
+
+  if (empty(${$export['identifier']})) {
+    $errors = ob_get_contents();
+    if (empty($errors)) {
+      $errors = t('No item found.');
+    }
+    return $errors;
+  }
+
+  $item = ${$export['identifier']};
+
+  // Set these defaults just the same way that ctools_export_new_object sets
+  // them.
+  $item->export_type = NULL;
+  $item->{$export['export type string']} = t('Local');
+
+  if (is_object($item)) {
+    module_invoke_all('finder_import', $item);
+  }
+  return $item;
+}
+
+/**
+ * Export CRUD callback to create a new finder.
+ *
+ * @return finder
+ *   A fully formed, $finder object.
+ */
+function finder_new() {
+  finder_inc('finder');
+  $finder = new finder();
+  module_invoke_all('finder_new', $finder);
+  return $finder;
+}
+
+/**
+ * Export CRUD callback for changing finder status.
+ *
+ * @param $finder
+ *   The finder object.
+ * @param $status
+ *   The new value of the status.
+ */
+function finder_status($finder, $status) {
+  $finder->status = $status;
+  finder_save($finder);
+}
+
+/**
+ * Adds plugin hook definitions.
+ */
+function finder_plugin_hooks($hook, &$items) {
+  $element_handlers = finder_element_handlers();
+  foreach ($element_handlers as $element_handler) {
+    if (isset($element_handler[$hook])) {
+      $items = array_merge($items, $element_handler[$hook]);
+    }
+  }
+}

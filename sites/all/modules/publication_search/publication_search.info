@@ -1,0 +1,4 @@
+name = Publication search
+description = Extra hooks for searching publications with Apache Solr
+core = 7.x
+package = AITopics

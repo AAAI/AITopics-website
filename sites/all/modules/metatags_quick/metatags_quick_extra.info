@@ -1,0 +1,14 @@
+name = Extra functionality
+description = Automatic settings for meta tags (quick)
+core = 7.x
+package = Meta tags (quick)
+
+dependencies[] = metatags_quick
+dependencies[] = taxonomy
+
+; Information added by drupal.org packaging script on 2012-06-18
+version = "7.x-2.5"
+core = "7.x"
+project = "metatags_quick"
+datestamp = "1340025081"
+

@@ -1,0 +1,153 @@
+<?php
+
+/**
+ * @file
+ * Allows node-related Views to be filtered by path aliases.
+ */
+
+
+/**
+ * Implements hook_views_api().
+ */
+function views_url_alias_node_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'views_url_alias_node'),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function views_url_alias_node_menu() {
+  $items['admin/structure/views/settings/alias/node'] = array(
+    'title' => 'Rebuild alias node table',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('views_url_alias_node_admin'),
+    'access arguments' => array('administer views'),
+    'file' => 'views_url_alias_node.admin.inc',
+    'file path' => drupal_get_path('module', 'views_url_alias_node'),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  return $items;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Pathauto hooks
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Implements hook_pathauto_alias_alter().
+ */
+function views_url_alias_node_pathauto_alias_alter(&$alias, array &$context) {
+  // Save node alias during bulk update.
+  if ($context['module'] == 'node'
+    && $context['op'] == 'bulkupdate'
+    && preg_match('#^node/(\d+)$#', $context['source'], $match)
+  ) {
+    $nid = $match[1];
+    views_url_alias_node_save($nid, $alias);
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function views_url_alias_node_form_pathauto_admin_delete_alter(&$form, &$form_state) {
+  $form['#submit'][] = 'views_url_alias_node_form_pathauto_admin_delete_submit';
+}
+
+/**
+ * Submit processing for bulk delete of aliases.
+ */
+function views_url_alias_node_form_pathauto_admin_delete_submit(&$form, &$form_state) {
+  // Purge view_url_alias_node table if delete all or node alises is requested.
+  if ($form_state['values']['all_aliases'] ||  $form_state['values']['node/']) {
+    db_truncate('views_url_alias_node')->execute();
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Node hooks
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Implements hook_node_insert().
+ */
+function views_url_alias_node_node_insert($node) {
+  views_url_alias_node_node_update($node);
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function views_url_alias_node_node_update($node) {
+  $alias = (isset($node->path['alias'])) ? $node->path['alias'] : NULL;
+  views_url_alias_node_save($node->nid, $alias);
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function views_url_alias_node_node_delete($node) {
+  views_url_alias_node_delete($node->nid);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// API functions
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Save node URL alias.
+ */
+function views_url_alias_node_save($nid, $alias = NULL) {
+  db_delete('views_url_alias_node')
+    ->condition('nid', $nid)
+    ->execute();
+
+  if (empty($alias)) {
+    return;
+  }
+
+  db_insert('views_url_alias_node')
+    ->fields(array(
+      'alias' => $alias,
+      'nid' => $nid,
+    ))
+    ->execute();
+}
+
+/**
+ * Delete's node URL alias.
+ */
+function views_url_alias_node_delete($nid) {
+  views_url_alias_node_save($nid);
+}
+
+/**
+ * Rebuild view_url_alias_node table.
+ *
+ * This function typically only needs to be called when this module is installed.
+ */
+function views_url_alias_node_rebuild() {
+  // Purge view_url_alias_node table.
+  db_truncate('views_url_alias_node')->execute();
+
+  // Build select query for insert.
+  $query = db_select('url_alias', 'ua');
+  $query->join('node', 'n', "CONCAT('node/', n.nid) = ua.source");
+  $query->fields('n', array('nid'))
+    ->fields('ua', array('alias'));
+
+  // Populate view_url_alias_node table.
+  db_insert('views_url_alias_node')
+    ->from($query)
+    ->execute();
+
+  // Display message
+  drupal_set_message( t('The %table table has been successfully rebuilt.', array('%table' => 'views_url_alias_node')) );
+}

@@ -1,0 +1,9 @@
+<?php
+function feedback_webform_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'webform_client_form_624') {
+    if ($node = menu_get_object()) {
+      $form['submitted']['url']['#value'] = drupal_get_path_alias("node/".$node->nid);;
+    }
+  }
+}
+?>

@@ -1,0 +1,11 @@
+<?php
+
+function ask_question_submit_redirect_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'question_node_form') {
+     $form['#submit'][] = 'my_submit_handler';
+  }
+}
+
+function my_submit_handler(&$form, &$form_state) {
+  //$form_state['redirect'] = 'topic/application-areas';
+}

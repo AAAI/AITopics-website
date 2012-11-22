@@ -1,0 +1,207 @@
+
+;----------// Theme info
+  ; Change the name, description and version to whatever you want.
+
+  name        = Footheme
+  description = Footheme is a starter sub-theme of <a href="http://drupal.org/project/corolla">Corolla</a> designed to get you up and sub-theming in a jiffy. You can easily modify this theme to sub-theme <a href="http://drupal.org/project/pixture_reloaded">Pixture Reloaded</a> or <a href="http://drupal.org/project/sky">Sky</a>, please see the included README or our <a href="http://bit.ly/q5hFT5">online documentation</a>. Remember to install Corolla, Sky or Pixture Reloaded first, and the base <a href="http://drupal.org/project/adaptivetheme">Adaptivetheme</a>.
+  version     = 7.x-2.0
+
+
+;----------// Drupal core compatibility - dont change this!
+  core = 7.x
+
+
+;----------// Base theme
+  ; Change the "base theme" if you are using a different base,
+  ; e.g. "pixture_reloaded" or "sky" (without speechmarks).
+
+  base theme = corolla
+
+
+;----------// Styles
+  ; We only need to include two stylesheets - we must include colors.css
+  ; and at least one more for our custom CSS.
+
+  stylesheets[all][] = color/colors.css
+  stylesheets[all][] = css/footheme.css
+
+
+;----------// Regions
+  ; Copy and paste the region list from your base theme - these are the
+  ; regions from Corolla.
+
+  regions[sidebar_first]     = Sidebar first
+  regions[sidebar_second]    = Sidebar second
+  regions[highlighted]       = Highlighted
+  regions[content]           = Main content
+  regions[content_aside]     = Content cottom panel
+  regions[menu_bar]          = Menu Bar
+  regions[header]            = Header panel
+  regions[three_33_first]    = Top panel first
+  regions[three_33_second]   = Top panel second
+  regions[three_33_third]    = Top panel third
+  regions[secondary_content] = Features panel
+  regions[tertiary_content]  = Bottom panel
+  regions[four_first]        = Footer panel first
+  regions[four_second]       = Footer panel second
+  regions[four_third]        = Footer panel third
+  regions[four_fourth]       = Footer panel fourth
+  regions[footer]            = Footer
+  regions[help]              = Help
+  regions[page_top]          = Page top
+  regions[page_bottom]       = Page bottom
+
+;----------// Site Features
+  ; You don't need to change this unless you want to add support
+  ; for normal Main and secondary menus, which none of AT's subthemes
+  ; normally support - instead we use the block system and menu blocks.
+
+  features[] = logo
+  features[] = name
+  features[] = slogan
+  features[] = node_user_picture
+  features[] = comment_user_picture
+  features[] = comment_user_verification
+  features[] = favicon
+
+;----------// Theme Settings
+  ; Copy and paste in the entire theme settings from your base theme.
+  ; You can change the values if you want different default settings.
+  ; These are the settings from the Corolla theme.
+
+  ; Layout settings
+
+  ; Standard bigscreen
+  settings[bigscreen_layout]         = 'three-col-grail'
+  settings[bigscreen_page_unit]      = '%'
+  settings[bigscreen_sidebar_unit]   = '%'
+  settings[bigscreen_max_width_unit] = 'px'
+  settings[bigscreen_page_width]     = 100
+  settings[bigscreen_sidebar_first]  = 20
+  settings[bigscreen_sidebar_second] = 25
+  settings[bigscreen_set_max_width]  = 1
+  settings[bigscreen_max_width]      = 1260
+  settings[bigscreen_media_query]    = 'only screen and (min-width:1025px)'
+
+  ; Tablet landscape
+  settings[tablet_landscape_layout]         = 'three-col-grail'
+  settings[tablet_landscape_page_unit]      = '%'
+  settings[tablet_landscape_sidebar_unit]   = '%'
+  settings[tablet_landscape_max_width_unit] = 'px'
+  settings[tablet_landscape_page_width]     = 100
+  settings[tablet_landscape_sidebar_first]  = 20
+  settings[tablet_landscape_sidebar_second] = 20
+  settings[tablet_landscape_set_max_width]  = 0
+  settings[tablet_landscape_max_width]      = 960
+  settings[tablet_landscape_media_query]    = 'only screen and (min-width:769px) and (max-width:1024px)'
+
+  ; Tablet portrait
+  settings[tablet_portrait_layout]         = 'one-col-vert'
+  settings[tablet_portrait_page_unit]      = '%'
+  settings[tablet_portrait_sidebar_unit]   = '%'
+  settings[tablet_portrait_max_width_unit] = 'px'
+  settings[tablet_portrait_page_width]     = 100
+  settings[tablet_portrait_sidebar_first]  = 50
+  settings[tablet_portrait_sidebar_second] = 50
+  settings[tablet_portrait_set_max_width]  = 0
+  settings[tablet_portrait_max_width]      = 780
+  settings[tablet_portrait_media_query]    = 'only screen and (min-width:481px) and (max-width:768px)'
+
+  ; smartphone landscape
+  settings[smartphone_landscape_layout]         = 'one-col-vert'
+  settings[smartphone_landscape_page_unit]      = '%'
+  settings[smartphone_landscape_sidebar_unit]   = '%'
+  settings[smartphone_landscape_max_width_unit] = 'px'
+  settings[smartphone_landscape_page_width]     = 100
+  settings[smartphone_landscape_sidebar_first]  = 50
+  settings[smartphone_landscape_sidebar_second] = 50
+  settings[smartphone_landscape_set_max_width]  = 0
+  settings[smartphone_landscape_max_width]      = 520
+  settings[smartphone_landscape_media_query]    = 'only screen and (min-width:321px) and (max-width:480px)'
+
+  ; smartphone portrait
+  settings[smartphone_portrait_media_query] = 'only screen and (max-width:320px)'
+
+  ; Breadcrumb
+  settings[breadcrumb_display]   = 'yes'
+  settings[breadcrumb_separator] = ' &#187; '
+  settings[breadcrumb_home]      = 0
+
+  ; Search
+  settings[display_search_form_label] = 1
+  settings[search_snippet]            = 1
+  settings[search_info_type]          = 1
+  settings[search_info_user]          = 1
+  settings[search_info_date]          = 1
+  settings[search_info_comment]       = 1
+  settings[search_info_upload]        = 1
+  settings[search_info_separator]     = ' - '
+
+  ; Login block options
+  settings[horizontal_login_block]        = 0
+  settings[horizontal_login_block_enable] = 'on'
+
+  ; Comments
+  settings[comments_hide_title] = 0
+
+  ; Style settings
+  settings[style_enable_schemes] = 'off'
+  settings[style_schemes]        = 'style-default.css'
+
+  ; Extra CSS classes
+  settings[extra_page_classes]      = 1
+  settings[extra_article_classes]   = 1
+  settings[extra_comment_classes]   = 1
+  settings[extra_block_classes]     = 1
+  settings[extra_menu_classes]      = 1
+  settings[extra_item_list_classes] = 1
+
+  ; Extra markup
+  settings[menu_item_span_elements] = 0
+
+  ; Fonts
+  settings[base_font_type]          = 'wsf'
+  settings[site_name_font_type]     = 'wsf'
+  settings[site_slogan_font_type]   = 'wsf'
+  settings[page_title_font_type]    = 'wsf'
+  settings[node_title_font_type]    = 'wsf'
+  settings[comment_title_font_type] = 'wsf'
+  settings[block_title_font_type]   = 'wsf'
+  settings[base_font]               = 'bf-l'
+  settings[site_name_font]          = 'snf-cc'
+  settings[site_slogan_font]        = 'ssf-cc'
+  settings[page_title_font]         = 'ptf-a'
+  settings[node_title_font]         = 'ntf-a'
+  settings[comment_title_font]      = 'ctf-a'
+  settings[block_title_font]        = 'btf-a'
+  settings[font_size]               = 'fs-medium'
+
+  ; Heading styles
+  settings[headings_styles_caps]   = 0
+  settings[headings_styles_weight] = 0
+  settings[headings_styles_shadow] = 0
+
+  ; Border radius
+  settings[content_corner_radius] = 'rc-6'
+  settings[tabs_corner_radius]    = 'rct-6'
+
+  ; Box shadows and textures
+  settings[box_shadows]     = 'bs-n'
+  settings[body_background] = 'bb-n'
+
+  ; Image field settings
+  settings[image_alignment]      = 'ia-r'
+  settings[image_caption_teaser] = 0
+  settings[image_caption_full]   = 0
+
+  ; Menu bullets
+  settings[menu_bullets] = 'mb-dd'
+
+;----------// Theme Settings END
+
+; Information added by drupal.org packaging script on 2011-10-05
+version = "7.x-2.0"
+core = "7.x"
+project = "footheme"
+datestamp = "1317813105"
+

@@ -1,0 +1,17 @@
+name = Content Taxonomy Migrate
+description = Migration from Content Taxonomy to Term Reference Fields
+
+core = 7.x
+package = Fields
+
+dependencies[] = taxonomy
+dependencies[] = content_migrate
+
+
+
+; Information added by drupal.org packaging script on 2012-07-11
+version = "7.x-1.0-beta1+4-dev"
+core = "7.x"
+project = "content_taxonomy"
+datestamp = "1341965446"
+

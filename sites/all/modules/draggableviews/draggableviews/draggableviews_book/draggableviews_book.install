@@ -1,0 +1,10 @@
+<?php
+
+/**
+ * Implements hook_install().
+ *
+ * Set the weight more than views.
+ */
+function draggableviews_book_install() {
+  db_query("UPDATE {system} SET weight = 11 WHERE name = 'draggableviews_book'");
+}

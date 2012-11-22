@@ -1,0 +1,751 @@
+/**
+ * Footheme footheme.css
+ *
+ * Use this file to add your custom styles.
+ *
+ * You can change the name of this file, just
+ * remember to update the name in the info file
+ * as well.
+ */
+
+/* Layout fixes */
+@media only screen and (min-width:481px) and (max-width:768px) {
+  #branding,
+  .region-header {
+    float: left !important;
+    max-height: 1000px;
+    width: 100%;
+    clear: both;
+  }
+  .mbp-r #menu-bar .menu-wrapper {
+    float: none;
+  }
+}
+
+@media only screen and (max-width: 480px) and (min-width: 321px) {
+  #branding,
+  .region-header {
+    float: left !important;
+    max-height: 1000px;
+    width: 100%;
+    clear: both;
+  }
+}
+
+@media only screen and (max-width: 320px) {
+  #branding,
+  .region-header {
+    float: left !important;
+    max-height: 1000px;
+    width: 100%;
+    clear: both;
+  }
+}
+
+#main-content .article-teaser {
+    behavior: url(/sites/all/themes/aitopics/css/PIE.htc);
+    border-radius: 10px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+    -khtml-border-radius: 10px;
+    position: relative;
+    zoom: 1;
+}
+
+#main-content .article-teaser.article-sticky,
+.article-teaser.article-sticky {
+    background: white;
+}
+
+#main-content .view-display-id-links_topic_page .article-teaser.article-sticky {
+    background: #f7f7f7;
+}
+
+.hierarchical-select-wrapper table caption {
+    display: none;
+}
+
+fieldset.vertical-tabs-pane > legend {
+    display: none !important;
+}
+
+#tasks {
+    width: 300px;
+    float: right;
+    margin-top: 10px;
+}
+
+#main-content {
+    margin-right: 20px;
+}
+
+#main-content .block-inner {
+    margin-right: 0;
+    margin-left: 0;
+}
+
+.article .article-title {
+    border: none;
+}
+
+.texture-overlay {
+    background-color: #eee;
+}
+
+#header, #branding {
+    height: 85px;
+    max-height: 100px;
+}
+
+#main-content > header {
+    width: 510px;
+}
+
+#branding, #header, #header .header-inner, #menu-bar, #primary-menu-bar {
+    background: #ffffff;
+}
+
+div.field-type-image div.field-items figure.field-item {
+    background: white;
+}
+
+.ia-r .field-type-image {
+    margin: 15px 0 0 15px;
+}
+
+.nodetype-publication .field-type-image figure {
+    margin-top: -10px;
+}
+
+.field-type-taxonomy-term-reference ul li {
+    display: block;
+}
+
+#edit-field-topics-und {
+    position: relative;
+}
+
+.block-content {
+    padding: 0;
+    padding-left: 10px;
+}
+
+#footer .block-content {
+    padding: 0;
+    padding-right: 10px;
+}
+
+.block ul.links li {
+    font-size: 100%;
+}
+
+div.attachment-after {
+    float: right;
+}
+
+form.node-form .field-type-image {
+    float: none;
+    margin: 0;
+}
+
+.field-type-image figure {
+    margin: 10px;
+}
+
+div.field-name-body div.caption-inner img {
+    margin: 0;
+}
+
+div.field-name-body img.mceIcon {
+    margin: 0;
+}
+
+#logo {
+    padding: 10px 0 0 25px;
+}
+
+li.service-links-google-plus-one {
+    padding-top: 3px !important;
+    margin-left: 10px !important;
+}
+
+#menu-bar {
+    line-height: 20px;
+    min-height: 20px;
+}
+
+.view-grouping-header {
+    font-size: 1.5em;
+    font-weight: bold;
+    padding: 3px;
+    background: #ccc;
+}
+
+a:hover, a:focus {
+    color: #5656c0;
+}
+
+#block-system-main-menu {
+    margin-top: -20px !important;
+}
+
+.nav li a:link,
+.nav li a:visited {
+    color: navy;
+}
+
+.nav li a:hover,
+.nav li a:focus,
+.nav li a:visited:hover {
+    color: #5656c0;
+    text-decoration: underline;
+}
+
+#columns {
+    padding-top: 0;
+}
+
+.node-topics {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.views-field-field-publication-date {
+    white-space: nowrap;
+}
+
+.service-links ul.links {
+    list-style-type: none;
+}
+
+.service-links {
+    float: right;
+    width: 360px;
+}
+
+body.mceContentBody {
+    background: #fff;
+    color: #000;
+    text-align: left;
+}
+
+/* Superfish menus */
+.sf-menu.sf-style-default a {
+    padding: 0.5em;
+    border: none;
+}
+
+.sf-menu.sf-style-default li:hover,
+.sf-menu.sf-style-default li.sfHover,
+.sf-menu.sf-style-default a:focus,
+.sf-menu.sf-style-default a:hover,
+.sf-menu.sf-style-default a:active {
+    background: #f7f7f7;
+}
+
+ul.sf-menu.sf-vertical a {
+    color: navy !important;
+}
+
+.sf-menu.sf-style-default li,
+.sf-menu.sf-style-default.sf-navbar {
+    background: white;
+}
+
+.sf-menu.sf-style-default li li li {
+    background: white;
+}
+
+.sf-menu.sf-style-default ul.sf-megamenu li.sf-megamenu-wrapper ol {
+    border: 1px solid #f7f7f7;
+}
+
+.sf-menu.sf-style-default li li {
+    background: white;
+}
+
+.sf-menu.sf-style-default ul.sf-megamenu li.sf-megamenu-wrapper ol {
+    border: none;
+}
+
+.sf-menu.sf-style-default li ul.sf-megamenu {
+    border-left: 2px solid #f7f7f7;
+    border-top: 2px solid #f7f7f7;
+}
+
+.sf-menu.sf-style-default li:hover,
+.sf-menu.sf-style-default li.sfHover {
+    background: white;
+}
+
+.sf-menu.sf-style-default li.sf-depth-1:hover a.menuparent.sf-depth-1,
+.sf-menu.sf-style-default li.sf-depth-2:hover a.menuparent.sf-depth-2,
+.sf-menu.sf-style-default li.sf-depth-1.sfHover a.menuparent.sf-depth-1,
+.sf-menu.sf-style-default li.sf-depth-2.sfHover a.menuparent.sf-depth-2 {
+    background: #f7f7f7;
+}
+
+.sf-menu.sf-style-default a,
+.sf-menu.sf-style-default a:visited {
+    color: navy;
+}
+
+/* Nice Menu */
+ul.nice-menu-right,
+ul.nice-menu-right li {
+    width: 13.5em;
+}
+
+ul.nice-menu a,
+ul.nice-menu a:visited,
+ul.nice-menu a:active,
+ul.nice-menu a:link {
+    color: navy;
+}
+
+ul.nice-menu a:focus,
+ul.nice-menu a:hover {
+    text-decoration: underline;
+    color: #5656c0;
+}
+
+ul.nice-menu,
+ul.nice-menu ul,
+ul.nice-menu li {
+    border: none;
+    background: white;
+}
+
+ul.nice-menu ul {
+    border: 1px solid #dadada;
+    margin: 0 0 0 -12px;
+}
+
+ul.nice-menu-right li.menuparent,
+ul.nice-menu-right li li.menuparent,
+ul.nice-menu-right li.menuparent:hover,
+ul.nice-menu-right li li.menuparent:hover {
+    background: white;
+}
+
+/* Typography */
+
+h1 {
+    font-size: 1.8em;
+    margin-bottom: 0 !important;
+}
+
+h2 {
+    margin-top: 0.4em;
+    font-size: 1.4em;
+}
+
+h2.title a {
+    font-weight: bold;
+}
+
+h3 { 
+    font-size: 1.3em !important;
+    padding: 0 !important;
+}
+
+.block-title {
+    font-size: 1.3em;
+}
+
+.summary img {
+    z-index: 2;
+    position: relative;
+}
+
+blockquote {
+    behavior: url(/sites/all/themes/aitopics/css/PIE.htc);
+    border-radius: 10px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+    -khtml-border-radius: 10px;
+    position: relative;
+    zoom: 1;
+    z-index: 1;
+    margin: 10px;
+}
+
+blockquote p {
+    margin-top: 0.4em;
+    margin-bottom: 0.8em;
+}
+
+.article .article-content,
+.comment .comment-content {
+    line-height: 1.8em;
+}
+
+/* Search */
+
+#search-block-form {
+    white-space: nowrap;
+}
+
+#block-search-form {
+    width: 350px;
+    text-align: right;
+}
+
+.search-result h3.title {
+    font-size: 1.4em;
+}
+
+li.search-result {
+    border: 1px solid #e9e9e9;
+    padding: 10px;
+}
+
+.ac_results li {
+    font-size: 0.917em;
+}
+
+.ac_over {
+    background-color: #000080 !important;
+}
+
+.ac_odd {
+    background: #dddddd;
+}
+
+.apachesolr_autocomplete.message {
+    color: #333333;
+}
+
+#search-form {
+    display: none;
+}
+
+ol.search-results {
+    margin-left: 0;
+}
+
+.search-info-user, .search-info-date {
+    display: none;
+}
+
+/* Small form tweaks */
+
+select#edit-field-topics-und {
+    height: 15em;
+}
+
+.region-header .form-submit,
+.form-select {
+    font-size: 0.917em;
+    border-color: #dddddd;
+    color: inherit;
+}
+
+input.form-submit,
+input.form-text,
+.rc-4 .article-teaser,
+.rc-4 .comment,
+.rc-4 .block-inner {
+    -moz-border-radius: 0;
+    -webkit-border-radius: 0;
+    -khtml-border-radius: 0;
+    border-radius: 0;
+    margin: 3px;
+}
+
+.form-submit,
+.form-submit:focus,
+.form-submit:hover,
+input.form-submit,
+#search-block-form input.form-submit {
+    background: url(/themes/seven/images/buttons.png) 0 0 repeat-x !important;
+    border: 1px solid #E4E4E4 !important;
+    border-bottom: 1px solid #B4B4B4 !important;
+    border-left-color: #D2D2D2 !important;
+    border-right-color: #D2D2D2 !important;
+    color: #5A5A5A !important;
+    padding: 4px 17px !important;
+    border-radius: 20px !important;
+    -webkit-border-radius: 20px !important;
+}
+
+.form-text:focus,
+.form-checkbox:focus,
+.form-radio:focus,
+.form-select:focus {
+    border: 1px solid #333333;
+    background: #dddddd;
+}
+
+.form-submit, .form-submit:focus, .form-submit:hover {
+    color: inherit;
+    border-color: #dddddd;
+    border-style: outset;
+    border-width: 2px;
+    background: #dddddd;
+}
+
+input.form-autocomplete,
+input.form-text,
+input.form-file,
+textarea.form-textarea,
+select.form-select {
+    padding: 2px !important;
+    border: 1px solid #CCC !important;
+    border-top-color: #999 !important;
+    background: white !important;
+    color: #333 !important;
+}
+
+.views-exposed-form .views-exposed-widget .form-submit {
+    margin-top: 0.5em;
+}
+
+ul.term-reference-tree-level li {
+    white-space: nowrap;
+}
+
+/* Tables */
+
+table caption {
+    margin: 0.5em 0;
+}
+
+thead th {
+    white-space: nowrap;
+}
+
+/* Views */
+div.views-exposed-widget div.views-widget,
+div.views-exposed-widget div.views-widget div.form-item {
+    display: inline;
+}
+
+table.views-view-grid td {
+    vertical-align: top;
+}
+
+
+#page div.messages {
+    margin: 0px 10px 30px 10px;
+}
+
+
+/* Bottom feedback form */
+
+#edit-submitted-user-role-select .form-item-submitted-user-role-select-select-or-other {
+    float: none;
+    clear: both;
+}
+
+#edit-submitted-user-role-select .form-type-checkbox {
+    margin-right: 20px;
+    float: left;
+}
+
+.form-item-submitted-user-role-other {
+    clear: both;
+}
+
+.form-actions {
+    clear: both;
+}
+
+
+/* node types */
+.nodetype-name {
+    color: #aaa;
+    font-weight: bold;
+    font-style: italic;
+}
+
+body.nodetype-podcast #main-content,
+.nodetype-podcast {
+    background-image: url('/sites/all/themes/aitopics/icons/podcast-large.png');
+    background-position: top right;
+    background-repeat: no-repeat;
+}
+
+body.nodetype-news #main-content,
+.nodetype-news {
+    background-image: url('/sites/all/themes/aitopics/icons/news-large.png');
+    background-position: top right;
+    background-repeat: no-repeat;
+}
+
+body.nodetype-video #main-content,
+.nodetype-video {
+    background-image: url('/sites/all/themes/aitopics/icons/video-large.png');
+    background-position: top right;
+    background-repeat: no-repeat;
+}
+
+.nodetype-page {
+    background-image: url('/sites/all/themes/aitopics/icons/page-large.png');
+    background-position: top right;
+    background-repeat: no-repeat;
+}
+
+body.nodetype-publication #main-content,
+.nodetype-publication {
+    background-image: url('/sites/all/themes/aitopics/icons/publication-large.png');
+    background-position: top right;
+    background-repeat: no-repeat;
+}
+
+.nodetype-link {
+    background-image: url('/sites/all/themes/aitopics/icons/link-large.png');
+    background-position: top right;
+    background-repeat: no-repeat;
+}
+
+.nodetype {
+    clear: both;
+    width: 100%;
+}
+
+.metadata.intopic {
+    color: #B76900;
+}
+
+.metadata.notintopic {
+    color: #aaa;
+}
+
+.nodetype .topics {
+}
+
+.nodetype .summary img {
+    margin: 8px;
+    border: 1px solid #ccc;
+    padding: 5px;
+    background: white;
+}
+
+/* isolate front-page footer */
+#node-71588 .nodetype .summary img {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+table.cols-2 > tbody > tr > td {
+    width: 50%;
+}
+
+.topics table td {
+    width: auto;
+}
+
+/* .summary is also used in links on bottom of edit form;
+   make sure we don't match those */
+.nodetype > .summary {
+    min-height: 50px;
+}
+
+.nodetype .external-links {
+    margin: 15px 0;
+    clear: both;
+}
+
+.nodetype .tags {
+    clear: both;
+    padding-top: 15px;
+}
+
+.nodetype .topics {
+    clear: both;
+    padding-top: 15px;
+}
+
+#block-webform-client-block-624 {
+    margin-right: 15px;
+}
+
+
+/* front page slide show */
+.view-front-page-slideshow {
+    position: relative;
+}
+
+#views_slideshow_cycle_teaser_section_front_page_slideshow-panel_pane_1 {
+    margin: 0 auto;
+}
+
+#views_slideshow_cycle_teaser_section_front_page_slideshow-panel_pane_1 {
+    /* left: 35px; */
+}
+
+/* previous link */
+#views_slideshow_controls_text_previous_front_page_slideshow-panel_pane_1 {
+    background: url('/sites/all/themes/aitopics/icons/left.png');
+    width: 30px;
+    height: 0px;
+    padding-top: 48px;
+    overflow: hidden;
+    position: absolute;
+    top: 100px;
+    left: 0px;
+}
+
+/* pause link */
+#views_slideshow_controls_text_pause_front_page_slideshow-panel_pane_1 {
+    display: none;
+}
+
+/* next link */
+#views_slideshow_controls_text_next_front_page_slideshow-panel_pane_1 {
+    background: url('/sites/all/themes/aitopics/icons/right.png');
+    width: 30px;
+    height: 0px;
+    padding-top: 48px;
+    overflow: hidden;
+    position: absolute;
+    top: 100px;
+    right: 0px;
+}
+
+.vbo-select-all-markup, .vbo-table-select-all-markup {
+    display: none !important;
+}
+
+
+/* Accordion menu */
+
+.block-content {
+    padding: 0;
+}
+
+.ui-widget {
+    font-size: 1em;
+    line-height: 1.75;
+}
+
+.ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default {
+    border: none;
+    background: white;
+}
+
+.ui-state-active {
+    border: 1px solid #AAA/*{borderColorActive}*/ !important;
+}
+
+.ui-accordion .ui-accordion-content {
+    padding: 1em 0 1em 0.25em;
+}
+
+.ui-accordion .ui-accordion-header {
+    margin-top: 0.5em;
+}
+
+.ui-accordion li.first {
+    font-weight: bold;
+}
+
+.block .menu li.expanded,
+.block .menu li.collapsed,
+.block .menu li.leaf {
+    margin: 0.25em 0.75em;
+}
+
+

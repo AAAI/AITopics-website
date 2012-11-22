@@ -1,0 +1,234 @@
+<?php
+
+/**
+ * @file
+ * This module is an add-on to the FAQ module that allows users with the 'ask question'
+ * permission to create a question which will be queued for an 'expert' to answer.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function faq_ask_schema() {
+  $schema['faq_expert'] = array(
+    'description' => 'FAQ expert to term mapping.',
+    'fields' => array(
+      'uid' => array(
+        'description' => 'User identifier for the expert.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        ),
+      'tid' => array(
+        'description' => 'Taxonomy identifier of the terms for the expert.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        ),
+      ),
+    'primary key' => array('uid', 'tid'),
+    'indexes' => array(
+      'tid' => array('tid', 'uid'),
+      ),
+    );
+
+  $schema['faq_ask_notify'] = array(
+    'description' => 'FAQ node to asker mapping.',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'Node identifier for notification',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        ),
+      'email' => array(
+        'description' => 'Node identifier for notification',
+        'type' => 'varchar',
+        'length' => '128',
+        'not null' => TRUE,
+        ),
+      ),
+    'primary key' => array('nid', 'email'),
+    'indexes' => array(
+      'nid' => array('nid', 'email'),
+      ),
+    );
+
+  $schema['faq_ask_term_index'] = array(
+    'description' => 'FAQ-Ask maintained index of unpublished node/term relationships.',
+      'fields' => array(
+      'nid' => array(
+        'description' => 'The {node}.nid this record tracks.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'tid' => array(
+         'description' => 'The term ID.',
+         'type' => 'int',
+         'unsigned' => TRUE,
+         'not null' => TRUE,
+         'default' => 0,
+      ),
+      'sticky' => array(
+        'description' => 'Boolean indicating whether the node is sticky.',
+        'type' => 'int',
+        'not null' => FALSE,
+        'default' => 0,
+        'size' => 'tiny',
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the node was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'term_node' => array('tid', 'sticky', 'created'),
+      'nid' => array('nid'),
+    ),
+    'foreign keys' => array(
+      'tracked_node' => array(
+        'table' => 'node',
+        'columns' => array('nid' => 'nid'),
+      ),
+      'term' => array(
+        'table' => 'taxonomy_term_data',
+        'columns' => array('tid' => 'tid'),
+      ),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function faq_ask_install() {
+  /**
+   * Seems like D7 installs anything in hook_schema before this is called.
+   * Need no install_shema call
+   */
+/*  $result = drupal_install_schema('faq_ask');
+
+  if (count($result) > 0) {
+    drupal_set_message(st('faq_ask module installed.'));
+  }
+  else {
+    drupal_set_message(st('faq_ask table creation failed. Please "uninstall" the module and retry.'));
+  }
+  */
+}
+
+/**
+ * Add default expert to term id 0
+ */
+function faq_ask_update_6100() {
+
+  db_query('INSERT INTO {faq_expert} (uid, tid) VALUES (' . variable_get('faq_ask_default_expert', 1) . ', 0)');
+
+  return t('Added default expert into faq_expert table');
+}
+
+/**
+ * Create notification table
+ */
+function faq_ask_update_6101() {
+
+  db_create_table('faq_ask', drupal_get_schema_unprocessed('faq_ask', 'faq_ask_notify'));
+
+  return t('Added notification table');
+
+}
+
+/**
+ * Adding the term index table for unpublished nodes
+ */
+function faq_ask_update_7001() {
+  $ret = array();
+
+  db_create_table('faq_ask_term_index', drupal_get_schema_unprocessed('faq_ask', 'faq_ask_term_index'));
+
+
+  return t('Added term index for unpublished nodes');
+}
+
+/**
+ * Add node/term data to faq_ask maintained term index for unpublished nodes
+ */
+function faq_ask_update_7002() {
+
+  $node_count = '';
+  $term_pairs = '';
+
+  // Get unpublished node nids
+  $unpub = db_select('node', 'n')
+            ->fields('n', array('nid'))
+            ->condition('n.status', '0')
+            ->condition('n.type', 'faq')
+            ->execute()
+            ->fetchCol('nid');
+
+  if (empty($unpub))
+    return t('No unpublished nodes found.');
+
+  foreach ($unpub as $nid) {
+
+    $node = node_load($nid);
+    $node_count++;
+
+    foreach (_faq_ask_get_term_field_name($node) as $field) {
+
+      foreach ($node->{$field}[$node->language] as $term) {
+
+        // Check if the node/term pair is loaded from before
+        $result = db_select('faq_ask_term_index', 'ti')->fields('ti')->condition('tid', $term['tid'])->condition('nid', $node->nid)->execute()->fetchAll();
+
+        // If not found and the term is actually a term (not 0) - add it to the table
+        if (empty($result) && $term['tid']) {
+          db_insert('faq_ask_term_index')
+          ->fields(  array(
+                  'nid' => $node->nid,
+                  'tid' => $term['tid'],
+                  'sticky' => $node->sticky,
+                  'created' => $node->created,
+          ))
+          ->execute();
+          $term_pairs++;
+        }
+      }
+    }
+  }
+
+  return t('Parsed @count nodes adding @num node id/term pairs to the faq_ask index table.',
+           array('@count' => $node_count, '@num' => $term_pairs));
+
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function faq_ask_uninstall() {
+  drupal_uninstall_schema('faq_ask');
+
+  variable_del('faq_expert_role');
+  variable_del('faq_ask_vocabularies');
+  variable_del('faq_ask_title_len');
+  variable_del('faq_ask_suggest');
+  variable_del('faq_ask_notify');
+  variable_del('faq_ask_default_expert');
+  variable_del('faq_unanswered_count');
+  variable_del('faq_ask_expert_advice');
+  variable_del('faq_ask_help_text');
+  variable_del('faq_ask_categorize');
+  variable_del('faq_ask_expert_own');
+  variable_del('faq_ask_notify_asker');
+  variable_del('faq_ask_notify_asker_simplenews_tid');
+  variable_del('faq_ask_notify_asker_simplenews_confirm');
+  variable_del('faq_ask_notify_by_cron');
+
+  drupal_set_message(st('faq_ask module uninstalled.'));
+}

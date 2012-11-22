@@ -1,0 +1,613 @@
+<?php
+
+/**
+ * @file
+ * Finder module install file.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function finder_schema() {
+  $schema['finder'] = array(
+    'description' => t('Table storing finder definitions.'),
+    'export' => array(
+      'key' => 'name',
+      'key name' => 'Name',
+      'primary key' => 'id',
+      'identifier' => 'finder', // Exports will be as $finder
+      'bulk export' => TRUE,
+      'default hook' => 'finder_default_finders',  // Function hook name.
+      'admin_title' => 'title',
+      'admin_description' => 'description',
+      'api' => array(
+        'owner' => 'finder',
+        'api' => 'finder_default',  // Base name for api include files.
+        'minimum_version' => 2,
+        'current_version' => 2,
+      ),
+      'object' => 'finder',
+      // the variable that holds enabled/disabled status
+      'status' => 'status',
+      // CRUD callbacks
+      'load callback' => 'finder_load',
+      'load multiple callback' => 'finder_load_multiple',
+      'load all callback' => 'finder_load_all',
+      'create callback' => 'finder_new',
+      'save callback' => 'finder_save',
+      'delete callback' => 'finder_delete',
+      'export callback' => 'finder_export',
+      'import callback' => 'finder_import',
+      'cache defaults' => TRUE,
+      'default cache bin' => 'cache_finder',
+    ),
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary ID field for the table. Not used for anything except internal lookups.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'no export' => TRUE, // Do not export database-only keys.
+      ),
+      'name' => array(
+        'description' => 'Unique name for this object. Used to identify it programmatically.',
+        'type' => 'varchar',
+        'length' => 32,
+      ),
+      'views_view' => array(
+        'description' => 'The unique name of the view.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'views_display' => array(
+        'description' => 'An identifier for the display; usually generated from the views display_plugin, so should be something like page or page_1 or block_2, etc.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'title' => array(
+        'description' => 'The human-readable title of this finder.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'description' => array(
+        'description' => 'The description of this finder.',
+        'type' => 'text',
+        'size' => 'big',
+      ),
+      'path' => array(
+        'description' => 'Path for the finder page.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'block' => array(
+        'description' => 'Provide block for this finder.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+        'size' => 'tiny',
+      ),
+      'status' => array(
+        'description' => 'Whether the finder is enabled or disabled.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+        'size' => 'tiny',
+      ),
+      'settings' => array(
+        'description' => 'Settings for this finder.',
+        'type' => 'text',
+        'size' => 'big',
+        'serialize' => TRUE,
+      ),
+      'elements' => array(
+        'description' => 'Elements for this finder.',
+        'type' => 'text',
+        'size' => 'big',
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('id'),
+    'unique keys' => array(
+      'name' => array('name'),
+    ),
+  );
+
+  $schema['finder_choice'] = array(
+    'description' => t('Table storing precalculated finder choices.'),
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary ID for the choice. Not really used for anything.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'finder' => array(
+        'description' => 'The finder ID.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'element' => array(
+        'description' => 'The finder element name.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'choice_key' => array(
+        'description' => 'The key of the finder choice.',
+        'type' => 'varchar',
+        'length' => 1024,
+      ),
+      'choice_value' => array(
+        'description' => 'The value of the finder choice.',
+        'type' => 'varchar',
+        'length' => 1024,
+      ),
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'finder_choice_finder' => array('finder'),
+      'finder_choice_element' => array('element'),
+      'finder_choice_key' => array('choice_key'),
+      'finder_choice_value' => array('choice_value'),
+    ),
+    'foreign keys' => array(
+      'finder_id' => array(
+        'table' => 'finder',
+        'columns' => array('finder' => 'id'),
+      ),
+    ),
+  );
+
+  $schema['cache_finder_find'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_finder'] = drupal_get_schema_unprocessed('system', 'cache');
+
+  return $schema;
+}
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function finder_update_last_removed() {
+  // Removed updates prior to Finder 2.x because they are simply incompatible
+  // with the new code.  The severity of the 720* upgrade requires admins to
+  // check their settings anyway, which is what most of the upgrade code was
+  // for.
+  // Actually the most recently removed was 7100 but it is similar to 6102
+  // so that is all that will be mentioned here, plus relatively few people
+  // would have updated Finder to D7 before Finder 7.x-2.x.
+  return 6102;
+}
+
+/**
+ * Disable Finder 1.x modules.
+ */
+function finder_update_7200() {
+  // Upgraders with optionwidgets should have the module disabled.
+  if (module_exists('finder_optionwidgets')) {
+    drupal_set_message('<em>Finder optionwidgets</em> is deprecated.  Please delete the ' . drupal_get_path('module', 'finder_optionwidgets') . ' directory from the Drupal installation.', 'warning');
+    module_disable(array('finder_optionwidgets'), FALSE);
+  }
+  // Upgraders with autocomplete should have the module disabled.
+  if (module_exists('finder_autocomplete')) {
+    drupal_set_message('<em>Finder autocomplete</em> is deprecated.  Please delete the ' . drupal_get_path('module', 'finder_autocomplete') . ' directory from the Drupal installation.', 'warning');
+    module_disable(array('finder_autocomplete'), FALSE);
+  }
+  // Upgraders with text should have the module disabled.
+  if (module_exists('finder_text')) {
+    drupal_set_message('<em>Finder text</em> is deprecated.  Please delete the ' . drupal_get_path('module', 'finder_text') . ' directory from the Drupal installation.', 'warning');
+    module_disable(array('finder_text'), FALSE);
+  }
+  // Upgraders with i18nstrings should have the module disabled.
+  if (module_exists('finder_i18nstrings')) {
+    drupal_set_message('<em>Finder i18nstrings</em> is deprecated.  Please delete the ' . drupal_get_path('module', 'finder_i18nstrings') . ' directory from the Drupal installation.', 'warning');
+    module_disable(array('finder_i18nstrings'), FALSE);
+  }
+  // Upgraders with search should have the module disabled.
+  if (module_exists('finder_search')) {
+    drupal_set_message('<em>Finder search</em> is deprecated.  Please delete the ' . drupal_get_path('module', 'finder_search') . ' directory from the Drupal installation.', 'warning');
+    module_disable(array('finder_search'), FALSE);
+  }
+  // Upgraders with node should have the module disabled.
+  if (module_exists('finder_node')) {
+    drupal_set_message('<em>Finder node</em> is deprecated.  Please delete the ' . drupal_get_path('module', 'finder_node') . ' directory from the Drupal installation.', 'warning');
+    module_disable(array('finder_node'), FALSE);
+  }
+  // Upgraders with user should have the module disabled.
+  if (module_exists('finder_user')) {
+    drupal_set_message('<em>Finder user</em> is deprecated.  Please delete the ' . drupal_get_path('module', 'finder_user') . ' directory from the Drupal installation.', 'warning');
+    module_disable(array('finder_user'), FALSE);
+  }
+  // Upgraders with views should have the module disabled.
+  if (module_exists('finder_views')) {
+    drupal_set_message('<em>Finder views</em> is deprecated.  Please delete the ' . drupal_get_path('module', 'finder_views') . ' directory from the Drupal installation.', 'warning');
+    module_disable(array('finder_views'), FALSE);
+  }
+  return 'Disable Finder 1.x modules.';
+}
+
+/**
+ * Collect and store Finder 1.x finders.
+ */
+function finder_update_7201() {
+  $finder_result = db_query("SELECT * FROM {finder} ORDER BY finder_id");
+  $finders = array();
+  foreach ($finder_result as $finder) {
+    if (!empty($finder->settings)) {
+      $finder->settings = unserialize($finder->settings);
+    }
+    $element_result = db_query("SELECT * FROM {finder_element} WHERE finder_id = :id ORDER BY weight", array(':id' => $finder->finder_id));
+    foreach ($element_result as $element) {
+      if (!empty($element->settings)) {
+        $element->settings = unserialize($element->settings);
+      }
+      $finder->elements[] = $element;
+    }
+    $finders[$finder->finder_id] = $finder;
+  }
+  variable_set('finder_old_finders', $finders);
+  return 'Collect and store Finder 1.x finders.';
+}
+
+/**
+ * Upgrade Finder 1.x database to Finder 2.x.
+ */
+function finder_update_7202() {
+  db_drop_table('finder');
+  db_drop_table('finder_element');
+  db_drop_table('cache_finder_find');
+  drupal_install_schema('finder');
+  return 'Upgrade Finder 1.x database to Finder 2.x.';
+}
+
+/**
+ * Convert Finder 1.x finders to Finder 2.x.
+ */
+function finder_update_7203() {
+  // Rebuild finder schema cache.
+  drupal_get_schema('finder', TRUE);
+  $finders = variable_get('finder_old_finders', array());
+  $custom_matching = variable_get('finder_custom_matching', array());
+  $max_finder_id = max(array_keys($finders));
+  $dummies = array();
+  for ($i = 1; $i <= $max_finder_id; $i++) {
+    if (!empty($finders[$i])) {
+      // Reformat the finder here and finder_save() it.
+      $new_finder = finder_new();
+      $finder = &$finders[$i];
+      $new_finder->name = 'finder_' . $finder->finder_id;
+      $new_finder->title = $finder->title;
+      $new_finder->description = $finder->description;
+      $new_finder->path = $finder->path;
+      $new_finder->block = $finder->block;
+      $new_finder->settings = array();
+      if ($finder->base == 'node') {
+        $new_finder->views_view = 'finder_node';
+        $new_finder->views_display = 'page_1';
+      }
+      elseif ($finder->base == 'user') {
+        $new_finder->views_view = 'finder_user';
+        $new_finder->views_display = 'page_1';
+      }
+      else {
+        if (isset($finder->settings['views']['view'])) {
+          $new_finder->views_view = $finder->settings['views']['view'];
+          $new_finder->views_display = 'default';
+          $view = views_get_view($view_name);
+          foreach ($view->display as $key => $display) {
+            if ($key != 'default') {
+              $new_finder->views_display = $key;
+              break;
+            }
+          }
+        }
+        if (isset($finder->settings['views']['displays']['query']) && $finder->settings['views']['displays']['query'] != 'default') {
+          $new_finder->views_display = $finder->settings['views']['displays']['query'];
+        }
+        if (isset($finder->settings['views']['results'])) {
+          $new_finder->settings['results_style'] = $finder->settings['views']['results'] ? 'custom' : 'views';
+        }
+        if (isset($finder->settings['views']['relationships'])) {
+          foreach ($finder->settings['views']['relationships'] as $rel_key => $fields) {
+            foreach ($fields as $field) {
+              $relationships[$field] = $rel_key;
+            }
+          }
+        }
+        if (isset($finder->settings['views']['views_args']['args'])) {
+          if (isset($finder->settings['views']['views_args']['delimiter'])) {
+            $finder->settings['views']['views_args']['args'] = str_replace(
+              $finder->settings['views']['views_args']['delimiter'],
+              '/',
+              $finder->settings['views']['views_args']['args']
+            );
+          }
+          $new_finder->settings['contextual_filter'] = $finder->settings['views']['views_args']['args'];
+        }
+      }
+      if (isset($finder->settings['form_on_page'])) {
+        $new_finder->settings['form_on_page'] = $finder->settings['form_on_page'];
+      }
+      if (isset($finder->settings['form']['prefix']['value'])) {
+        $new_finder->settings['header']['value'] = $finder->settings['form']['prefix']['value'];
+      }
+      if (isset($finder->settings['form']['prefix']['format'])) {
+        $new_finder->settings['header']['format'] = $finder->settings['form']['prefix']['format'];
+      }
+      if (isset($finder->settings['form']['suffix']['value'])) {
+        $new_finder->settings['footer']['value'] = $finder->settings['form']['suffix']['value'];
+      }
+      if (isset($finder->settings['form']['prefix']['format'])) {
+        $new_finder->settings['footer']['format'] = $finder->settings['form']['suffix']['format'];
+      }
+      if (isset($finder->settings['form']['button_text'])) {
+        $new_finder->settings['find_text'] = $finder->settings['form']['button_text'];
+      }
+      if (isset($finder->settings['form']['go_text'])) {
+        $new_finder->settings['go_text'] = $finder->settings['form']['go_text'];
+      }
+      if (isset($finder->settings['advanced']['no_results']['no_results'])) {
+        $new_finder->settings['no_results'] = 'configured';
+        $new_finder->settings['no_results_configured'] = $finder->settings['advanced']['no_results']['no_results'];
+      }
+      if (!empty($finder->settings['advanced']['filter'])) {
+        $new_finder->settings['show_results'] = 'filter';
+      }
+      if (!empty($finder->settings['advanced']['validate_empty'])) {
+        $new_finder->settings['validate_empty'] = TRUE;
+      }
+      if (isset($finder->settings['advanced']['submission'])) {
+        $new_finder->settings['find_button'] = $finder->settings['advanced']['submission'];
+      }
+      if (isset($finder->settings['advanced']['ajax'])) {
+        $new_finder->settings['ajax'] = $finder->settings['advanced']['ajax'];
+      }
+      if (isset($finder->settings['advanced']['ajax_effect'])) {
+        $new_finder->settings['ajax_effect'] = $finder->settings['advanced']['ajax_effect'];
+      }
+      if (isset($finder->settings['advanced']['ajax_remote'])) {
+        $new_finder->settings['ajax_remote'] = $finder->settings['advanced']['ajax_remote'];
+      }
+      if (isset($finder->settings['advanced']['element_combination'])) {
+        $new_finder->settings['element_logic'] = $finder->settings['advanced']['element_combination'] ? 'OR' : 'AND';
+      }
+      if (isset($finder->settings['advanced']['pager'])) {
+        $new_finder->settings['pager'] = $finder->settings['advanced']['pager'];
+      }
+      if (isset($finder->settings['advanced']['goto'])) {
+        if ($finder->settings['advanced']['goto'] == '') {
+          $new_finder->settings['goto'] = 'never';
+        }
+        elseif ($finder->settings['advanced']['goto'] == 'go') {
+          $new_finder->settings['goto'] = 'never';
+          $new_finder->settings['go_button'] = TRUE;
+        }
+        else {
+          $new_finder->settings['goto'] = $finder->settings['advanced']['goto'];
+        }
+      }
+      if (isset($finder->settings['advanced']['hide_args'])) {
+        $new_finder->settings['url'] = $finder->settings['advanced']['hide_args'] ? 'disabled' : 'enabled';
+      }
+      if (isset($finder->settings['advanced']['arg_sep'])) {
+        $new_finder->settings['url_delimiter'] = $finder->settings['advanced']['arg_sep'];
+      }
+      if (isset($finder->settings['advanced']['empty_symbol'])) {
+        $new_finder->settings['url_empty'] = $finder->settings['advanced']['empty_symbol'];
+      }
+      if (isset($finder->settings['advanced']['cache_finder_find'])) {
+        $new_finder->settings['cache'] = $finder->settings['advanced']['cache_finder_find'];
+      }
+      if (isset($finder->settings['advanced']['search'])) {
+        $new_finder->settings['search'] = $finder->settings['advanced']['search'];
+      }
+      if (isset($finder->settings['advanced']['search_tab'])) {
+        $new_finder->settings['search_tab'] = $finder->settings['advanced']['search_tab'];
+      }
+      $new_finder->elements = array();
+      foreach ($finder->elements as $element) {
+        $new_element = (object)array();
+        $new_element->id = 'element_' . $element->finder_element_id;
+        $new_element->finder = $new_finder->name;
+        $new_element->element = $element->element;
+        $new_element->title = $element->title;
+        $new_element->weight = $element->weight;
+        if (isset($element->settings['form']['description'])) {
+          $new_element->settings['description'] = $element->settings['form']['description'];
+        }
+        if (isset($element->settings['form']['prefix']['value'])) {
+          $new_element->settings['header']['value'] = $element->settings['form']['prefix']['value'];
+        }
+        if (isset($element->settings['form']['prefix']['format'])) {
+          $new_element->settings['header']['format'] = $element->settings['form']['prefix']['format'];
+        }
+        if (isset($element->settings['form']['suffix']['value'])) {
+          $new_element->settings['footer']['value'] = $element->settings['form']['suffix']['value'];
+        }
+        if (isset($element->settings['form']['suffix']['format'])) {
+          $new_element->settings['footer']['format'] = $element->settings['form']['suffix']['format'];
+        }
+        if (isset($element->settings['form']['default_value'])) {
+          $new_element->settings['default_value'] = $element->settings['form']['default_value'];
+        }
+        if (isset($element->settings['form']['required'])) {
+          $new_element->settings['required'] = $element->settings['form']['required'];
+        }
+        if (isset($element->settings['form']['field_prefix'])) {
+          $new_element->settings['field_prefix'] = $element->settings['form']['field_prefix'];
+        }
+        if (isset($element->settings['form']['field_suffix'])) {
+          $new_element->settings['field_suffix'] = $element->settings['form']['field_suffix'];
+        }
+        if (isset($element->settings['form']['maxlength'])) {
+          $new_element->settings['maxlength'] = $element->settings['form']['maxlength'];
+        }
+        if (isset($element->settings['form']['size'])) {
+          $new_element->settings['size'] = $element->settings['form']['size'];
+        }
+        if (isset($element->settings['form']['max_suggestions'])) {
+          $new_element->settings['max_suggestions'] = $element->settings['form']['max_suggestions'];
+        }
+        if (isset($element->settings['form']['match'])) {
+          $match = $element->settings['form']['match'];
+          if (isset($custom_matching[$match])) {
+            $custom_match = $custom_matching[$match];
+            $new_element->settings['autocomplete_match'] = 'x';
+            $new_element->settings['autocomplete_match_custom_prefix'] = $custom_match['value_prefix'];
+            $new_element->settings['autocomplete_match_custom_suffix'] = $custom_match['value_suffix'];
+            $new_element->settings['autocomplete_match_custom_operator'] = $custom_match['operator'];
+          }
+          else {
+            $new_element->settings['autocomplete_match'] = $match;
+          }
+        }
+        if (isset($element->settings['form']['autosubmit'])) {
+          $new_element->settings['autosubmit'] = $element->settings['form']['autosubmit'];
+        }
+        if (isset($element->settings['form']['delimit_autocomplete'])) {
+          $new_element->settings['autocomplete_delimit'] = $element->settings['form']['delimit_autocomplete'];
+        }
+        if (isset($element->settings['form']['multiple'])) {
+          $new_element->settings['multiple'] = $element->settings['form']['multiple'];
+        }
+        if (isset($element->settings['form']['empty'])) {
+          $new_element->settings['empty'] = $element->settings['form']['empty'];
+        }
+        if (isset($element->settings['form']['empty_text'])) {
+          $new_element->settings['empty_text'] = $element->settings['form']['empty_text'];
+        }
+        if (isset($element->settings['form']['minlength'])) {
+          $new_element->settings['minlength'] = $element->settings['form']['minlength'];
+        }
+        if (isset($element->settings['form']['rows'])) {
+          $new_element->settings['rows'] = $element->settings['form']['rows'];
+        }
+        if (isset($element->settings['choices']['field'])) {
+          foreach ($element->settings['choices']['field'] as $field) {
+            list($table, $field_name) = explode('.', $field);
+            $new_field = (object)array(
+              'table' => $table,
+              'field' => $field_name,
+              'relationship' => NULL,
+              'format' => isset($element->settings['choices']['sanitization']['format']) ? $element->settings['choices']['sanitization']['format'] : 'filter_xss',
+            );
+            if (isset($relationships[$field])) {
+              $new_field->relationship = $relationships[$field];
+            }
+            $new_element->settings['fields'][$field] = $new_field;
+          }
+        }
+        if (isset($element->settings['choices']['sort'])) {
+          $new_element->settings['sort'] = $element->settings['choices']['sort'];
+        }
+        if (isset($element->settings['choices']['views']['args'])) {
+          if (isset($element->settings['choices']['views']['delimiter'])) {
+            $element->settings['choices']['views']['args'] = str_replace(
+              $element->settings['choices']['views']['delimiter'],
+              '/',
+              $element->settings['choices']['views']['args']
+            );
+          }
+          $new_element->settings['contextual_filter'] = $element->settings['choices']['views']['args'];
+        }
+        if (isset($element->settings['choices']['displays']['query']) && $element->settings['choices']['displays']['query'] != 'default') {
+          $new_element->settings['display'] = $element->settings['choices']['displays']['query'];
+        }
+        if (isset($element->settings['advanced']['delimit'])) {
+          $new_element->settings['delimit'] = $element->settings['advanced']['delimit'];
+        }
+        if (isset($element->settings['advanced']['field_combination'])) {
+          $new_element->settings['field_logic'] = $element->settings['advanced']['field_combination'] ? 'AND' : 'OR';
+        }
+        if (isset($element->settings['advanced']['value_combination'])) {
+          $new_element->settings['value_logic'] = $element->settings['advanced']['value_combination'] ? 'AND' : 'OR';
+        }
+        if (isset($element->settings['advanced']['nesting_order'])) {
+          $new_element->settings['nesting_order'] = $element->settings['advanced']['nesting_order'];
+        }
+        if (isset($element->settings['advanced']['match'])) {
+          $match = $element->settings['advanced']['match'];
+          if (isset($custom_matching[$match])) {
+            $custom_match = $custom_matching[$match];
+            $new_element->settings['match'] = 'x';
+            $new_element->settings['match_custom_prefix'] = $custom_match['value_prefix'];
+            $new_element->settings['match_custom_suffix'] = $custom_match['value_suffix'];
+            $new_element->settings['match_custom_operator'] = $custom_match['operator'];
+          }
+          else {
+            $new_element->settings['match'] = $match;
+          }
+        }
+        $args = array();
+        if ($finder->base == 'node') {
+          if (!empty($element->settings['choices']['node_types'])) {
+            foreach ($element->settings['choices']['node_types'] as $node_type) {
+              if ($node_type) {
+                $args[] = $node_type;
+              }
+            }
+          }
+        }
+        elseif ($finder->base == 'user') {
+          if (!empty($element->settings['choices']['user_roles'])) {
+            foreach ($element->settings['choices']['user_roles'] as $user_role) {
+              if ($user_role) {
+                $args[] = $user_role;
+              }
+            }
+          }
+        }
+        if (!empty($args)) {
+          $new_element->settings['contextual_filter'] = implode('/', $args);
+        }
+        $new_finder->elements[$new_element->id] = $new_element;
+      }
+      finder_save($new_finder);
+    }
+    else {
+      // Create a dummy entry, and mark it so we delete it later.
+      $new_finder = finder_new();
+      $dummies[] = $new_finder->name;
+      finder_save($new_finder);
+    }
+  }
+  if (!empty($dummies)) {
+    // Delete the dummies.
+    db_delete('finder')
+      ->condition('name', $dummies, 'IN')
+      ->execute();
+  }
+
+  return 'Convert Finder 1.x finders to Finder 2.x.';
+}
+
+/**
+ * Finder 1.x to 2.x updates.  Check your settings!
+ */
+function finder_update_7204() {
+  // Upgraders will expect the admin ui.
+  module_enable(array('finder_ui'));
+  variable_del('finder_custom_matching');
+  variable_del('finder_search_finder_results_theme');
+  variable_del('finder_old_finders');
+  cache_clear_all();
+  drupal_set_message('Welcome to version 2 of the Finder module.  The finder settings have changed, please check the configuration on all your finders.  An attempt was made to upgrade your finders, but it will be necessary to review the configuration.');
+  return 'Finder 1.x to 2.x updates.  Check your settings!';
+}
+
+/**
+ * Install a table for precalculation of choices.
+ */
+function finder_update_7205() {
+  db_create_table('finder_choice', drupal_get_schema_unprocessed('finder', 'finder_choice'));
+  return 'Install a table for precalculation of choices.';
+}
+

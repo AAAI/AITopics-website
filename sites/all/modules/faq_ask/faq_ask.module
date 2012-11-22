@@ -1,0 +1,2128 @@
+<?php
+
+/**
+ * @file
+ * This module is an add-on to the FAQ module that allows users with the 'ask question'
+ * permission to create a question which will be queued for an 'expert' to answer.
+ */
+
+/**
+ * Display help and module information
+ * @param string $path
+ *   section which section of the site we're displaying help
+ *
+ * @return string
+ *   help text for section
+ */
+function faq_ask_help($path, $arg) {
+  $output = '';
+
+  switch ($path) {
+    case 'admin/help#faq_ask':
+      $output .= '<p>' . t("This module is an add-on to the FAQ module that allows users with the 'ask question' permission to create a question which will be queued for an 'expert' to answer.") . '</p>' .
+        '<p>' . t("The module shows an abbreviated version of the FAQ form without an answer field. The node is created without the 'published' attribute. There is a block that will show the unanswered questions to the 'expert' (generally, this requires a separate role).") . '</p>' .
+        '<p>' . t("Viewing of the completed question and answer pair is done by the FAQ module.") . '</p>' .
+        '<p>' . t("Simply adding the 'FAQ' content type to a vocabulary will not make it eligible for experts; you must go to the settings page and add it there.") . '</p>';
+      return $output;
+
+    case 'admin/settings/faq/ask':
+      return theme('box', NULL, '<big>' . t('In order for the Faq_Ask module to operate, you must, at the least,: 1) Define at least one vocabulary for use with the "faq" content type; 2) select one or more roles as experts (and you may have to "Save configuration"); 3) select at least one category and expert combination; 4) click the "Save configuration" button.') . '</big>');
+
+    case 'faq_ask/unanswered':
+      $output = '<p>' . filter_xss_admin(variable_get('faq_ask_expert_advice', _faq_ask_advice_default('expert'))) . '</p>';
+      if (user_access('administer blocks')) {
+        $output .= '<p><em>' . t('You may go <a href="!setting">here</a> to change the block limit.', array('!setting' => url('admin/structure/block/manage/faq_ask/unanswered/configure'))) . '</em></p>';
+      }
+      return $output;
+
+    case 'faq_ask/%':
+    case 'faq_ask':
+      return filter_xss_admin(variable_get('faq_ask_help_text', _faq_ask_help_default()));
+  }
+}
+
+/**
+ * Implements hook_permission().
+ *
+ * Define the permissions this module uses
+ *
+ * @return array
+ *   permissions defined for the faq_ask module
+ */
+function faq_ask_permission() {
+  return array(
+    'ask question' => array(
+      'title' => t('Ask a question'),
+      'description' => t('Ask a question to be submitted to an expert.'),
+      ),
+    'answer question' => array(
+      'title' => t('Answer a question'),
+      'description' => t('Answer a question submitted by someone asking.'),
+      ),
+    );
+}
+
+/**
+ * Implements hook_node_access().
+ *
+ * @param string $op
+ *   The type of node access we are handling
+ * @param object $node
+ *   Node object we are checking the access to
+ * @param obhect $account
+ *   Account object of the current user
+ *
+ * @return boolean
+ *   TRUE if access is granted, FALSE if not.
+ */
+function faq_ask_node_access($op, $node, $account) {
+  // If node is already published, it's not ours any more.
+  if (!is_object($node)) {
+    return NULL;
+  }
+  if ($node->status == 1) {
+    return NULL;
+  }
+  if ($op == 'create') {
+    return user_access('ask question') || user_access('answer question');
+  }
+  else {
+    // We don't include "edit own" because the intent is they can edit their own until it's published.
+    return user_access('answer question') || $account->uid == $node->uid;
+  }
+}
+
+/**
+ * Determines whether the current user has one of the given permissions.
+ *
+ * @param string $string1
+ *   first permission string
+ * @param string $string2
+ *   second permission string
+ *
+ * @return boolean
+ *   TRUE if user has one of the given permissions, FALSE otherwise
+ */
+function faq_ask_user_access_or($string1, $string2) {
+  return user_access($string1) || user_access($string2);
+}
+
+/**
+ * Implements hook_menu().
+ *
+ * @return array
+ *   Menu structure for the various menus defined for the faq_ask module
+ *
+ */
+function faq_ask_menu() {
+  $items = array();
+  // Issue #1348430: taecelle: Can't see the settings tab
+  // Changed the path to the correct location
+  $items['admin/config/content/faq/ask'] = array(
+    'title' => 'Experts',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('faq_ask_settings_form'),
+    'access arguments' => array('administer faq'),
+    'description' => 'Allows the user to configure the Ask_FAQ module.',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -7,
+    );
+/*
+  $items['admin/config/content/faq/ask/test'] = array(
+    'title' => 'Experts',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('faq_ask_test_form'),
+    'access arguments' => array('administer faq'),
+    'description' => 'Just for testing purpouses.',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -7,
+    );
+*/
+  $items['faq_ask'] = array(
+    'title' => 'Ask a question',
+    'page callback' => 'faq_ask_page',
+    'access callback' => 'user_access',
+    'access arguments' => array('ask question'),
+    'weight' => 1,
+    );
+
+  $items['faq_ask/%'] = array(
+    'page arguments' => array(1),
+    'access arguments' => array('ask question'),
+    'type' => MENU_CALLBACK,
+    );
+
+  $items['faq_ask/answer/%node'] = array(
+    'title' => 'Answer a question',
+    'page callback' => 'faq_ask_answer',
+    'page arguments' => array(2),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    );
+
+  $items['faq_ask/edit/%node'] = array(
+    'title' => 'Edit a question',
+    'page callback' => 'faq_ask_edit',
+    'page arguments' => array(2),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    );
+
+  $items['faq_ask/unanswered'] = array(
+    'title' => 'List more unanswered questions',
+    'page callback' => 'faq_ask_list_more',
+    'access callback' => 'faq_ask_user_access_or',
+    'access arguments' => array('answer question', 'ask question'),
+    'type' => MENU_CALLBACK,
+    );
+
+  return $items;
+}
+
+/**
+ * Get the ask question form.
+ *
+ * Obsolete? Doesn not seem to be called anywhere
+ *
+ * @return void
+ */
+function faq_ask_page($tid = NULL) {
+  drupal_goto('node/add/faq', array( 'query' => array( 'ask' => 'TRUE' )));
+}
+
+/**
+ * Get the edit question form.
+ *
+ * Checks for the permissions of the current user and redirects to the appropriate edit form.
+ *
+ * @param object $node
+ *   Node object of the node we are editing
+ *
+ * @return void
+ */
+function faq_ask_edit($node) {
+  global $user;
+
+  if ($node->status == 1) {
+    drupal_set_message(t('That question has already been answered.'), 'status');
+  }
+  else {
+    if (node_access('update', $node)) {
+    drupal_goto('node/' . $node->nid . '/edit', array( 'query' => array( 'ask' => 'TRUE' )));
+    }
+    else {
+    drupal_set_message(t('You are not allowed to edit that question.'), 'error');
+    }
+  }
+  drupal_goto('node');
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * This is how we build the "ask question" form.
+ * @TODO: Make sure this is called after the taxonomy is added, so that we may delete or modify the taxonomy part of the form if we want to.
+ *
+ * @param array $form
+ *   The edit form to modify.
+ * @param array $form_state
+ *   Form state information
+ *
+ * @return array $form
+ *   Modified form as called by reference
+ */
+function faq_ask_form_faq_node_form_alter(&$form, &$form_state) {
+
+  global $user;
+
+  // Issue #1280446 by deck7uk
+  // If this form is reached with a user that can ask question but should not answer
+  if (user_access('ask question') && !user_access('answer question')) {
+    $_GET['ask'] = 1;   // make sure the ask query is set
+  }
+
+  if (!isset($_GET['ask']) || ($_GET['ask'] != 1 && $_GET['ask'] != 'TRUE')) {
+    return;    // Do not modify form if ask query is not set
+  }
+
+  $language = $form['body']['#language'];
+
+  if (!user_access('view own unpublished content') || ($user->uid == 0)) {
+    $form['#redirect'] = 'faq-page';
+  }
+
+  drupal_set_title(t('Ask a Question'));
+
+  // Set the published field off and make sure they can't override it.
+  $form['options']['status']['#default_value'] = FALSE;
+  $form['options']['status']['#disabled'] = TRUE;
+
+  // Add default text to body field.
+  $form['body']['#default_value'] = variable_get('faq_ask_unanswered', t('Not answered yet.'));
+
+  // Hide the body elements (we'll dummy one later) and the menu elements.
+  hide($form['body']);
+  hide($form['menu']);
+  hide($form['options']);
+  hide($form['upload']);
+  $form['additional_settings']['#access'] = FALSE;
+  $form['upload']['#access'] = FALSE;
+
+  // Check if only experts can categorize the question.
+  if (variable_get('faq_ask_categorize', FALSE)) {
+    // Hide all taxonomy fields
+    $fields = field_info_instances('node', 'faq');
+    foreach ($fields as $name => $properties) {
+      if ($properties['display']['default']['module'] == 'taxonomy' && isset($form[$name])) {
+       hide($form[$name]);                              // Hide form if it is a taxonomy field
+       $form[$name][$language]['#required'] = FALSE;    // If hidden, then do not expect it to be required
+      }
+    }
+  }
+
+  // if we're supposed to notify asker on answer, add form item for this
+  if (variable_get('faq_ask_notify_asker', FALSE)) {
+
+    // If asker is anonymous, add an optional e-mail field that may be used for notification when question is answered
+    if ($user->uid == 0) {
+      // Form field for e-mail.
+      $form['faq_email'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Notification E-mail (optional)'),
+        '#default_value' => '',
+        '#weight' => 10,
+        '#description' => t('Write your e-mail here if you would like to be notified when the question is answered.')
+        );
+    }
+    else {
+      // Checkbox for notification
+      $form['faq_notify'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Notify by E-mail (optional)'),
+        '#default_value' => FALSE,
+        '#weight' => 10,
+        '#description' => t('Check this box if you would like to be notified when the question is answered.'),
+        );
+    }
+  }
+
+  // Add validation of the e-mail field
+  if (!isset($form['#validate'])) {
+    $form['#validate'] = array();
+  }
+  $form['#validate'][] = 'faq_ask_form_validate';
+
+  // Make sure we know we came from here.
+  $form['faq_ask'] = array('#type' => 'value', '#value' => TRUE);
+
+  //$form['#submit'][] = 'faq_ask_submit';
+  $form['actions']['submit']['#submit'][] = 'faq_ask_submit';
+
+  // Handle special cases if this is a block form
+  if (isset($_GET['block'])) {
+    if ($_GET['block']) {
+
+      // Shorter description on Qestion field + move it higher
+      $form['title']['#description'] = t('Question to be answered.');
+      $form['title']['#weight'] = '-5';
+      $form['title']['#size'] = '';    // Make sure it is not set to 60 as default
+
+      // Shorter description on detailed question field
+      $form['detailed_question']['#description'] = t('Longer question text.');
+      $form['detailed_question']['#size'] = '';    // Make sure it is not set to 60 as default
+
+      // Make sure the category field does not expand too wide
+      $fields = field_info_instances('node', 'faq');
+      foreach ($fields as $name => $properties) {
+        if ($properties['display']['default']['module'] != 'taxonomy'
+          && isset($form[$name])
+          && $properties['field_name'] == 'field_tags'
+          )
+        $form[$name][$form[$name]['#language']]['#cols'] = '';
+        $form[$name][$form[$name]['#language']]['#size'] = '';
+      }
+
+      // Email field
+      if (isset($form['faq_email'])) {
+        $form['faq_email']['#size'] = '';    // Make sure it is not set to 60 as default
+      }
+    }
+  }
+}
+
+/**
+ * Validation form for the FAQ Ask form
+ *
+ * Verifies that the e-mail entered seems to be a valid e-mail.
+ * Thanks to http://hokuten.net/2010/drupal-creating-an-e-mail-subscription-block/
+ *
+ * @param array $form
+ *   The edit form to validate.
+ * @param array $form_state
+ *   Form state information
+ *
+ * @return void
+ *
+ */
+function faq_ask_form_validate($form, &$form_state) {
+
+  if (isset($form_state['values']['faq_email']) && 2 < strlen($form_state['values']['faq_email'])) {
+    $email = $form_state['values']['faq_email'];
+    if (!valid_email_address($email)) {
+      form_set_error('email', t('That is not a valid e-mail address.'));
+    }
+  }
+  else {
+    // Issue #1569684 by jlea9378: Not a valid e-mail address
+    unset($form_state['values']['faq_email']);
+  }
+}
+
+/**
+ * Implements hook_node_update().
+ *
+ * Checks if the node being updated is a question that has been answered
+ *
+ * @param object $node
+ *   Node object to update
+ *
+ */
+function faq_ask_node_update($node) {
+  if ($node->type == 'faq') {
+
+    // Update the faq_ask_term_index table by removing nid/tid pairs when node is published
+    if ($node->status == '1') {
+      db_delete('faq_ask_term_index')->condition('nid', $node->nid)->execute();
+    }
+
+    // return if the asker notification should be done by cron
+    if (variable_get('faq_ask_notify_by_cron', TRUE)) {
+      return;
+    }
+
+    // Check if the node is published and asker notified
+    $email = _faq_ask_get_faq_notification_email($node->nid);
+    if ($node->status == '1' && $email != '') {
+      // Get the asker account
+      $params['account'] = user_load_by_mail($email);
+      $params['question'] = $node->title;
+      $params['nid'] = $node->nid;
+
+      // Send the e-mail to the asker. Drupal calls hook_mail() via this
+      $mail_sent = drupal_mail('faq_ask', 'notify_asker', $email, user_preferred_language($params['account']), $params);
+      // Handle sending result
+      if ($mail_sent) {
+        watchdog('FAQ_Ask', 'Asker notification email sent to @to for question @quest',
+          array('@to' => $email, '@quest' => check_plain($node->title)), WATCHDOG_NOTICE);
+        // If email sent, remove the notification from the queue
+        _faq_ask_delete_faq_notification($node->nid);
+      }
+      else {
+        watchdog('FAQ_Ask', 'Asker notification email to @to failed for the "@quest" question.',
+          array('@to' => $email, '@quest' => check_plain($node->title)), WATCHDOG_ERROR);
+        drupal_set_message( t( 'Asker notification email to @to failed for the "@quest" question.',
+          array('@to' => $email, '@quest' => check_plain($node->title))
+            )
+          );
+      }
+    }
+
+  }
+}
+
+/**
+ * Implementation of hook_node_insert()
+ *
+ * Handles the creation of a question node after the node is created. This
+ * ensures that the node ID is available, needed for sending e-mail
+ * notifications
+ *
+ * @param object $node
+ *   Node object to handle
+ */
+function faq_ask_node_insert($node) {
+
+  global $user;
+
+  if ($node->type == 'faq') {    // Handle only faq node types
+
+    $terms = _faq_ask_get_terms($node);
+    // Update the faq_ask_term_index table if node is unpublished
+    if ($node->status == '0') {
+      db_delete('faq_ask_term_index')->condition('nid', $node->nid)->execute();
+      foreach ($terms as $tid => $term) {
+        if ($tid) {  // If term is available
+          db_insert('faq_ask_term_index')
+            ->fields( array('nid' => $node->nid, 'tid' => $tid, 'sticky' => $node->sticky, 'created' => $node->created))
+            ->execute();
+        }
+      }
+    }
+
+
+    // Are we notifying the expert(s)?
+    if (variable_get('faq_ask_notify', FALSE)) {
+        // Use only the first term entered in the correct vocabulary.
+      $term = taxonomy_term_load(array_shift(array_keys($terms)));
+
+      // Find out who the experts are.
+      $query = db_select('faq_expert', 'fe')->fields('fe', array('uid'))->condition('fe.tid', array_keys($terms), 'IN');
+      $experts = $query->execute()->fetchAll();
+
+      foreach ($experts as $expert) {
+
+        $account = user_load($expert->uid);
+        $params = array(
+          'category' => is_object($term)?$term->tid:-1,
+          'question' => $node->title,
+          'question_details' => $node->detailed_question,
+          'nid' => $node->nid,
+          'creator' => theme('username', array('account' => user_load($node->uid), 'plain' => TRUE)),
+          'account' => $account,
+        );
+
+        $mail_sent = drupal_mail('faq_ask', 'notify_expert', $account->mail, user_preferred_language($account), $params);
+
+        if ($mail_sent) {
+          watchdog('FAQ_Ask', 'Expert notification email sent to @to', array('@to' => $account->mail), WATCHDOG_NOTICE);
+        }
+        else {
+          watchdog(  'FAQ_Ask',
+                    'Expert notification email to @to failed for the "@cat" category.',
+                    array('@to' => $account->mail, '@cat' => check_plain($term->name)),
+                    WATCHDOG_ERROR
+          );
+          drupal_set_message(t('Expert notification email failed for the "@cat" category.', array('@cat' => check_plain($term->name))));
+        }
+      }
+    }
+
+    // Save this is the node to be created
+    $asker_email = '';
+
+    // Handle the notification of asker
+    if (isset($node->faq_email) && $node->faq_email) {
+      $asker_email = $node->faq_email;
+
+      // If this user is not registered as a user before - check if all asking anonymous users should be added to the newsletter list
+      if (module_exists('simplenews') && $tid = variable_get('faq_ask_notify_asker_simplenews_tid', '0')) {
+        // If we have selected a newsletter to add
+        if (function_exists('simplenews_subscribe_user')) {
+          simplenews_subscribe_user($asker_email, $tid,  variable_get('faq_ask_notify_asker_simplenews_confirm', 1), 'FAQ-Ask');
+        }
+      }
+    }
+    elseif (isset($node->faq_notify) && $node->faq_notify) {
+      $asker_email = $user->mail;
+    }
+    else {
+      drupal_set_message(t('Your question has been submitted. It will appear in the FAQ listing as soon as it has been answered.'), 'status');
+    }
+
+    if ($asker_email) {
+      _faq_ask_set_faq_notification($node->nid, $asker_email);
+      drupal_set_message(t('Your question has been submitted. An e-mail will be sent to <i>@mail</i> when answered.', array('@mail' => $asker_email)), 'status');
+    }
+    // Handle the notification of asker
+  }
+}
+
+/**
+ * Handle deletion of questions
+ * Removes any pending answer notifications and
+ * term mappings for unpublished questions
+ *
+ * @param object $node
+ *   Node to be deleted.
+ */
+function faq_ask_node_delete($node) {
+
+  // Remove notifications
+  db_delete('faq_ask_notify')
+    ->condition('nid', $node->nid)
+    ->execute();
+
+  // Remove term/nid pairs
+  db_delete('faq_ask_term_index')
+    ->condition('nid', $node->nid)
+    ->execute();
+
+}
+
+/**
+ * Get the term id's related to a node or a form posting
+ * Returns an array of all term ids of a node if the terms
+ * are part of the vocabularies selected for FAQ-Ask.
+ * If no terms then an array with a single 0 as term id is returned
+ *
+ * Parameters passed as array should be the $form_state['values']
+ * part of a form submission
+ *
+ * @param (object|array) $data
+ *
+ * @return array of terms ids
+ *
+ */
+function _faq_ask_get_terms($data) {
+
+  $category = array();
+  $vocabs = variable_get('faq_ask_vocabularies', 0);
+  $language = is_object($data)?$data->language:$data['language'];
+
+  if (is_object($data))
+    $data = (array)$data;
+
+  // Get fields relevant for the faq node
+  $fields = field_info_instances('node', 'faq');
+  foreach ($fields as $name => $properties) {
+    if ($properties['display']['default']['module'] != 'taxonomy')
+      unset($fields[$name]);
+  }
+
+  // Parse through all tagging fields in use
+  foreach ($fields as $field_name => $field_details) {
+
+    // If we have terms defined
+    if (isset($data[$field_name][$language])) {
+
+      // Cycle through terms
+      foreach ($data[$field_name][$language] as $term) {
+
+        // If there is a term tid defined and it is an int
+        if (isset($term['tid']) && is_int((int)$term['tid'])) {
+           if (!isset($term['vid']) || (in_array($term['vid'], $vocabs)))
+             $category[$term['tid']] = taxonomy_term_load($term['tid']);
+         }
+         // Otherwise it may be a new term created by a tagging feature
+         elseif (isset($term['tid']) && $term['tid'] == 'autocreate') { // We're creating a new term
+
+           if (!isset($category['autocreate'])) {
+             $category['0'] = new stdClass();
+             $category['0']['names'] = array();
+             $category['0']->vid = $term['vid'];
+           }
+
+           $category['autocreate']['names'][] = $term['name'];
+
+         }
+       }
+     }
+  }
+
+  if (empty($category)) $category[] = '0';
+
+  return $category;
+}
+
+/**
+ * Handles the ask form submission
+ *
+ * @param array $form
+ *   The form being posted
+ *
+ * @param array $form_state
+ *   Array containing the posted values
+ *
+ */
+function faq_ask_submit($form, &$form_state) {
+
+  global $user;
+
+  if ($form_state['values']['op'] != t('Save')) {  // If we're not saving then do not do actions
+    return;
+  }
+
+  // Issue #1554912 by jlea9378: Access Denied for Anonymous
+  if ((!user_access('view own unpublished content')) || ($user->uid == 0)) {
+    $form_state['redirect'] = array('faq-page');  // Redirect to faq-page if the user is not allowed to view content
+  }
+}
+
+/**
+ * Implements hook_cron().
+ *
+ * Checks the que for asker notifications and sends a notification to the asker when the question is published
+ *
+ */
+function faq_ask_cron() {
+
+  // If the asker notification should be done by cron
+  if (!variable_get('faq_ask_notify_by_cron', TRUE)) {
+    return;
+  }
+  // Get all the waiting notifications
+  $notifications = _faq_ask_get_faq_notifications();
+  foreach ($notifications as $nid => $notify) {
+    // With the notification record, check if status of the question is published
+    if ($notification = db_select('node', 'n')->fields('n', array('title', 'status'))->condition('nid', $notify->nid)->execute()->fetchAssoc()) {
+
+      if ($notification['status'] == '1') {
+
+      $params = array(
+        'question' => $notification['title'],
+        'nid' =>  $notify->nid,
+        'account' => user_load_by_mail($notify->email),
+        'category' => -1,
+        );
+
+        // Send the e-mail to the asker. Drupal calls hook_mail() via this
+        $mail_sent = drupal_mail('faq_ask', 'notify_asker', $notify->email, user_preferred_language($params['account']), $params);
+
+        // Handle sending result
+        if ($mail_sent) {
+          watchdog('FAQ_Ask', 'Asker notification email sent to @to for question: "@quest"',
+            array('@to' => $notify->email, '@quest' => check_plain($notification['title'])), WATCHDOG_NOTICE);
+            // If email sent, remove the notification from the queue
+            _faq_ask_delete_faq_notification($nid);
+        }
+        else {
+          watchdog('FAQ_Ask', 'Asker notification email to @to failed for the "@quest" question.',
+            array('@to' => $notify->email, '@quest' => check_plain($notification['title'])), WATCHDOG_ERROR);
+          drupal_set_message(t('Asker notification email to @to failed for the "@quest" question.', array('@to' => $notify->email, '@quest' => check_plain($notification['title']))));
+        }
+      }
+    }
+
+  }
+}
+/**
+ * Helper function to fetch an email for notification assigned to an faq node
+ *
+ * @param integer $nid
+ *   The node Id where the e-mail is assoiciated
+ *
+ * @return string
+ *   Email associated with the node given by $nid
+ *
+ */
+function _faq_ask_get_faq_notification_email($nid) {
+
+  return db_select('faq_ask_notify', 'fan')
+    ->fields('fan', array('email'))
+    ->condition('nid', $nid)
+    ->execute()
+    ->fetchField();
+}
+
+/**
+ * Helper function fetching all notifications
+ *
+ * @TODO: optimise to query for all the relevant notifications = those who have a node that is published
+ *
+ * @return array
+ *   Array containing all outstanding notifications
+ */
+function _faq_ask_get_faq_notifications() {
+
+  return db_select('faq_ask_notify', 'fa')
+    ->fields('fa', array('nid', 'email'))
+    ->execute()
+    ->fetchAllAssoc('nid');
+
+}
+
+/**
+ * Helper function to set a notification associated with a node
+ *
+ * @param integer $nid
+ *   Node Id of the question to associate an e-mail address to
+ * @param string $email
+ *   Email address to associate with the question and to send the notification to when answered
+ *
+ */
+function _faq_ask_set_faq_notification($nid, $email) {
+
+  if (!$nid) {
+    drupal_set_message(t('Attempt to insert notification to @email for no node ID. Insert failed.', array('@email' => $email)), 'error');
+    return;
+  }
+
+  db_insert('faq_ask_notify')
+    ->fields(  array(
+        'nid' => $nid,
+        'email' => $email,
+        )
+      )
+    ->execute();
+// Does not work as the result of the execute() method on the query object is undefined
+// or untrusted for tables without a AUTO_INCREMENT field. See http://drupal.org/node/310079
+//  if ($inserted == 0) {
+//    drupal_set_message(t('Attempt to insert email notification failed.'), 'error');
+//  }
+
+}
+
+/**
+ * Helper function to remove a notification from a question
+ *
+ * @param integer $nid
+ *   The Node Id to remove the notification from
+ *
+ */
+function _faq_ask_delete_faq_notification($nid) {
+  $deleted = db_delete('faq_ask_notify')->condition('nid', $nid)->execute();
+  if ($deleted == 0) {
+    drupal_set_message(t('Attempt to delete email notification failed.'), 'error');
+  }
+}
+
+
+
+/**
+ * Block "Ask a Question" form implementation
+ *
+ * This implements the form displayed in a block where the user may ask a question
+ *
+ * @return array
+ *   Block content
+ *
+ */
+function faq_ask_a_question_blockform() {
+
+  // Include page handler for node_add()
+  module_load_include('inc', 'node', 'node.pages');
+
+  // If user is allowed to create a faq content type
+  if (node_access('create', 'faq')) {
+
+    // Fool the hook_form_alter function to think we're in an faq-ask page
+    $saved_get = '';
+    if (isset($_GET['ask'])) {
+      $saved_get = $_GET['ask'];
+    }
+    $_GET['ask'] = '1';
+    $_GET['block'] = 'TRUE';
+
+    // Note title before rendering of form.
+    $title = drupal_get_title();
+    // Create the form
+    $form = node_add('faq');
+    // Restore title, which will have been overridden.
+    drupal_set_title($title);
+
+    // Restore the $_GET['ask'] variable status
+    if ($saved_get != '') {
+      $_GET['ask'] = $saved_get;
+    }
+    else {
+      unset($_GET['ask']);
+    }
+    unset($_GET['block']);
+
+    return $form;
+  }
+  else {
+    return '';
+  }
+
+}
+
+/*
+function faq_ask_test_form($form, &$form_state, $nid = '10') {
+  $form = array();
+ // dpm($form_state, 'form_state');
+
+  $form['email'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Testing E-mail formatting'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+
+  $form['email']['nid'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Enter the node ID of a question'),
+    '#description' => t('The node will be fetched and the formatted e-mail generated for notification will be displayed when submitted.'),
+    '#default_value' => $nid,
+  );
+
+  $form['email']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Run'),
+    '#submit' => array('faq_ask_test_form_submit'),
+  );
+
+  $form['taxonomy'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Testing Taxonomy field settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+
+  $form['taxonomy']['info'] = array(
+  );
+
+  $form['taxonomy']['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Get fields'),
+      '#submit' => array('faq_ask_test_taxonomy_submit'),
+  );
+
+  return $form;
+
+}
+
+function faq_ask_test_taxonomy_submit($form, &$form_state) {
+  $unpub = db_select('node', 'n')->fields('n', array('nid'))->condition('n.status', '0')->condition('n.type', 'faq')->execute()->fetchCol('nid');
+  dpm($unpub, 'Unpublished questions');
+  if (empty($unpub)) return;
+
+  $node = '';
+  foreach ($unpub as $nid) {
+    $node = node_load($nid);
+    foreach (_faq_ask_get_term_field_name($node) as $field) {
+      foreach ($node->{$field}[$node->language] as $term) {
+        $result = db_select('faq_ask_term_index', 'ti')->fields('ti')->condition('tid', $term['tid'])->condition('nid', $node->nid)->execute()->fetchAll();
+        if (empty($result) && $term['tid']) {
+          db_insert('faq_ask_term_index')
+            ->fields(  array(
+              'nid' => $node->nid,
+              'tid' => $term['tid'],
+              'sticky' => $node->sticky,
+              'created' => $node->created,
+            ))
+            ->execute();
+        }
+      }
+    }
+  }
+
+  $fields = field_info_instances('node', 'faq');
+
+
+}
+
+function faq_ask_test_form_submit($form, &$form_state) {
+
+  $form_state['node'] = node_load($form_state['values']['nid']);
+
+  $category = array();
+  $vocabs = variable_get('faq_ask_vocabularies', 0);
+
+  if (isset($form_state['node']->{$faq_cat}) && $form_state['node']->{$faq_cat}) {
+    $categories = $form_state['node']->{$faq_cat}[$form_state['node']->language];
+    foreach ($categories as $id => $term) {
+      $tid = $term['tid'];
+      $category[$tid] = $tid;
+    }
+  }
+
+  if (empty($category)) $category[] = '0';
+  // Save this is the node to be created
+  $form_state['node']->faq_ask_data = array();
+  $form_state['node']->faq_ask_data['categories'] = $category;
+
+//  if (variable_get('faq_ask_notify', FALSE)) {
+    // Are we notifying the expert(s)?
+
+    // Find out who the experts are.
+    $query = db_select('faq_expert', 'fe')->fields('fe', array('uid'))->condition('fe.tid', $category, 'IN');
+    $experts = $query->execute()->fetchAll();
+    // Save in node object for use in the hook_insert() implementation
+    $form_state['node']->faq_ask_data['experts'] = $experts;
+
+//  }
+
+    $node = $form_state['node'];
+
+  $params = array();
+  $account = new stdClass();
+  $messages = array();
+  foreach ($node->faq_ask_data['experts'] as $expert) {
+    // Use only the first term entered in the correct vocabulary.
+    $term = taxonomy_term_load(array_shift($node->faq_ask_data['categories']));  // TODO: Make something better in category->expert mapping
+    $account = user_load($node->uid);
+    $params = array(
+        'category' => is_object($term)?$term->tid:-1,
+        'question' => $node->title,
+        'question_details' => $node->detailed_question,
+        'nid' => $node->nid,
+        'creator' => theme('username', array('account' => $account, 'plain' => TRUE)),
+    );
+
+    $params['account'] = user_load($expert->uid);
+    $language = user_preferred_language($account);
+    $language->language = $form_state['node']->language;
+    $message = array('language' => $language);
+    $mail_sent = faq_ask_mail('notify_expert', $message, $params);
+    unset($message['language']);
+    unset($message['headers']);
+    $messages[] = $message;
+  }
+
+  $notifications = _faq_ask_get_faq_notifications();
+  foreach ($notifications as $nid => $notify) {
+
+    if ($nid == $node->nid) {
+      // With the notification record, check if status of the question is published
+      $notification = db_select('node', 'n')->fields('n', array('title', 'status'))->condition('nid', $notify->nid)->execute()->fetchAssoc();
+
+      $params = array(
+          'question' => $notification['title'],
+          'nid' =>  $notify->nid,
+          'account' => user_load_by_mail($notify->email),
+          'category' => -1,
+      );
+
+//  drupal_set_message('Account:<pre>'.print_r($params['account']->name, TRUE).'</pre>');
+      // Send the e-mail to the asker. Drupal calls hook_mail() via this
+      $messages[$nid] = array( 'language' => $language );
+      $mail_sent = faq_ask_mail('notify_asker', $messages[$nid], $params);
+      unset($messages[$nid]['language']);
+      unset($messages[$nid]['headers']);
+    }
+  }
+
+//  drupal_set_message('E-mails sent:<pre>'.print_r($messages, TRUE).'</pre>');
+  $form_state['redirect'] = 'admin/config/content/faq/ask/test/' . $form_state['values']['nid'];
+}
+*/
+/**
+ * Implements hook_mail().
+ *
+ * This function completes the email, allowing for placeholder substitution.
+ * Done: notify_asker. stenjo
+ * @TODO: define messages & subjects on settings page, with list of tokens. how to handle newlines?
+ *
+ * @param string $key
+ *   What type of e-mail are we sending?
+ * @param array $message
+ *   The message array to be sendt
+ * @param array $params
+ *   Additional parameters for placeholders in e-mail text.
+ *
+ * @return array $message
+ *   As passed by reference
+ *
+ */
+function faq_ask_mail($key, &$message, $params) {
+
+  $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+
+  $body = array();
+  $options = array(
+    'langcode' => $message['language']->language,
+  );
+
+  // Initiate text variables
+  $variables = array(
+    '@question' => $params['question'],
+    '@question_details' => isset($params['question_details'])?$params['question_details']:'',
+    '@site-name' => variable_get('site_name', 'Drupal'),
+  );
+
+  // Find category name
+  if (isset($params['category']) && $params['category']) {
+    $term = '';
+    $tid = $params['category'];
+    if (is_array($params['category'])) {
+      $term = taxonomy_term_load(array_shift($params['category']));
+    }
+    else {
+      $term = taxonomy_term_load($params['category']);
+    }
+    if (is_object($term)) {
+      $variables['!cat'] = $term->name;
+    }
+    else {
+      $params['category'] = -1;
+    }
+  }
+  else {
+    $params['category'] = -1;
+  }
+
+  // Handle user names
+  if (!isset($variables['!username']) || $variables['!username'] == '') {
+    if (isset($params['account']) && is_object($params['account'])) {
+      $variables['!username'] = $params['account']->name;
+    }
+    else {
+      $variables['!username'] = t('user');
+    }
+  }
+
+  switch ($key) {
+    case 'notify_expert':
+
+      $url_options = array(
+        'options' => array(  'absolute' => TRUE),
+          'query' => array('token' => _faq_ask_get_token('faq_ask/answer/' . $params['nid'])));
+
+      $variables = array_merge(
+        $variables,
+        array(
+          '!answer_uri' => url('faq_ask/answer/' . $params['nid'], $url_options),
+          '!asker' => $params['creator'],
+          '!login_uri' => url('user'),
+        )
+      );
+
+      $subject = t('You have a question waiting on @site-name', $variables, $options);
+      $body[]= t('Dear !username,', $variables, $options);
+
+      if ($params['category'] == -1) {
+        $body[] = t('The following question has been posted.', array(), $options);
+      }
+      else {
+        $body[] = t('The following question has been posted in the "!cat" category by !asker.', $variables, $options);
+      }
+
+      $body[] = t('<strong><i>@question</i></strong>', $variables, $options);
+
+      if ($variables['@question_details']) {
+        $body[] = t('<i>@question_details</i>', $variables, $options);
+      }
+
+      $body[] = t('In order to answer it you will first need to <a href="!login_uri">login</a> to the site.', $variables, $options);
+      $body[] = t('Once logged in, you may proceed <a href="!answer_uri">directly to the question</a> to answer it.', $variables, $options);
+      $body[] = t('By clicking on the above question link you will be redirected to the login form if you are currently logged out.', $variables, $options);
+
+      break;
+
+    case 'notify_asker':
+      $url_options = array(
+        'absolute' => TRUE,
+      );
+
+      $variables = array_merge($variables, array(
+        '!question_uri' => url('node/' . $params['nid'], array('absolute' => TRUE)),
+      ));
+
+      $subject = t('A question you asked has been answered on @site-name', $variables, $options);
+      $body[] = t('Dear !username,', $variables, $options);
+      $body[] = t('The question: "@question" you asked on @site-name has been answered.', $variables, $options);
+      $body[] = t('To view the answer, please visit the question you created on !question_uri.', $variables, $options);
+      $body[] = t('Thank you for visiting.', $variables, $options);
+      break;
+  }
+  $message['body'] = $body;
+  $message['subject'] = $subject;
+}
+
+/**
+ * Implements hook_form().
+ *
+ * This form allows the users to select the expert roles and to which categories the users in those roles are assigned.
+ * Note, the expert/category table attempts to use the least horizontal space,
+ * so it can "flip" based on whether there are more categories or experts.
+ *
+ * @param array $form_state
+ *
+ */
+function faq_ask_settings_form($form, &$form_state /*, $op = NULL, $aid = NULL*/) {
+
+  // Set a basic message that will be unset once we pass the error checking.
+  $form['error'] = array('#value' => t('Errors were found, please correct them before proceeding.'), '#weight' => -10);
+
+  $faq_use_categories = variable_get('faq_use_categories', FALSE);
+  if (!$faq_use_categories) {
+    drupal_set_message(t('The Faq_Ask module requires that FAQ "Categorize questions."') . ' ' . t('Please go to the <a href="@url">settings page</a> to configure this module.', array( '@url' => url('admin/config/content/faq/categories') )), 'error');
+    return $form;
+    }
+
+  // Get the list of vocabularies that apply to FAQ s.
+  $vocabs = taxonomy_get_vocabularies('faq');
+  if (count($vocabs) == 0) {
+    drupal_set_message(t('The Faq_Ask module requires that at least one vocabulary apply to the "faq" content type. Please go to the Taxonomy <a href="@taxo_uri">configuration page</a> to do this.', array('@taxo_uri' => url('admin/structure/taxonomy'))), 'error');
+    return $form;
+  }
+
+  // Get the admin's name.
+  //$admin = ucwords(db_result(db_query('SELECT name FROM {users} WHERE uid=1')));
+  $query1 = db_select('users', 'u');
+  $query1->addField('u', 'name');
+  $query1->condition('u.uid', '1');
+  $admin = ucwords($query1->execute()->fetchField());
+
+  // Get the Simplenews newsletters if they exists
+  $newsletters = array('0' => t('No newsletter'));
+
+  if (module_exists('simplenews')) {
+    if (!function_exists('simplenews_get_newsletters')) {
+      drupal_set_message(t('The Simplenews integration is not compatible with this version of Simplenews. Please download a later version.'), 'error');
+    }
+    else {
+      $list = simplenews_get_newsletters(variable_get('simplenews_vid', ''));
+      foreach ($list as $key => $object) {
+        $list[$key] = $object->name;
+      }
+      $newsletters += $list;
+    }
+  }
+
+  $form['notification'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Notifications'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    );
+
+  $form['notification']['faq_ask_notify'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Notify experts'),
+    '#description' => t('If this box is checked, the expert(s) for the question will be notified via email that a question awaits them. If you do not choose this option, the "Unanswered Questions" block will be the only way they will know they have questions to answer.'),
+    '#default_value' => variable_get('faq_ask_notify', 0),
+    );
+
+  $form['notification']['notify_asker'] = Array(
+    '#type' => 'fieldset',
+    '#title' => T('Asker notification'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+    );
+
+  $form['notification']['notify_asker']['faq_ask_asker_notify'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Notify askers'),
+    '#description' => t('If this box is checked, the asker creating the question will be notified via email that their question is answered.'),
+    '#default_value' => variable_get('faq_ask_notify_asker', 0),
+    );
+
+  $form['notification']['notify_asker']['faq_ask_asker_notify_cron'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use cron for asker notification'),
+    '#description' => t('If this box is checked, the asker notifications will be sendt via cron.'),
+    '#default_value' => variable_get('faq_ask_notify_by_cron', TRUE),
+//    '#disabled' =>  !variable_get('faq_ask_notify_asker', 0),
+    '#states' => array(
+      'visible' => array(':input[name="faq_ask_asker_notify"]' => array('checked' => TRUE)),
+  ),
+
+    );
+
+  // If the Simplenews module is loaded we can add functionality to add anonymous askers to a newsletter
+  $form['notification']['notify_asker']['faq_ask_notify_asker_simplenews'] = array(
+    '#type' => 'select',
+    '#title' => t('Add anonymous asker to newsletter'),
+    '#default_value' => variable_get('faq_ask_notify_asker_simplenews_tid', '0'),
+    '#options' => $newsletters,
+    '#description' => (module_exists('simplenews') ? t('Select a newsletter you want anonymous askers to be assigned to.') : t('This functionality needs the <a href="http://drupal.org/project/simplenews">Simplenews module</a> to be activated.')),
+    '#disabled' => !module_exists('simplenews'),
+    '#states' => array(
+      'visible' => array(':input[name="faq_ask_asker_notify"]' => array('checked' => TRUE))),
+    );
+
+  $form['notification']['notify_asker']['faq_ask_notify_asker_simplenews_confirm'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Confirm subscription to newsletter'),
+    '#description' => t('If this box is checked, the asker creating the question will be asked to confirm the subscription of the newsletter.'),
+    '#default_value' => variable_get('faq_ask_notify_asker_simplenews_confirm', 1),
+    '#disabled' => !module_exists('simplenews'),
+    '#states' => array(
+      'visible' => array(':input[name="faq_ask_asker_notify"]' => array('checked' => TRUE))),
+  );
+
+  $form['options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Options'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    );
+
+  $form['options']['faq_ask_categorize'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Only expert can categorize'),
+    '#description' => t('If this box is checked, only an expert answering a question can add a category.'),
+    '#default_value' => variable_get('faq_ask_categorize', FALSE),
+    '#weight' => 1,
+  );
+
+/*
+  // Issue #1482014 by Matthew Slater (matslats): Assumes vocab called tags
+  $options = array();
+
+  foreach (field_info_instances('node', 'faq') as $fieldname => $instance) {
+    //could narrow it down to just taxonomy fields
+    //and even derive the vocab name instead of the fieldname if that's more useful.
+    $options[$fieldname] = $instance['label'];
+  }
+
+  $form['options']['faq_category_field'] = array(
+  '#title' => 'Description field',
+      '#description' => t("Which field API field in the FAQ node bundle should be used for 'categories'"),
+      '#type' => 'select',
+      '#options' => $options,
+       '#default_value' => variable_get('faq_category_field', 0),
+      '#weight' => 2,
+    );
+*/
+
+  $give_options = array(
+    0 => t('Asker retains ownerhsip'),
+    1 => t('Anonymous questions reassigned to expert'),
+    2 => t('All questions reassigned to expert'),
+    );
+
+  $form['options']['faq_ask_expert_own'] = array(
+    '#type' => 'radios',
+    '#options' => $give_options,
+    '#title' => t('Give ownership to the expert'),
+    '#description' => t('This determines if questions will be reassigned to the expert when answered.'),
+    '#default_value' => variable_get('faq_ask_expert_own', 0),
+    '#weight' => 3,
+  );
+
+  $form['options']['faq_ask_unanswered'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Default unanswered body text'),
+    '#cols' => 60,
+    '#rows' => 1,
+    '#description' => t('This text will be inserted into the body of questions when they are asked. This helps make editing easier'),
+    '#default_value' => variable_get('faq_ask_unanswered', t('Not answered yet.')),
+    '#weight' => 4,
+  );
+
+  $form['options']['faq_ask_expert_advice'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Answer advice for the expert'),
+    '#cols' => 60,
+    '#rows' => 1,
+    '#description' => t('This text will be shown at the bottom of the "Unanswered questions" block.'),
+    '#default_value' => variable_get('faq_ask_expert_advice', _faq_ask_advice_default()),
+    '#weight' => 4,
+  );
+
+    $form['options']['advice']['faq_ask_admin_advice'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Advice for an administrator/editor'),
+    '#cols' => 60,
+    '#rows' => 1,
+    '#default_value' => variable_get('faq_ask_admin_advice', _faq_ask_advice_default('admin')),
+    '#weight' => 5,
+    );
+
+    $form['options']['advice']['faq_ask_asker_advice'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Advice for an asker'),
+    '#cols' => 60,
+    '#rows' => 1,
+    '#default_value' => variable_get('faq_ask_asker_advice', _faq_ask_advice_default('asker')),
+    '#weight' => 6,
+    );
+
+  $help_default = variable_get('faq_ask_help_text', _faq_ask_help_default());
+  $form['options']['faq_ask_help_text'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Help text for the asker'),
+    '#cols' => 60,
+    '#rows' => drupal_strlen($help_default) / 60,
+    '#description' => t('This text will be shown at the top of the "Ask a Question" page.'),
+    '#default_value' => $help_default,
+    '#weight' => 7,
+  );
+
+  $form['experts'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Experts'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    );
+
+  // Use the list of vocabularies from above.
+  if (count($vocabs) == 1) {
+    // Single vocabulary, don't bother with a selection box, just set it.
+    $vid = key($vocabs);
+    $def_vid = $vid;
+    variable_set('faq_ask_vocabularies', array($vid => $vid));
+    $vobj = $vocabs[$vid];
+    $free = $vobj->name;
+  }
+  else {
+    // Multiple vocabs available.
+    $voc_list = array();
+    $def_vid = 0;  // variable_get('faq_ask_vocabularies', 0)?
+    foreach ($vocabs as $vid => $vobj) {
+      $voc_list[$vid] = $vobj->name;
+      if ($vobj->name == 'FAQ') {
+        $def_vid = $vid;
+      }
+    }
+    $form['experts']['faq_ask_vocabularies'] = array(
+      '#type' => 'select',
+      '#options' => $voc_list,
+      '#title' => t('Use these vocabularies'),
+      '#multiple' => TRUE,
+      '#default_value' => variable_get('faq_ask_vocabularies', $def_vid),
+      '#description' => t('Only the terms from the selected vocabularies will be included in the list below.')
+        . ' ' . t("Simply adding the 'FAQ' content type to a vocabulary will not make it eligible for experts; you must return to here to add it.")
+        . '<br/><big>' . t('If you select different vocabularies, you must save the configuration BEFORE selecting users below.') . '</big>',
+    '#weight' => 8,
+    );
+  } // End multiple vocabs.
+
+  // Changed query and loop because it failed if 'answer' was the first perm in list.
+  // This should be faster any way.
+  //$r_res = db_query("SELECT r.rid, r.name FROM {role} r JOIN {permission} p USING (rid) WHERE p.perm LIKE '%%answer question%%'");
+  $query1 = db_select('role', 'r');
+  $query1->join('role_permission', 'p', 'r.rid = p.rid');
+  $query1->condition('p.permission', '%%answer question%%', 'LIKE' );
+  $query1->fields('r', array('rid', 'name'));
+  $role_object_list = $query1->execute()->fetchAllAssoc('rid');
+  $role_list = array();
+  foreach ($role_object_list as $role_object) {
+    $role_list[$role_object->rid] = $role_object->name;
+  }
+
+  if (empty($role_list)) {
+    drupal_set_message(t('No roles with "answer question" permission were found; only @admin is currently eligible to be an expert. You may want to go to the <a href="@access">Permissions page</a> to update your permissions.',
+        array('@access' => url('admin/user/permissions'), '@admin' => $admin),
+        array('langcode' => 'en')),
+      'error');
+  }
+
+  // Get all terms associated with FAQ.
+  //$vocabs = variable_get('faq_ask_vocabularies', $def_vid);
+  $vocabs_array = array();
+  foreach ($vocabs as $vocab) {
+    $vocabs_array[$vocab->vid] = $vocab->vid;
+  }
+
+//  $result = db_query('SELECT td.tid, td.name, td.description FROM {taxonomy_term_data} td WHERE td.vid IN (' . db_placeholders($vocabs_array) . ') ORDER BY td.weight ASC, td.name ASC', $vocabs_array);
+  $result = db_select('taxonomy_term_data', 'td')
+    ->condition('td.vid', $vocabs_array, 'IN')
+    ->fields('td', array('tid', 'name', 'description'))
+    ->orderBy('td.weight')->orderBy('td.name')
+    ->execute()
+    ->fetchAllAssoc('tid');
+//  $result = db_query("SELECT td.tid, td.name, td.description FROM {term_data} td WHERE td.vid IN (". db_placeholders($vocabs) .") ORDER BY td.weight ASC, td.name ASC", $vocabs);
+
+  $faq_terms = array();
+  foreach ($result as $term) {
+//  while ($term = db_fetch_array($result)) {
+    // Show term hierarchy?
+    $term_name = /* str_repeat('--', $term['depth']) . */ check_plain($term->name);
+    if (substr($term->description, 0, 9) == 'suggested') {
+      $faq_terms[$term->tid] = $term_name . '<br/>--<small>' . strip_tags($term->description) . '</small>';
+    }
+    else {
+      $faq_terms[$term->tid] = $term_name;
+    }
+  }
+  if (count($faq_terms) == 0) {
+    drupal_set_message(t('No vocabularies or terms were found for the "faq" content type . Please go to the <a href="@access">Categories page</a> to update your vocabulary.', array('@access' => url('admin/structure/taxonomy'))), 'error');
+    return $form;
+  }
+
+  // Get all users associated with the roles.
+  $faq_expert_names = array();
+  // User/1 typically is not assigned roles, but should be in the list.
+  $faq_expert_names[1] = $admin;
+
+  $rids = variable_get('faq_expert_role', array());
+  if (!empty($rids)) {
+    if (in_array(DRUPAL_AUTHENTICATED_RID, $rids)) {
+      // Authenticated users may be experts, so get all active users.
+      // No other roles matter.
+      //$result = db_query("SELECT u.uid, u.name FROM {users} u WHERE status=1");
+      $result = db_select('users', 'u')
+        ->condition('status', 1)
+        ->fields('u', array('uid', 'name'))
+        ->execute()
+        ->fetchAllKeyed();
+
+    }
+    else {
+      // Only specific roles may be experts.
+      //$result = db_query('SELECT DISTINCT(u.uid), u.name FROM {users_roles} ur JOIN {users} u USING (uid) WHERE ur.rid IN (' . db_placeholders($rids) . ')', $rids);
+      $query = db_select('users_roles', 'ur');
+      $query->join('users', 'u', 'ur.uid = u.uid');
+      $query = $query->condition('ur.rid', $rids, 'IN')->fields('u', array('uid', 'name'))->distinct();
+      $result= $query->execute()->fetchAllKeyed();
+    }
+
+    foreach ($result as $uid => $name) {
+      if ($uid != 1) {
+        $faq_expert_names[$uid] = ucwords($name);
+      }
+    }
+    //while ($user = db_fetch_array($result)) {
+    //  if ($user['uid'] != 1) {
+    //    $faq_expert_names[$user['uid']] = ucwords($user['name']);
+    //  }
+    //}
+    // Put them in alphabetical order.
+    asort($faq_expert_names);
+  }
+
+  if (!empty($role_list)) {
+    $form['experts']['faq_expert_role'] = array(
+      '#type' => 'select',
+      '#title' => t('Expert Roles'),
+      '#options' => $role_list,
+      '#multiple' => TRUE,
+      '#default_value' => variable_get('faq_expert_role', '2'),
+      '#description' => t('User 1 (@admin) will always be in the list, regardless of roles.', array('@admin' => $admin)) . '<br/><big>' . t('If you select different roles, you must save the configuration BEFORE selecting users below.') . '</big>',
+      '#weight' => 9,
+    );
+  }
+
+  $more_experts_than_terms = count($faq_expert_names) > count($faq_terms);
+
+  // If there is only one eligible expert, we might as well preset all categories.
+  $expert_msg = NULL;
+  $only_one_expert = (count($faq_expert_names) == 1);
+
+  $count = 0;
+  if ($more_experts_than_terms) {
+    // Experts go down the left; terms go across the top.
+    $top = NULL;
+    if ($only_one_expert) {
+      $top .= '<p>' . t('Note: Even though the check boxes below are checked, you must still click the "Save configuration" button to save the expert settings.') . '</p>';
+    }
+    $top .= '<table id="faq_experts"><tr><th> </th><th>' . implode('</th><th>', $faq_terms) . '</th></tr>';
+    if ($only_one_expert) {
+      $top .= '<tr><td colspan="100">' . t('Note: Even though the check boxes below are checked, you must still click the "Save configuration" button to save the expert settings.') . '</td></tr>';
+    }
+    foreach ($faq_expert_names as $uid => $name) {
+      ++$count;
+      $class = $count & 1 ? 'odd' : 'even';
+      $left = '<tr class="' . $class . '"><td><strong>' . $name . '</strong></td>';
+      foreach ($faq_terms as $tid => $term_name) {
+        $box_name = 'expert_' . $uid . '_' . $tid;
+        $form['experts'][$box_name] = array(
+          '#type' => 'checkbox',
+          '#default_value' => $only_one_expert,
+          '#prefix' => $top . $left . '<td align="center">',
+          '#suffix' => '</td>',
+          );
+        $top = NULL;
+        $left = NULL;
+      }
+    $form['experts'][$box_name]['#suffix'] .= '</tr>';
+    }
+    $form['experts'][$box_name]['#suffix'] .= '</table>';
+  }
+  else {
+    // Experts go across the top; terms go down the left.
+    $top = NULL;
+    if ($only_one_expert) {
+      $top .= '<p>' . t('Note: Even though the check boxes below are checked, you must still click the "Save configuration" button to save the expert settings.') . '</p>';
+    }
+    $top .= '<table id="faq_experts"><tr><th> </th><th>' . implode('</th><th>', $faq_expert_names) . '</th></tr>';
+    foreach ($faq_terms as $tid => $term_name) {
+      ++$count;
+      $class = $count & 1 ? 'odd' : 'even';
+      $left = '<tr class="' . $class . '"><td><strong>' . $term_name . '</strong></td>';
+      foreach ($faq_expert_names as $uid => $name) {
+        $box_name = 'expert_' . $uid . '_' . $tid;
+        $form['experts'][$box_name] = array(
+          '#type' => 'checkbox',
+          '#default_value' => $only_one_expert,
+          '#prefix' => $top . $left . '<td align="center">',
+          '#suffix' => '</td>',
+          );
+        $top = NULL;
+        $left = NULL;
+      }
+    $form['experts'][$box_name]['#suffix'] .= '</tr>';
+    }
+    $form['experts'][$box_name]['#suffix'] .= '</table>';
+  }
+
+  $form['experts'][$box_name]['#suffix'] .= t('Those who will be answering questions will need both "answer question" and "edit faq" permissions.');
+
+  //$result = db_query("SELECT * FROM {faq_expert}");
+  $result = db_select('faq_expert', 'fe')
+    ->fields('fe', array('uid', 'tid'))
+    ->execute()
+    ->fetchAll();
+  foreach ($result as $expert) {
+    $box_name = 'expert_' . $expert->uid . '_' . $expert->tid;
+    if (isset($form['experts'][$box_name])) { // Might not be present any more.
+      $form['experts'][$box_name]['#default_value'] = TRUE;
+    }
+    else {
+      // Expert 0 means default expert; overlook it.
+      if ($expert->tid != 0) {
+        drupal_set_message(t("@name doesn't exist. If you have just changed your role selections this may be okay.", array('@name' => $box_name)), 'warning');
+      }
+    }
+  }
+  //while ($expert = db_fetch_array($result)) {
+  //  $box_name = 'expert_' . $expert['uid'] . '_' . $expert['tid'];
+  //  if (isset($form['experts'][$box_name])) { // Might not be present any more.
+  //    $form['experts'][$box_name]['#default_value'] = TRUE;
+  //  }
+  //  else {
+  //    // Expert 0 means default expert; overlook it.
+  //    if ($expert['tid'] != 0) {
+  //      drupal_set_message(t("!name doesn't exist. If you have just changed your role selections this may be okay.", array('!name' => $box_name)), 'warning');
+  //    }
+  //  }
+  //}
+
+  if ($only_one_expert) {
+    // Create a form value to set default expert to admin.
+    $form['experts']['faq_ask_default_expert'] = array(
+      '#type' => 'value',
+      '#value' => 1,
+      );
+  }
+  else {
+    $form['experts']['faq_ask_default_expert'] = array(
+      '#type' => 'select',
+      '#options' => $faq_expert_names,
+      '#multiple' => FALSE,
+      '#title' => t('Default expert'),
+      '#description' => t('The selected user will be assigned as the expert for all terms that are added to the selected vocabularies until you return to this page and update it.'),
+      '#default_value' => variable_get('faq_ask_default_expert', 1),
+      );
+  }
+
+  $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Save configuration'),
+    '#submit' => array('faq_ask_settings_form_submit'),
+    );
+
+
+  // Get rid of error element.
+  unset($form['error']);
+
+  return $form;
+}
+
+/**
+ * Implements hook_form_submit().
+ *
+ * It saves the expert roles that were selected, then rebuilds the expert/category table.
+ */
+function faq_ask_settings_form_submit($form, &$form_state) {
+  // Save the simple stuff.
+  if (isset($form_state['values']['faq_expert_role'])) {
+    variable_set('faq_expert_role', $form_state['values']['faq_expert_role']);
+  }
+
+  if (isset($form_state['values']['faq_ask_vocabularies'])) {
+    variable_set('faq_ask_vocabularies', $form_state['values']['faq_ask_vocabularies']);
+  }
+  variable_set('faq_ask_categorize', $form_state['values']['faq_ask_categorize']);
+//  variable_set('faq_category_field', $form_state['values']['faq_category_field']);
+  variable_set('faq_ask_expert_own', $form_state['values']['faq_ask_expert_own']);
+  variable_set('faq_ask_notify', $form_state['values']['faq_ask_notify']);
+  variable_set('faq_ask_notify_asker', $form_state['values']['faq_ask_asker_notify']);
+  variable_set('faq_ask_notify_asker_simplenews_tid', $form_state['values']['faq_ask_notify_asker_simplenews']);
+  variable_set('faq_ask_notify_asker_simplenews_confirm', $form_state['values']['faq_ask_notify_asker_simplenews_confirm']);
+  variable_set('faq_ask_notify_by_cron', $form_state['values']['faq_ask_asker_notify_cron']);
+  variable_set('faq_ask_unanswered', $form_state['values']['faq_ask_unanswered']);
+  variable_set('faq_ask_default_expert', $form_state['values']['faq_ask_default_expert']);
+  variable_set('faq_ask_expert_advice', $form_state['values']['faq_ask_expert_advice']);
+  variable_set('faq_ask_help_text', $form_state['values']['faq_ask_help_text']);
+  variable_set('faq_ask_admin_advice', $form_state['values']['faq_ask_admin_advice']);
+  variable_set('faq_ask_asker_advice', $form_state['values']['faq_ask_asker_advice']);
+
+  // Get all the selected expert/category options.
+  // First, we'll include the default expert for tid=0.
+  $values = array();
+  $values[] = array('uid' => $form_state['values']['faq_ask_default_expert'], 'tid' => 0);
+  foreach ($form_state['values'] as $name => $value) {
+    if (substr($name, 0, 7) == 'expert_') {
+      if ($value) {
+         list($junk, $uid, $tid) = explode('_', $name);
+      $values[] = array('uid' => $uid, 'tid' => $tid);
+      }
+    }
+  }
+
+  // Delete the current values and save the new ones.
+  if (!empty($values)) {
+
+    db_delete('faq_expert')->execute();
+
+    $db_query = db_insert('faq_expert')->fields(array('uid', 'tid'));
+    foreach ($values as $pair) {
+      $db_query->values($pair);
+    }
+    $db_query->execute();
+  }
+
+  drupal_set_message(t('Configuration has been updated.'), 'status');
+}
+
+/**
+ * This function is called when an expert selects a question to answer.
+ *
+ * It changes the status option to "published" then goes to the regular FAQ edit function.
+ *
+ * @param object $node
+ *     FAQ node to answer
+ */
+function faq_ask_answer($node) {
+  global $user;
+
+  if ($user->uid == '0') { // If user is not logged in
+    drupal_goto('user', array('query' => drupal_get_destination()) ); // Log in first
+  }
+
+  // Validate the request.
+  if (!isset($_REQUEST['token']) || !_faq_ask_valid_token($_REQUEST['token'], "faq_ask/answer/$node->nid")) {
+    watchdog('Faq_Ask',
+      'Received an invalid answer request (@query_string) from @user_ip.',
+      array('@query_string' => $_SERVER['QUERY_STRING'], '@user_ip' => $_SERVER['REMOTE_ADDR']),
+      WATCHDOG_ALERT);
+    drupal_access_denied();
+    return;
+  }
+
+  $reassign_opt = variable_get('faq_ask_expert_own', 0);
+  // Check if we need to reassign to the expert.
+  switch ($reassign_opt) {
+    case 0:  // Do not reassign.
+      break;
+
+    case 1:  // Reassign if anonymous.
+      if ($node->uid == 0) {
+        faq_ask_reassign($node);
+      }
+      break;
+
+    case 2:  // Always reassign.
+      faq_ask_reassign($node);
+      break;
+  }
+
+  // Change the status to published
+  $node = node_load($node->nid);
+  $node->status = NODE_PUBLISHED;
+  node_save($node);
+
+  // Need to invoke node/##/edit.
+  drupal_goto("node/$node->nid/edit");
+}
+
+/**
+ *  Reassign the node to the current user and display a message.
+ */
+function faq_ask_reassign(&$node) {
+  global $user;
+
+  $node->uid = $user->uid;
+  drupal_set_message(t('This question is being assigned to !user.', array('!user' => theme('username', array('account' => $user)))));
+}
+
+/**
+ * Implementation of hook_taxonomy_term_insert()
+ *
+ * @param object $term
+ *   Term object to be created
+ */
+function faq_ask_taxonomy_term_insert($term) {
+
+  global $user;
+
+  $default_expert = variable_get('faq_ask_default_expert', 1);
+
+  // See if it's one of our vocabularies.
+  $our_vocab = in_array($term->vid, variable_get('faq_ask_vocabularies', array()));
+
+  // term: set default expert.
+
+  if ($our_vocab) {
+    db_insert('faq_expert')->fields(array('uid' => $default_expert, 'tid' => $term->tid))->execute();
+    $inserted = count(db_select('faq_expert', 'fe')->fields('fe', array('uid'))->condition('tid', $term->tid)->execute()->fetchAll());
+    if ($inserted == 0) {
+      drupal_set_message(t('Attempt to assign expert failed.'), 'error');
+    }
+    else {
+      drupal_set_message(
+        t('Assigned expert @expert to @name (@tid).',
+          array(
+            '@expert' => $default_expert,
+            '@name' => $term->name,
+            '@tid' => $term->tid,
+            )
+          ),
+        'status'
+      );
+    }
+  }
+}
+
+/**
+ * Implmentation of hook_taxonomy_term_delete()
+ *
+ * Deletes any expert/term relationships for this term
+ *
+ * @param object $term
+ *   Term to be deleted
+ */
+function faq_ask_taxonomy_term_delete($term) {
+
+  // Delete term: remove experts.
+  if (in_array($term->vid, variable_get('faq_ask_vocabularies', array()))) {
+    _faq_ask_delete_expert($term->tid, $term->name);
+  }
+}
+
+/**
+ * Implementation of hook_taxonomy_vocabulary_delete()
+ *
+ * Remove vocabulary from the list we're using too
+ *
+ * @param object $vocabulary
+ *   Vocabulary to be deleted
+ */
+function faq_ask_taxonomy_vocabulary_delete($vocabulary) {
+
+  // Each term gets deleted first, so all we have to do is remove it from our vocab list.
+  if (in_array($vocabulary->vid, variable_get('faq_ask_vocabularies', array()))) {
+    _faq_ask_delete_vocabulary($vocabulary);
+  }
+}
+
+/**
+ * Implementation of hook_taxonomy_vocabulary_update()
+ *
+ * TODO: Find out if this is needed
+ *
+ * @param object $vocabulary
+ *   vocabulary to be modified
+ */
+function faq_ask_taxonomy_vocabulary_update($vocabulary) {
+
+//  dpm($vocabulary);
+//  dpm(field_info_instances('node', 'faq'));
+  return;
+  if (in_array('faq', $edit['nodes'])) {
+    // If it's there now, we're done.
+    return;
+  }
+  // Not there now, so we need to see if it was.
+  if (in_array($vocabulary->vid, variable_get('faq_ask_vocabularies', array()))) {
+    $tree = taxonomy_get_tree($vocabulary->vid);
+    foreach ($tree as $term) {
+      $my_tid = $term->tid;
+      $my_tname = $term->name;
+      _faq_ask_delete_expert($my_tid, $my_tname);
+    } // End foreach tree.
+    _faq_ask_delete_vocabulary($vocabulary);
+  }
+}
+
+
+/**
+ * Helper function to delete a vocabulary.
+ *
+ *  @param object $vocabulary
+ *    the taxonomy vocabulary about to be deleted
+ *
+ *  @return: none.
+ */
+function _faq_ask_delete_vocabulary($vocabulary) {
+  global $user;
+
+  $name = check_plain($vocabulary->name);
+  $uname = $user->name;
+
+  drupal_set_message(t("Vocabulary '@name' is being removed from the Faq_Ask list.", array('@name' => $name)), 'status');
+  watchdog('Faq_Ask', 'Vocabulary @voc was deleted from Faq_Ask by @name.', array('@voc' => $name, '@name' => $uname), WATCHDOG-NOTICE);
+
+  $my_vocs = variable_get('faq_ask_vocabularies', array());
+  unset($my_vocs[$vocabulary->vid]);
+  variable_set('faq_ask_vocabularies', $my_vocs);
+}
+
+/**
+ * Helper function to delete experts.
+ *
+ * @param.
+ *    $tid - the taxonomy term id for the experts.
+ *
+ *  @return: none.
+ */
+function _faq_ask_delete_expert($tid, $name=NULL) {
+  //$delete = db_query("DELETE FROM {faq_expert} WHERE tid=%d", $tid);
+  $delete = db_delete('faq_expert')->condition('tid', $tid)->execute();
+  if ($delete == 0) {
+    drupal_set_message(t('Attempt to delete expert failed.'), 'error');
+  }
+  else {
+    drupal_set_message(t("Deleted experts for '@name'.", array('@name' => $name)), 'status');
+  }
+}
+
+/**
+ *  Special function to get the advice text default.
+ */
+function _faq_ask_advice_default($type = 'expert') {
+  switch ($type) {
+    case 'expert':
+      return t('If you select a question, you must answer it.');
+
+    case 'admin':
+      return t('You are allowed to edit unanswered questions.');
+
+    case 'asker':
+      return t('You may edit your own questions until they are answered.');
+  }
+}
+
+/**
+ *  Special function to get the help text default.
+ */
+function _faq_ask_help_default() {
+  return t("Add a question for our expert to answer. After being answered, your question and the answer will be displayed in the FAQ pages. If the question will not fit in the box below, please try to rephrase it.");
+}
+
+/**
+ * Implements hook_block_save().
+ *
+ */
+function faq_ask_block_save($delta = '', $edit = array()) {
+  switch ($delta) {
+    case 'unanswered':
+      variable_set('faq_unanswered_count', $edit['faq_unanswered_count']);
+      break;
+  } // end switch($delta)
+}
+
+
+/**
+ * Implements hook_block_configure().
+ *
+ */
+function faq_ask_block_configure($delta = '') {
+  $form = array();
+  switch ($delta) {
+    case 'unanswered':
+      // Unanswered Questions.
+      $form['faq_unanswered_count'] = array(
+        '#type' => 'select',
+        '#title' => t('Number of questions to show'),
+        '#description' => t("This controls the number of questions that appear in the 'Unanswered Questions' block."),
+        '#options' => array(1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9, 10 => 10, 15 => 15, 20 => 20, 25 => 25, 50 => 50, 100 => 100),
+        '#default_value' => variable_get('faq_unanswered_count', 3),
+        );
+  } // end switch($delta)
+
+  return $form;
+}
+
+/**
+ * Implements hook_block_info().
+ *
+ */
+function faq_ask_block_info() {
+  $block = array();
+  $blocks['unanswered'] = array(
+    'info' => t('Unanswered Questions'),
+    'weight' => 0,
+    'status' => 1,
+    'region' => 'sidebar_first',
+    'cache'  => DRUPAL_CACHE_PER_ROLE,
+  );
+  $blocks['ask_a_question'] = array(
+    'info'       => t('Ask a Question'),
+    'weight'     => -1,  // Set initially above the unanswered questions block
+    'status'     => 1,
+    'region'     => 'sidebar_first',
+    'cache'      => DRUPAL_CACHE_GLOBAL,
+    'pages'      => 'node/add/faq', // Do not initially show on the ask a question page
+    'visibility' => BLOCK_VISIBILITY_NOTLISTED,
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ *
+ */
+function faq_ask_block_view($delta = '') {
+  global $user;
+  $block = array();
+  switch ($delta) {
+    case 'unanswered':
+      // Unanswered Questions.
+      $block['subject']= t('Unanswered questions');
+      $block['content'] = _faq_ask_list_unanswered(variable_get('faq_unanswered_count', 3));
+      break;
+
+    case 'ask_a_question':
+      // Ask a question block.
+      if (user_access('ask question')) {
+        // #827426: Senpai
+        $block['subject']= t('Ask a Question');
+        $block['content'] = faq_ask_a_question_blockform();
+      }
+
+  } // end switch($delta).
+  return $block;
+}
+
+
+
+/**
+ * This is the code to select the Unanswered Questions for the block.
+ * It is also used by the "unanswered" page by setting a very high limit.
+ */
+function _faq_ask_list_unanswered($limit) {
+  global $user;
+
+  $output = '';
+
+  // Bounce anonymous users.
+  if ($user->uid == 0) {
+      if ($limit < 1000) {  // If this is a block
+      return NULL;  // Return empty content
+    }
+    else {
+      // Snached from http://drupal.org/node/60148
+      drupal_set_message(t("Access Denied: Please Login"));
+      $dest = drupal_get_destination();
+      drupal_goto('user/login', $dest); // this remembers where the user is coming from
+    }
+  }
+
+  // What permissions does this user have?
+  $can_edit = user_access('administer faq') || user_access('administer nodes');
+  $is_expert = user_access('answer question');
+
+  // Find the vocabulary to search for...
+  $vocabulary = taxonomy_vocabulary_load_multiple(variable_get('faq_ask_vocabularies', 0));
+
+  // Join the term_data table to select based on tid.
+  $query = db_select('node', 'n');
+  $query->leftJoin('faq_ask_term_index', 'ti', 'n.nid = ti.nid OR ti.tid IS NULL');
+  $query->addField('n', 'nid');
+  $query->addField('ti', 'tid');
+  $query->condition('n.status', 0);
+  $query->condition('n.type', 'faq');
+
+
+  $mode = 'edit';
+
+  // Note: If the admin is also an expert, the expert-ness prevails.
+  if ($is_expert) {
+    $mode = 'answer';
+
+    // Get all the expert's terms from the database into a keyed array of term indexes keyed by the term index: $terms[tid] = tid
+    $terms = db_select('faq_expert', 'fe')
+      ->condition('uid', $user->uid)
+      ->fields('fe')
+      ->execute()
+      ->fetchAllKeyed(1, 1);
+
+    // Check if this expert has any categories.
+    if (count($terms) == 0) {
+      if ($limit > 1000) {
+        return '<p>' . t("For some strange reason, I couldn't find any categories for you.") . '</p>';
+      }
+      else {
+        return NULL;
+      }
+    }
+
+    // find the nodes that are in our terms or does not have a term
+    $query->condition(db_or()->condition('tid', $terms, 'IN')->isNull('tid'));
+
+  }
+  elseif (!$can_edit) {            // If not expert and cannot edit the node by permission - edit own
+    $query->condition('n.uid', $user->uid);  // AND n.uid = $user->uid (the user and the node owner are the same)
+  }
+
+  // A high limit means we are doing the "unanswered" page.
+  if ($limit < 1000) {
+    $totalcount = $query->countQuery()->execute()->fetchField();   // Find the total number of items w/o limit
+    $query->range(0, $limit);  // We are only displaying a block
+    $query->orderBy('n.created');
+    $nids = $query->execute()->fetchCol();  // Get nids
+
+    if ($totalcount)
+      return theme('faq_ask_unanswered_block', array('data' => $nids, 'more_link' => $totalcount > $limit, 'mode' => $mode));
+    else
+      return '';
+  }
+
+  $query->orderBy('tid');
+
+
+  // Only need the nid column.
+  $result = $query->execute()->fetchAllKeyed();  // Get fts
+
+  $data = array();
+
+  // Rearrange so that we have an array indexed by tid => array(nids)
+  foreach ($result as $nid => $tid) {
+    if (empty($data[$tid])) $data[$tid]=array();
+    $data[$tid][] = $nid;
+  }
+
+  foreach ($data as $tid => $nodes) {
+    // Output via theme each block of nodes
+    $output .= theme('faq_ask_unanswered', array('data' => $nodes, 'term' => $tid, 'mode' => $mode));
+
+  }
+
+  return $output;
+}
+
+
+
+/**
+ *  This function lists all the unanswered questions the user is allowed to see.
+ *  It is used by the "more..." link from the block, but can also be called independently.
+ */
+function faq_ask_list_more() {
+  drupal_set_title(t('All Unanswered Questions'));
+  $output = '<br/>';
+  return _faq_ask_list_unanswered(9999999);
+}
+
+
+/**
+ * Implements hook_theme().
+ */
+function faq_ask_theme() {
+  return array(
+    'faq_ask_unanswered' => array(
+      'file' => 'faq_ask.unanswered.inc',
+      'template' => 'faq-ask-unanswered',
+      'variables' => array('data' => NULL, 'term' => NULL, 'class' => NULL, 'mode' => NULL),
+    ),
+    'faq_ask_unanswered_block' => array(
+      'file' => 'faq_ask.unanswered.inc',
+      'template' => 'faq-ask-unanswered-block',
+      'variables' => array('data' => NULL, 'more_link' => NULL, 'mode' => NULL),
+    ),
+  );
+}
+
+/**
+ * Identical to drupal_get_token() but without the session variable and the salt
+ *
+ * @param string $value
+ */
+function _faq_ask_get_token($value = '') {
+  return drupal_hmac_base64($value, drupal_get_private_key());
+}
+
+function _faq_ask_valid_token($token, $value = '', $skip_anonymous = FALSE) {
+  global $user;
+  return (($skip_anonymous && $user->uid == 0) || ($token == _faq_ask_get_token($value)));
+
+}
+
+/**
+ * Helper function to find the term field on existing nodes
+ *
+ * @param object $node
+ * @return array field names
+ */
+function _faq_ask_get_term_field_name($node) {
+
+  $lang = $node->language;
+  $fields = array();
+  $node_fields = (array)$node;
+  foreach ( get_object_vars($node) as $field => $values) {
+    if (isset($values[$lang][0])) {
+      if (is_array($values[$lang][0])) {
+        if (isset($values[$lang][0]['tid'])) {
+          $fields[] = $field;
+        }
+      }
+    }
+  }
+  return $fields;
+}
+

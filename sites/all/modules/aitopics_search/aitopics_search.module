@@ -1,0 +1,136 @@
+<?php
+
+function _aitopics_search_get_query() {
+    preg_match("/\/search\/site\/([^\?]*)/", $_SERVER['REQUEST_URI'], $m);
+    $search_query = urldecode($m[1]);
+    if(empty($search_query)) {
+      preg_match("/\/search\/site\/([^\?]*)/", $_SERVER['HTTP_REFERER'], $m);
+      $search_query = urldecode($m[1]);
+    }
+    $search_query_words = array();
+    preg_match_all('/("[^"]+"|[\w]+)/', $search_query, $matches);
+    foreach($matches as $match_array) {
+      foreach($match_array as $match) {
+        $match = preg_replace('/"/', "", $match);
+        if($match != "" && !in_array($match, array('ai', 'the', 'in', 'a', 'an', 'at'))) {
+          array_push($search_query_words, $match);
+        }
+      }
+    }
+    $search_query_words = array_unique($search_query_words);
+
+    return $search_query_words;
+}
+
+function _aitopics_search_match_redirects($search_query_words) {
+  $redirects = array();
+
+  $search_str = implode(" ", $search_query_words);
+
+  if(FALSE !== strpos($search_str, "video")) {
+    array_push($redirects, l("Videos", "videos"));
+  }
+  if(FALSE !== strpos($search_str, "podcast") ||
+    FALSE !== strpos($search_str, "audio")) {
+    array_push($redirects, l("Podcasts", "podcasts"));
+  }
+  if(FALSE !== strpos($search_str, "news")) {
+    array_push($redirects, l("AI in the News", "news"));
+  }
+  if(FALSE !== strpos($search_str, "classic")) {
+    array_push($redirects, l("Classic publications", "classics"));
+  }
+  if(FALSE !== strpos($search_str, "publication")) {
+    array_push($redirects, l("Classic publications", "classics"));
+  }
+  if(FALSE !== strpos($search_str, "contact")) {
+    array_push($redirects, l("Contact us", "contact"));
+  }
+  if(FALSE !== strpos($search_str, "feedback")) {
+    array_push($redirects, l("Leave us feedback", "feedback"));
+  }
+  if(FALSE !== strpos($search_str, "login")) {
+    array_push($redirects, l("Editor login", "user/login"));
+  }
+  if(FALSE !== strpos($search_str, "faq")) {
+    array_push($redirects, l("FAQs", "misc/faqs"));
+  }
+  if(FALSE !== strpos($search_str, "privacy")) {
+    array_push($redirects, l("Privacy & Terms for AITopics", "misc/privacy-terms"));
+  }
+  if(FALSE !== strpos($search_str, "sitemap") || FALSE !== strpos($search_str, "site map")) {
+    array_push($redirects, l("Sitemap", "sitemap"));
+  }
+
+  asort($redirects);
+  return $redirects;
+}
+
+function aitopics_search_views_query_alter(&$view, &$query) {
+  if($view->name == 'search_views') {
+
+    $search_query_words = _aitopics_search_get_query();
+
+    foreach($query->where as &$condition_group) {
+      foreach($condition_group['conditions'] as &$condition) {
+        if(is_object($condition['field'])) {
+          $conds = $condition['field']->conditions();
+
+          foreach(array(
+              '***AUTHORS***' => 'field_data_field_authors.field_authors_value',
+              '***TITLE***' => 'node.title') as $match => $field) {
+
+            if($conds[0]['value'] == '%'.$match.'%') {
+              $condition['field'] = new DatabaseCondition("OR");
+              foreach($search_query_words as $search_query_word) {
+                $condition['field']->condition($field, '%'.$search_query_word.'%', 'LIKE');
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+function aitopics_search_apachesolr_search_page_alter(&$build) {
+  $search_query_words = _aitopics_search_get_query();
+
+  $redirects = _aitopics_search_match_redirects($search_query_words);
+
+  $view = views_get_view('search_views');
+  $topics = $view->preview('topics');
+
+  $view = views_get_view('search_views');
+  $authors = $view->preview('authors');
+
+  $view = views_get_view('search_views');
+  $title = $view->preview('title');
+
+  if(array_key_exists('#markup', $build['search_results'])) {
+    $solr_results = array();
+  } else {
+    $solr_results = $build['search_results']['#results'];
+  }
+
+  $build['search_results'] = array(
+    '#theme' => 'aitopics_search_test',
+    '#query' => implode(" OR ", $search_query_words),
+    '#custom_results' => array(
+      'redirects' => $redirects,
+      'topics' => $topics,
+      'authors' => $authors,
+      'title' => $title),
+    '#solr_results' => $solr_results);
+}
+
+function aitopics_search_theme() {
+  return array(
+    'aitopics_search_test' => array(
+      'template' => 'aitopics_search_results',
+      'variables' => array('query' => NULL, 'custom_results' => NULL, 'solr_results' => NULL),
+      ),
+    );
+}
+
+

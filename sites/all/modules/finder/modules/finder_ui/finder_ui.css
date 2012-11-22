@@ -1,0 +1,413 @@
+
+.finder-ui .ctools-export-ui-operations .ctools-button {
+  margin: 10px 0;
+  position: relative !important;
+}
+
+.finder-ui-list-wrapper #ctools-export-ui-list-form {
+  display: none;
+}
+
+div.finder-ui {
+  border: 1px solid #CCC;
+  padding-bottom: 36px;
+  margin-bottom: 14px;
+}
+
+div.finder-ui-info {
+  background-color: #F9F9F9;
+  border-bottom: 1px solid #CCC;
+  margin-bottom: 14px;
+  padding: 8px 8px 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+div.finder-ui-info-edit {
+  float: right;
+  margin-top: 6px;
+  position: relative;
+}
+div.finder-ui-columns {
+  margin: 15px 12px 0 12px;
+  overflow: hidden;
+}
+
+div.finder-ui-column {
+  float: left;
+  margin-left: 1%;
+  padding-left: 1%;
+}
+
+div#finder-ui-column-1 {
+  margin-left: 0;
+  padding-left: 0;
+  width: 20%;
+}
+
+div#finder-ui-column-2 {
+  width: 20%;
+}
+
+div#finder-ui-column-3 {
+  width: 56%;
+}
+
+div.finder-ui-group {
+  border: 1px solid #F3F3F3;
+  line-height: 20px;
+  margin: 0;
+  padding-top: 4px;
+}
+
+div.finder-ui-group > .even {
+  background-color: #F9F9F9;
+}
+
+div.finder-ui-group-title {
+  position: relative;
+}
+
+div.finder-ui-group-title h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  padding: 2px 6px 4px 6px;
+  margin: 0;
+}
+
+div.finder-ui-item {
+  color: #666;
+  font-size: 12px;
+  padding: 2px 6px;
+  overflow: hidden;
+}
+
+div.finder-ui-item .label {
+  margin-right: 3pt;
+  float: left;
+}
+
+div.finder-ui-item a {
+  float: left;
+  margin: 0 2px;
+}
+
+div.finder-ui-field-list a {
+  float: none;
+}
+
+div.finder-ui-column .extra {
+  float: right;
+  margin-right: 6px;
+}
+
+div#finder-ui-elements-list {
+  margin: 0 3pt;
+}
+
+div#finder-ui-elements-list fieldset {
+  margin: 0;
+  border: 0;
+  padding-top: 1.8em;
+  line-height: auto;
+  background: white;
+}
+
+div#finder-ui-elements-list fieldset span.fieldset-legend {
+  padding-top: 0;
+  margin-top: 0;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+div#finder-ui-elements-list div.fieldset-wrapper {
+  padding: 0 0 3px 3px;
+  margin: 0;
+}
+
+div#finder-ui-elements-list div.finder-ui-column {
+  width: 32%;
+}
+
+div#finder-ui-elements-list div.finder-ui-columns {
+  margin: 0;
+}
+
+table#finder-ui-edit-elements-table td {
+  position: relative;
+}
+
+.finder-ui table td, 
+.finder-ui table th {
+  vertical-align:top !important;
+}
+
+.finder-ui .tabledrag-handle {
+  position: relative;
+  z-index: 10;
+  left: 0;
+  top: 0;
+}
+
+.finder-ui .ctools-button-processed {
+  background-color: #FFFFFF;
+  border-color: #CCCCCC;
+  font-size: 11px;
+  padding-bottom: 0px;
+  padding-top: 0px;
+  background-image:
+   -moz-linear-gradient(
+    -90deg,
+    #ffffff 0px,
+    #f9f9f9 100%);
+  background-image:
+   -webkit-gradient(
+    linear,
+    left top,
+    left bottom,
+    color-stop(0.0, rgba(255, 255, 255, 1.0)),
+    color-stop(1.0, rgba(249, 249, 249, 1.0))
+   );
+  background-image:
+   -webkit-linear-gradient(
+    -90deg,
+    #ffffff 0px,
+    #f9f9f9 100%);
+  background-image:
+   linear-gradient(
+    -90deg,
+    #ffffff 0px,
+    #f9f9f9 100%);
+  -moz-border-radius: 11px 11px 11px 11px;
+  -webkit-border-radius: 11px 11px 11px 11px;
+  border-radius: 11px 11px 11px 11px;
+  position:absolute !important;
+  top: 0px;
+  right: 6px;
+}
+
+.finder-ui .ctools-button-processed:hover {
+  background-image:
+   -moz-linear-gradient(
+    -90deg,
+    #ffffff 0px,
+    #f1f1f1 100%);
+  background-image:
+   -webkit-gradient(
+    linear,
+    left top,
+    left bottom,
+    color-stop(0.0, rgba(255, 255, 255, 1.0)),
+    color-stop(1.0, rgba(241, 241, 241, 1.0))
+   );
+  background-image:
+   -webkit-linear-gradient(
+    -90deg,
+    #ffffff 0px,
+    #f1f1f1 100%);
+  background-image:
+   linear-gradient(
+    -90deg,
+    #ffffff 0px,
+    #f1f1f1 100%);
+}
+
+.finder-ui .ctools-dropbutton-processed.open:hover {
+  background-image:
+   -moz-linear-gradient(
+    -90deg,
+    #ffffff 0px,
+    #f9f9f9 100%);
+  background-image:
+   -webkit-gradient(
+    linear,
+    left top,
+    left bottom,
+    color-stop(0.0, rgba(255, 255, 255, 1.0)),
+    color-stop(1.0, rgba(249, 249, 249, 1.0))
+   );
+  background-image:
+   -webkit-linear-gradient(
+    -90deg,
+    #ffffff 0px,
+    #f9f9f9 100%);
+  background-image:
+   linear-gradient(
+    -90deg,
+    #ffffff 0px,
+    #f9f9f9 100%);
+}
+
+.finder-ui .ctools-dropbutton-processed.open {
+  -moz-box-shadow: 1px 1px 2px rgba(0,0,0,0.25);
+  -webkit-box-shadow: 1px 1px 2px rgba(0,0,0,0.25);
+  box-shadow: 1px 1px 2px rgba(0,0,0,0.25);
+}
+
+.finder-ui .ctools-dropbutton-processed .ctools-content {
+   border-right: 1px solid #E8E8E8;
+}
+
+.finder-ui .ctools-button-processed .ctools-content {
+   padding-bottom: 2px;
+   padding-top: 2px;
+}
+
+.finder-ui .ctools-button-processed li {
+   line-height: 1.3333;
+}
+
+.finder-ui .ctools-dropbutton-processed li a, 
+.finder-ui .ctools-dropbutton-processed li input {
+   padding-right: 9px;
+}
+
+.finder-ui .ctools-button li a {
+  padding-left: 12px;
+  padding-right: 12px;
+  white-space: nowrap;
+}
+
+.finder-ui .ctools-dropbutton-processed.open li + li {
+   border-top: 1px solid #EFEFEF;
+   margin-top: 4px;
+   padding-bottom: 0;
+   padding-top: 4px;
+}
+
+.finder-ui .ctools-twisty:focus {
+   outline: medium none;
+}
+
+.finder-ui .ctools-button .ctools-content ul {
+  margin: 0;
+}
+
+.finder-ui-element-info {
+  position: relative;
+}
+
+.finder-ui-element-info .ctools-dropbutton {
+  margin-top: 6px;
+}
+
+.finder-ui-match-custom {
+  margin-bottom: 2em;
+}
+
+.finder-ui-match-custom .form-item {
+  display: inline;
+  padding: 0 !important;
+}
+
+.finder-ui-match-custom-operator {
+  padding-right: 1em;
+}
+
+.finder-ui-match-custom-operator span.field-prefix {
+  padding-right: 1em;
+}
+
+div.finder-ui-list {
+  border: 0;
+  padding-bottom: 0;
+}
+
+.finder-ui-elements-table-value {
+  width: 100%;
+}
+
+.finder-ui-modal-buttons {
+  position: relative;
+  top: 0;
+  height: 45px;
+  left: -13px;
+  background-color: #F3F4EE;
+  border-top: 1px solid #ccc;
+  width: 100%;
+  padding-right: 26px;
+}
+
+.finder-ui-modal-buttons input.form-submit {
+  margin: 8px 13px;
+  margin-right: 0;
+}
+
+#modalContent div.finder-ui-modal-content {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+#modalContent div.finder-ui-modal-content .modal-content {
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+#modalContent div.finder-ui-modal-content .modal-header {
+  font-size: 15px;
+  border-bottom: 1px solid #CCC;
+  padding: 8px 13px;
+  height: 50px;
+  background-color: #F3F4EE;
+}
+
+#modalContent div.finder-ui-modal-content .modal-title {
+  font-size: 15px;
+  display: block;
+  color: inherit;
+}
+
+#modalContent div.finder-ui-modal-content .modal-content form {
+  padding: 0 13px;
+  overflow-y: auto;
+  height: 100%;
+  background-color: #fff;
+}
+
+#modalContent div.finder-ui-modal-content .modal-content form .finder-ui-modal-form-wrapper {
+  min-height: 475px !important;
+  padding-top: 10px !important;
+  overflow: auto;
+}
+
+#modalContent div.finder-ui-modal-content .modal-content form fieldset.filter-wrapper {
+  width: auto;
+  margin-left: 15em;
+  margin-right: 5em;
+}
+
+#modalContent div.finder-ui-modal-content .modal-header a.close {
+  display: block;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  right: -26px;
+  top: 0;
+  background: url("images/close.png") no-repeat scroll 6px 3px #F3F4EE;
+  -moz-border-radius: 0 10px 12px 0;
+  -webkit-border-radius: 0 10px 12px 0;
+  border-radius: 0 10px 12px 0;
+  border-style: solid;
+  border-width: 1px 1px 1px 0;
+  height: 22px;
+  width: 26px;
+  z-index: 1002;
+  overflow: hidden;
+  text-indent: -10000px;
+  line-height: 0;
+}
+
+#modalContent div.finder-ui-modal-content .dependent-options {
+  padding-left: 0;
+}
+
+#modalContent div.finder-ui-modal-content .form-actions {
+  margin: 0;
+}
+
+/* It's not nice to hide the messages, but it ruins stuff :( */
+#modalContent div.finder-ui-modal-content div.messages {
+  display: none;
+}

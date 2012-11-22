@@ -1,0 +1,260 @@
+<?php
+
+/**
+ * @file
+ * Changes menu trail of current entity to its term's menu item.
+ *
+ * @author Dmitriy.trt      <http://drupal.org/user/329125>
+ */
+
+/**
+ * Gets settings for specified entity type and bundle name.
+ * 
+ * @param string $entity_type
+ * @param string $bundle
+ * @param boolean $load_default
+ *   Should function populate settings with default values if there were no
+ *   settings saved yet. If settings were saved, they will be filled with
+ *   default values independent from this parameter (to prevent warnings
+ *   about missing array keys).
+ * @return array
+ *   Numeric-indexed array with:
+ *   - settings for entity type and bundle
+ *   - variable name for settings
+ *   - does variable already exists.
+ */
+function _taxonomy_menu_trails_get_settings($entity_type, $bundle, $load_default = TRUE) {
+  $var_name = 'taxonomy_menu_trails_' . $entity_type . '_' . $bundle;
+  $settings = variable_get($var_name);
+  $var_exists = !empty($settings);
+  if (!empty($settings)) {
+    $settings += _taxonomy_menu_trails_defaults();
+  }
+  elseif ($load_default) {
+    $settings = _taxonomy_menu_trails_defaults();
+  }
+  return array($settings, $var_name, $var_exists);
+}
+
+/**
+ * Returns default Taxonomy Menu Trails settings for bundle
+ *
+ * @return array
+ */
+function _taxonomy_menu_trails_defaults() {
+  $defaults = array(
+    'selection_method' => 'first',
+    'only_without_menu' => FALSE,
+    'set_breadcrumb' => 'if_empty',
+    'term_path' => 'default',
+    'term_path_patterns' => array(),
+    'instances' => array(),
+    'paths_ui' => '',
+  );
+  if (module_exists('i18n_taxonomy')) {
+    $defaults += array(
+      'terms_with_current_language' => FALSE,
+    );
+  }
+  return $defaults;
+}
+
+/**
+ * Extracts entity keys from entity type info.
+ *
+ * @param string $entity_type
+ * @param array $keys
+ *   List of keys to extract.
+ * @return array
+ *   Numerical-indexed array with entity keys in the same order like in $keys argument.
+ */
+function _taxonomy_menu_trails_get_entity_type_keys($entity_type, $keys = array('id', 'label')) {
+  $type_info = entity_get_info($entity_type);
+  $result = array();
+  foreach ($keys as $key) {
+    $result[] = $type_info['entity keys'][$key];
+  }
+  return $result;
+}
+
+/**
+ * Implements hook_init().
+ */
+function taxonomy_menu_trails_init() {
+  switch (arg(0)) {
+    case 'node':
+      if (is_numeric(arg(1))) {
+        $entity_type = 'node';
+        $entities = entity_load($entity_type, array(arg(1)));
+        $entity = reset($entities);
+      }
+      break;
+    //TODO other entity types support
+  }
+
+  // If entity was found, extract bundle name and get entity path from entity
+  // API, so it will be real entity path and not its child tab path.
+  // We don't need this for entity found with regexp.
+  if (!empty($entity)) {
+    list( , , $bundle) = entity_extract_ids($entity_type, $entity);
+    list($settings) = _taxonomy_menu_trails_get_settings($entity_type, $bundle, FALSE);
+    if ($settings['only_without_menu']) {
+      $entity_uri = entity_uri($entity_type, $entity);
+      $entity_path = $entity_uri['path'];
+    }
+  }
+  else {
+    $all_regexps = variable_get('taxonomy_menu_trails__path_regexps', array());
+    foreach ($all_regexps as $entity_type => $bundles) {
+      foreach ($bundles as $bundle => $placeholders) {
+        foreach ($placeholders as $placeholder => $regexps) {
+          foreach ($regexps as $regexp) {
+            // Run regular expression test. $matches[1] will contain placeholder
+            // matched value.
+            if (preg_match($regexp, $_GET['q'], $matches)) {
+              $placeholder_value = $matches[1];
+              list($id_key, $title_key, $bundle_key) = _taxonomy_menu_trails_get_entity_type_keys($entity_type, array('id', 'label', 'bundle'));
+              $ids = FALSE;
+              $conditions = array(
+                $bundle_key => $bundle,
+              );
+              switch ($placeholder) {
+                case $id_key:
+                  $ids = array($placeholder_value);
+                  break;
+
+                case $title_key:
+                  $conditions[$title_key] = $placeholder_value;
+                  break;
+              }
+              $entities = entity_load($entity_type, $ids, $conditions);
+              $entity = reset($entities);
+              if (!empty($entity)) {
+                // Entity found, set current page as entity path and break all loops.
+                list($settings) = _taxonomy_menu_trails_get_settings($entity_type, $bundle, FALSE);
+                if ($settings['only_without_menu']) {
+                  $entity_path = $_GET['q'];
+                }
+                break 4;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (!empty($entity)) {
+    // TODO check for active trail cache existence and process only if there is
+    // no cache data for current path and make sure this behavior will work
+    // for Menu Block
+    if (!empty($settings['instances'])) {
+      $pass_own_menu_check = TRUE;
+      if ($settings['only_without_menu']) {
+        $has_own_menu = db_query('SELECT mlid FROM {menu_links} WHERE link_path = :path AND hidden = 0 LIMIT 1', array(':path' => $entity_path))->fetchField();
+        $pass_own_menu_check = !$has_own_menu;
+      }
+      if ($pass_own_menu_check) {
+        $has_terms = FALSE;
+        //TODO figure out: maybe we have to choose language in term reference fields
+        foreach ($settings['instances'] as $field) {
+          if (!empty($entity->$field)) {
+            $has_terms = TRUE;
+            break;
+          }
+        }
+        if ($has_terms) {
+          $settings['entity_type'] = $entity_type;
+          module_load_include('inc', 'taxonomy_menu_trails');
+          _taxonomy_menu_trails_process($entity, $settings);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for field_ui_field_edit_form.
+ */
+function taxonomy_menu_trails_form_field_ui_field_edit_form_alter(&$form, &$state) {
+  if ($form['#instance']['entity_type'] == 'node' && $form['#field']['type'] == 'taxonomy_term_reference') {
+    form_load_include($state, 'admin.inc', 'taxonomy_menu_trails');
+    _taxonomy_menu_trails_alter_field_form($form);
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for node_type_form.
+ */
+function taxonomy_menu_trails_form_node_type_form_alter(&$form, &$state) {
+  form_load_include($state, 'admin.inc', 'taxonomy_menu_trails');
+  _taxonomy_menu_trails_alter_bundle_form($form, 'node', $form['#node_type']);
+  $form['taxonomy_menu_trails']['#group'] = 'additional_settings';
+  $form['taxonomy_menu_trails']['#attached'] = array(
+   'js' => array(drupal_get_path('module', 'taxonomy_menu_trails') . '/js/node-type-form.js'),
+  );
+}
+
+/**
+ * Implements hook_field_delete_instance().
+ */
+function taxonomy_menu_trails_field_delete_instance($instance) {
+  $field_name = $instance['field_name'];
+  $info = field_info_field($field_name);
+  if ($info['type'] == 'taxonomy_term_reference') {
+    switch ($instance['entity_type']) {
+      case 'node':
+        module_load_include('admin.inc', 'taxonomy_menu_trails');
+        _taxonomy_menu_trails_delete_instance($instance);
+        break;
+      //TODO other entity types support
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for field_ui_field_overview_form.
+ */
+function taxonomy_menu_trails_form_field_ui_field_overview_form_alter(&$form, &$state) {
+  switch ($form['#entity_type']) {
+    case 'node':
+      form_load_include($state, 'admin.inc', 'taxonomy_menu_trails');
+      _taxonomy_menu_trails_alter_overview_form($form);
+      break;
+    //TODO other entity types support
+  }
+}
+
+/**
+ * Stores selected menu item for taxonomy_menu_trails_menu_breadcrumb_alter().
+ * 
+ * @param array|null $new_item
+ *
+ * @return array|null
+ */
+function taxonomy_menu_trails_selected_item_for_breadcrumb($new_item = NULL) {
+  $item = &drupal_static(__FUNCTION__);
+  if (isset($new_item)) {
+    $item = $new_item;
+  }
+  return $item;
+}
+
+/**
+ * Implements hook_menu_breadcrumb_alter().
+ *
+ * Injects selected menu item and its parents into the breadcrumb.
+ * 
+ * @param type $active_trail
+ * @param type $item
+ */
+function taxonomy_menu_trails_menu_breadcrumb_alter(&$active_trail, $item) {
+  if (drupal_is_front_page()) {
+    return;
+  }
+
+  if ($selected_item = taxonomy_menu_trails_selected_item_for_breadcrumb()) {
+    module_load_include('inc', 'taxonomy_menu_trails');
+    _taxonomy_menu_trails_menu_breadcrumb_alter($active_trail, $selected_item);
+  }
+}

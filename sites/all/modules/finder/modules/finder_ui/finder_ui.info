@@ -1,0 +1,14 @@
+name = Finder UI
+description = "Administrative interface to finder. Without this module, you cannot create or edit your finders."
+core = 7.x
+package = "Finder"
+dependencies[] = finder
+dependencies[] = ctools
+dependencies[] = views
+files[]=plugins/finder_ui.class.php
+; Information added by drupal.org packaging script on 2012-05-31
+version = "7.x-2.0-beta1"
+core = "7.x"
+project = "finder"
+datestamp = "1338438063"
+

@@ -1,0 +1,15 @@
+This file gives a brief guide to the "Relevant Answers" module. See http://drupal.org/projects/relevant_answers 
+
+Last Updated: 7/10/11 by Chip Cleary
+
+Relevant Answers enables users to raise questions and get answers about specific pages on a site. Questions and answers are tracked by the drupal path for a page.
+
+It is based on the "Answers" module. See http://drupal.org/projects/answers . It is also compatible with 
+
+Summary of Functionality
+ - Users can raise new questions about a page.
+ - Users can review the questions already raised about a page. They can also review answers already provided for each question and/or add their own answers.
+ - Users have the functionality for questions already provided by Answers (e.g., asking to be notified when someone provides an answer, setting permissions for who can ask questions)
+
+Site administrators can decide which of the Relevant Answers blocks are displayed and which pages provide them (using the standard blocks administration functions ('admin/build/block')).
+ 

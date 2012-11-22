@@ -1,0 +1,15 @@
+diff --git a/plugins/explode.inc b/plugins/explode.inc
+index d06644f..6b9b99c 100644
+--- a/plugins/explode.inc
++++ b/plugins/explode.inc
+@@ -49,7 +49,9 @@ function feeds_tamper_explode_callback($result, $item_key, $element_key, &$field
+   }
+   foreach ($field as $f) {
+     if (strpos($f, $settings['real_separator']) === FALSE) {
+-      $out[] = $f;
++      if (!empty($f)) {
++        $out[] = $f;
++      }
+     }
+     elseif ($settings['limit'] == '') {
+       $out = array_merge($out, explode($settings['real_separator'], $f));

@@ -1,0 +1,59 @@
+<?php
+
+/**
+ * Implementation of hook_install().
+ */
+function panels_page_cache_install() {
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function panels_page_cache_uninstall() {
+}
+
+/**
+ * Implementation of hook_schema()
+ */
+function panels_page_cache_schema() {
+  $schema['cache_panels_page_cache'] = array(
+    'description' => 'Cache table for caching search results.',
+    'fields' => array(
+      'cid' => array(
+        'description' => 'Primary Key: Unique cache ID.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''),
+      'data' => array(
+        'description' => 'A collection of data to cache.',
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big'),
+      'expire' => array(
+        'description' => 'A Unix timestamp indicating when the cache entry should expire, or 0 for never.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0),
+      'created' => array(
+        'description' => 'A Unix timestamp indicating when the cache entry was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0),
+      'headers' => array(
+        'description' => 'Any custom HTTP headers to be added to cached data.',
+        'type' => 'text',
+        'not null' => FALSE),
+      'serialized' => array(
+        'description' => 'A flag to indicate whether content is serialized (1) or not (0).',
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'default' => 0)
+    ),
+    'indexes' => array('expire' => array('expire')),
+    'primary key' => array('cid'),
+  );
+
+  return $schema;
+}

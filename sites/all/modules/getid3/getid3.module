@@ -1,0 +1,117 @@
+<?php
+
+define('GETID3_RECOMMEND_VERSION', '1.8.2');
+
+/**
+ * Implements hook_help().
+ */
+function getid3_help($section, $arg) {
+  switch ($section) {
+    case 'admin/config/media/getid3':
+      $help = '<p>' . t("To use this module you'll need to <a href='!download-link'>download the library</a> from the <a href='!info-link'>getID3 website</a> and extract the contents into the  module's getid3 directory. Currently, the recommended version of the getID3 library is %recommended-version.",
+        array('!download-link' => url('http://prdownloads.sourceforge.net/getid3'), '!info-link' => url('http://getid3.org/'), '%recommended-version' => GETID3_RECOMMEND_VERSION)) . '</p>';
+      return $help;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function getid3_menu() {
+  $items['admin/config/media/getid3'] = array(
+    'title' => 'getID3()',
+    'description' => 'Configure settings associated with getID3().',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('getid3_admin_settings_form', NULL),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'getid3.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Load the getID3 library.
+ *
+ * @return
+ *   Boolean indicating if the library was successfully loaded.
+ */
+function getid3_load($display_warning = TRUE) {
+  $getid3_path = getid3_get_path();
+
+  if (file_exists($getid3_path . '/getid3.php') && file_exists($getid3_path . '/write.php')) {
+    // A little workaround for getID3 on Windows.
+    if (!defined('GETID3_HELPERAPPSDIR')) {
+      define('GETID3_HELPERAPPSDIR', realpath($getid3_path . '/../helperapps') . '/');
+    }
+    include_once($getid3_path . '/getid3.php');
+
+    // Initialize getID3 tag-writing module. NOTE: Their wanky dependency setup
+    // requires that this file must be included AFTER an instance of the getID3
+    // class has been instantiated.
+    $getid3 = new getID3;
+    require_once($getid3_path . '/write.php');
+
+    return method_exists($getid3, 'version') || defined('GETID3_VERSION');
+  }
+  else {
+    drupal_set_message(t("The getid3() module cannot find the getID3 library used to read and write ID3 tags. The site administrator will need to verify that it is installed and then update the <a href='!admin-settings-audio-getid3'>settings</a>.", array('!admin-settings-audio-getid3' => url('admin/config/media/getid3'))), 'error', FALSE);
+    return FALSE;
+  }
+}
+
+/**
+ * Create and initialize an instance of getID3 class.
+ */
+function getid3_instance() {
+  $id3 = NULL;
+  if (getid3_load()) {
+    $id3 = new getID3();
+    // MD5 is a big performance hit. Disable it by default.
+    $id3->option_md5_data = FALSE;
+    $id3->option_md5_data_source = FALSE;
+    $id3->encoding = 'UTF-8';
+  }
+  return $id3;
+}
+
+/**
+ * Analyze file and return its media information.
+ *
+ * @param $filepath
+ *   A string specifying a file path.
+ * @return
+ *   An array with the information returned by getID3.
+ */
+function getid3_analyze($filepath) {
+  $info = array();
+  if ($id3 = getid3_instance()) {
+    $info = $id3->analyze($filepath);
+    unset($id3);
+  }
+  return $info;
+}
+
+/**
+ * Returns the path where getID3() is installed.
+ */
+function getid3_get_path() {
+  return variable_get('getid3_path', 'sites/all/libraries/getid3/getid3');
+}
+
+/**
+ * Returns the version number of getID3() that is installed.
+ */
+function getid3_get_version() {
+  if (getid3_load(FALSE)) {
+    $getid3 = new getID3;
+    // 1.9 and newer has a version method.
+    if (method_exists($getid3, 'version')) {
+      return $getid3->version();
+    }
+    // Older versions defined a constant.
+    if (defined('GETID3_VERSION')) {
+      return GETID3_VERSION;
+    }
+  }
+  return NULL;
+}

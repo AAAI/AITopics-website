@@ -1,0 +1,904 @@
+<?php
+
+/**
+ * @file
+ * Test Faq_Ask functionality Base test class. All tests inherits this one
+ * Hugely based on code from the test file block.test by boombatower
+ */
+
+/**
+ * Base class that is extended by test cases
+ */
+class Faq_AskTestCase extends DrupalWebTestCase {
+
+  protected $admin_user, $answer_user, $view_faq_user, $faq_user;
+  protected $taxonomy;
+  protected $term, $term1, $term2, $faq, $faq1, $faq2, $faq3, $faq4;
+  protected $expert_role, $expert_roles;
+
+  /**
+   * Implementation of getInfo().
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('FAQ-Ask functionality'),
+      'description' => t('Base class. No tests here.'),
+      'group' => t('FAQ-Ask'),
+    );
+  }
+
+  /**
+   * Implementation of setUp().
+   */
+  function setUp() {
+
+    // Install FAQ Module
+    parent::setUp('taxonomy', 'faq', 'faq_ask');
+
+    // Create and log in user with administer taxonomy permissions.
+    $this->admin_user = $this->drupalCreateUser(array('administer users', 'administer permissions', 'administer taxonomy', 'administer faq', 'administer faq order', 'administer blocks'));
+    $this->faq_user = $this->drupalCreateUser(array('create faq content', 'edit any faq content', 'delete any faq content', 'view faq page', 'access content'));
+    $this->view_faq_user = $this->drupalCreateUser(array('view faq page', 'access content'));
+    $this->ask_user = $this->drupalCreateUser(array('view faq page', 'ask question', 'create faq content', 'edit own faq content', 'view own unpublished content'));
+    $this->answer_user = $this->drupalCreateUser(array('answer question', 'view faq page', 'edit any faq content'));
+    $roles = $this->answer_user->roles;
+    end($roles);
+    $this->pass(print_r($roles, TRUE));
+    $this->expert_role = key($roles);  // Set to last role (the unique one)
+
+    $this->drupalLogin($this->admin_user);
+
+
+    // Set up the vocab and terms
+    $this->setupTaxonomy();
+
+    $this->drupalLogin($this->admin_user);
+    // Categorize questions
+    $this->drupalPost('admin/config/content/faq', array('faq_description' => 'Faq-page description text'), t('Save configuration'));
+    $this->drupalPost('admin/config/content/faq/questions', array('faq_question_length' => 'both'), t('Save configuration'));
+    $this->drupalPost(
+      'admin/config/content/faq/categories',
+      array(
+        'faq_use_categories' => TRUE,
+        'faq_answer_category_name' => TRUE,
+        'faq_group_questions_top' => TRUE,
+      ),
+      t('Save configuration'));  // Set the default expert to answer user
+
+    // Set answer_user as default expert
+    $roles = $this->answer_user->roles;
+    //end($roles);  // Set to last role (the unique one)
+    $this->pass('<pre>' . print_r($this->answer_user, TRUE) . '</pre>');
+    // Set expert role
+    $settings = array(
+        'faq_expert_role[]' => key($roles),
+//        'faq_category_field' => 'taxonomy_' . $this->vocabulary->machine_name,
+        'faq_ask_vocabularies[]' => array($this->term->vid),
+        );
+    $this->setFaqAskSettings($settings);
+
+    // Set default expert
+//    $this->drupalPost('admin/config/content/faq/ask', array('expert_1_1' => '0', 'expert_'.$this->answer_user->uid.'_1' => '1'), t('Save configuration'));
+    $this->setFaqAskSettings(array('expert_1_1' => '0', 'expert_' . $this->answer_user->uid . '_1' => '1'));
+//    $this->drupalPost('admin/config/content/faq/ask', array('faq_ask_default_expert' => $this->answer_user->uid), t('Save configuration'));
+    $this->setFaqAskSettings(array('faq_ask_default_expert' => $this->answer_user->uid));
+    // $this->pass('<pre>'.var_export($this->answer_user, TRUE).'</pre>');          // Show us the node loaded
+
+    // Select the Unanswered questions block to be configured and moved.
+    $this->turnBlockOn('faq_ask', 'unanswered');
+
+  }
+
+  /**
+   * Tear the whole thing down again
+   */
+  function tearDown() {
+
+    // Things to tidy up like vars and stuff
+    parent::tearDown();
+  }
+
+  function turnBlockOn($module, $blockname, $region = 'sidebar_second') {
+
+    $block = array();
+    $block['module'] = $module;
+    $block['delta'] = $blockname;  // Ask a Question Block
+
+    $edit = array();
+    $edit['blocks' . '[' . $block['module'] . '_' . $block['delta'] . '][region]'] = $region;
+    $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
+    $this->assertText(t('The block settings have been updated.'), t('Block successfully move to region @region.', array('@region' => $region)));
+
+  }
+
+  function turnBlockOff($module, $blockname) {
+
+    $block = array();
+    $block['module'] = $module;
+    $block['delta'] = $blockname;  // Ask a Question Block
+
+    $edit = array();
+    $edit['blocks' . '[' . $block['module'] . '_' . $block['delta'] . '][region]'] = '-1';
+    $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
+    $this->assertText(t('The block settings have been updated.'), t('Block successfully move to disabled region.'));
+
+  }
+
+  function askQuestion($asker) {
+    // Fill in the Create FAQ node 1 form and post it
+    $faq1 = array();
+    $faq1['title'] = $this->randomName(20);
+    $faq1['taxonomy_' . $this->vocabulary->machine_name . '[und]'] =  $this->term->name;  // Add new term
+    $faq1['detailed_question'] = $this->randomName(80);
+
+    $this->drupalLogin($asker);
+
+    $this->drupalPost('node/add/faq', $faq1, t('Save'));
+
+    // Check that new FAQ node has actually been created
+    $this->assertText(t('FAQ @title has been created.', array('@title' => $faq1['title'])));
+
+    return $faq1;
+  }
+
+ /**
+   * Generates a random string of ASCII numeric characters (values 48 to 57).
+   *
+   * @param $length
+   *   Length of random string to generate .
+   * @return
+   *   Randomly generated string.
+   */
+  protected static function randomNumber($length = 8) {
+    $str = '';
+    for ($i = 0; $i < $length; $i++) {
+      $str .= chr(mt_rand(48, 57));
+    }
+    return $str;
+  }
+
+ /**
+   * Verify that current user has no access to page.
+   *
+   * @param $url
+   *   URL to verify.
+   */
+  function faqVerifyNoAccess($url) {
+    // Test that page returns 403 Access Denied
+    $this->drupalGet($url);
+    $this->assertResponse(403);
+  }
+
+  /**
+   * Asserts the current url to the passed one
+   *
+   * @param string $url
+   *   The passed url to verify against
+   */
+  function faqVerifyUrl($url, $msg) {
+
+    $current_url = parse_url($this->getUrl());
+    if ($current_url['query'] == '') {
+      $this->assertEqual($current_url['path'], $url, $msg);
+    }
+    else {
+      $query = substr($current_url['query'], 2);  // Split off the q= part
+      $this->assertEqual($query, $url, $msg);
+    }
+    $this->pass('Current URL:<pre>' . print_r($current_url, TRUE) . '</pre>');
+  }
+  /**
+   * Set the permission of a user. If user is NULL or blank then assume anonymous
+   *
+   * @param object $user
+   *   The user to set permission for
+   * @param array $perms
+   *   An array of permissions
+   */
+  protected function setPermissions($user, $perms) {
+    $edit = array();
+    $role = '1';
+    if (isset($user->roles)) {
+      $role = end($user->roles);
+      $this->pass('Roles of user ' . $user->name . ': <pre>' . var_export($user->roles, TRUE) . '</pre>');          // Show us the user roles
+    }
+    $this->pass('Role selected: <pre>' . var_export($role, TRUE) . '</pre>');          // Show us the user roles
+
+    foreach ($perms as $permission) {
+      $edit[$role . '[' . $permission . ']'] = TRUE;
+    }
+
+    $this->drupalPost('admin/people/permissions', $edit, 'Save permissions');
+
+  }
+
+  protected function setFaqAskSettings($settings) {
+
+    $this->drupalPost('admin/config/content/faq/ask', $settings, t('Save configuration'));
+  }
+
+  /**
+   * Set up the taxonomy - all vocabularies and stuff
+   * Values also stored in protected variable $tax
+   */
+  function setupTaxonomy() {
+    // Create vocabulary.
+    $this->vocabulary = $vocabulary = new stdClass();
+    $vocabulary->name = $this->randomName(8);
+    $vocabulary->description = $this->randomName(64);
+    $vocabulary->machine_name = drupal_strtolower($vocabulary->name);
+    $vocabulary->help = '';
+    $vocabulary->nodes = array('faq' => 'faq');
+    $vocabulary->weight = mt_rand(0, 10);
+    taxonomy_vocabulary_save($vocabulary);
+
+    $field = array(
+      'field_name' => 'taxonomy_' . $this->vocabulary->machine_name,
+      'type' => 'taxonomy_term_reference',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'settings' => array(
+        'allowed_values' => array(
+          array(
+            'vocabulary' => $this->vocabulary->machine_name,
+            'parent' => 0,
+          ),
+        ),
+      ),
+    );
+    field_create_field($field);
+
+    $this->instance = array(
+      'field_name' => 'taxonomy_' . $this->vocabulary->machine_name,
+      'bundle' => 'faq',
+      'entity_type' => 'node',
+      'widget' => array(
+        'type' => 'taxonomy_autocomplete',
+
+      ),
+      'display' => array(
+        'default' => array(
+          'type' => 'taxonomy_term_reference_link',
+        ),
+      ),
+    );
+    field_create_instance($this->instance);
+
+    // Add term
+    // Click the last occurrence of the link.
+    $this->term = $term = new stdClass();
+    $term->name = $this->randomName(8);
+    $term->description = $this->randomName(64);
+    // Use the first available text format.
+    $term->format = db_query_range('SELECT format FROM {filter_format}', 0, 1)->fetchField();
+    $term->vid = $vocabulary->vid;
+    taxonomy_term_save($term);
+
+    $this->term1 =  new stdClass();
+    $this->term1->name = 'term1-' . $this->randomName(8);  // Create taxonomy vocabulary name
+    $this->term1->description = $this->randomName(64);
+    $this->term1->format = $term->format;
+    $this->term1->vid = $vocabulary->vid;
+    taxonomy_term_save($this->term1);
+
+    $this->term2 =  new stdClass();
+    $this->term2->name = 'term2-' . $this->randomName(8);  // Create taxonomy vocabulary name
+    $this->term2->description = $this->randomName(64);
+    $this->term2->format = $term->format;
+    $this->term2->vid = $vocabulary->vid;
+    taxonomy_term_save($this->term1);
+
+  }
+
+  /**
+   * Test accessing the FAQ page
+   */
+
+}
+
+class Faq_AskAccessTestClass extends Faq_AskTestCase {
+
+  /**
+   * Implementation of getInfo().
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Access to FAQ pages'),
+      'description' => t('Access to pages by anonymous user and logged in user with rights.'),
+      'group' => t('FAQ-Ask'),
+    );
+  }
+
+  function testFaqAccess() {
+
+    // Verify that anonymous user has no access to the faq page
+    $this->faqVerifyNoAccess('faq-page');
+
+    // Create and login user
+    $normal_user = $this->drupalCreateUser();
+    $this->drupalLogin($normal_user);
+    // Verify that logged in user has no access to the faq page
+    $this->faqVerifyNoAccess('faq-page');
+    $this->drupalLogout();
+
+    $view_faq_user = $this->drupalCreateUser(array('view faq page'));
+    $this->drupalLogin($view_faq_user);
+
+    // Verify that the faq page is visible and available but empty
+    $this->drupalGet('faq-page');
+    $this->assertText(t('Frequently Asked Questions'), t('FAQ page is available for view faq page permissions.'));
+
+  }
+}
+
+
+class CreateFaq_AskTestCase extends Faq_AskTestCase {
+
+  /**
+   * Implementation of getInfo().
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Create FAQ node'),
+      'description' => t('Add, Edit and delete FAQ nodes when FAQ Ask module is enabled.'),
+      'group' => t('FAQ-Ask'),
+    );
+  }
+
+  /**
+   * Test creating a FAQ node
+   */
+  function testFaqCreate() {
+
+    // Create and log in user with create FAQ permissions
+    //$this->admin_user = $this->drupalCreateUser(array('view faq page'));
+    $this->drupalLogin($this->ask_user);
+
+    // Verify that the faq page is visible and available but empty
+    $this->drupalGet('faq-page');
+    $this->assertText(t('Frequently Asked Questions'), t('FAQ page is available for view faq page permissions.'));
+
+    $this->pass('<pre>' . print_r($this->term, TRUE) . '</pre>');
+    // Fill in the Create FAQ node 1 form and post it
+    $this->faq1 = array();
+    $this->faq1['title'] = $this->randomName(8);
+    $this->faq1['taxonomy_' . $this->vocabulary->machine_name . '[und]'] = $this->term->name;  // Add existing term
+    $this->faq1['detailed_question'] = $this->randomName(16);
+    $this->drupalPost('node/add/faq', $this->faq1, t('Save'));
+
+    $this->faq1['body'] = $this->randomName(16);
+
+    // Check that new FAQ node has actually been created
+    $this->assertText(t('FAQ @title has been created.', array('@title' => $this->faq1['title'])));
+
+    // Fill in the Create FAQ node 2 form and post it
+    $this->faq2 = array();
+    $this->faq2['title'] = $this->randomName(8);
+    $this->faq2['taxonomy_' . $this->vocabulary->machine_name . '[und]'] = $this->term->name;  // Add existing term
+    $this->faq2['detailed_question'] = $this->randomName(16);
+    $this->drupalPost('node/add/faq', $this->faq2, t('Save'));
+
+    $this->faq2['body'] = $this->faq1['body']; // Cheating a little. Same answer on both questions
+
+    // Check that new FAQ node has actually been created
+    $this->assertText(t('FAQ @title has been created.', array('@title' => $this->faq2['title'])));
+
+
+    // New user
+    $this->drupalLogout();
+
+
+    // Verify that logged in user has no access to the faq page
+    $this->faqVerifyNoAccess('faq-page');
+
+    // Check that the FAQ page is available and that the correct term is listed as grouping for the new FAQ node
+    $view_faq_user = $this->drupalCreateUser(array('view faq page'));
+    $this->drupalLogin($view_faq_user);
+    $this->drupalGet('faq-page');
+    $this->assertText(t('Frequently Asked Questions'), t('FAQ page is available for view faq page permissions.'));
+    $this->assertNoText($this->faq1['title'], t('Created FAQ node 1 not yet available on FAQ page.'));
+    $this->assertNoText($this->faq1['taxonomy_' . $this->vocabulary->machine_name . '[und]'], t('Term for node 1 not yet  available on FAQ page.'));
+    $this->assertNoText($this->faq2['title'], t('Created FAQ node 2 not yet available on FAQ page.'));
+    $this->assertNoText($this->faq2['taxonomy_' . $this->vocabulary->machine_name . '[und]'], t('Term for node 2 not yet  available on FAQ page.'));
+
+    // Navigate to FAQ node created on FAQ page
+    $faq1_node = $this->drupalGetNodeByTitle($this->faq1['title']);
+    $this->faqVerifyNoAccess('node/' . $faq1_node->nid);
+    $faq2_node = $this->drupalGetNodeByTitle($this->faq2['title']);
+    $this->faqVerifyNoAccess('node/' . $faq2_node->nid);
+
+    // Verify status message when question is reassigned
+    $this->drupalLogin($this->admin_user);
+    // Question is reassigned always
+    $this->setFaqAskSettings(array('faq_ask_expert_own' => '2'));
+
+    // Enable categorisation of FAQ nodes
+    // Log in user with Answer FAQ permissions
+    $this->drupalLogin($this->answer_user);
+
+    // Answer first question
+    $this->drupalGet('faq_ask/unanswered');
+    $this->clickLink('Answer question');
+    $this->assertText(t('This question is being assigned to @name.', array('@name' => $this->answer_user->name)), t('Question assigned to expert'));
+    $this->drupalPost(NULL, array('body[und][0][value]' => $this->faq1['body']), t('Save'));
+
+    // Answer second question
+    $this->drupalGet('faq_ask/unanswered');
+    $this->clickLink('Answer question');
+    $this->drupalPost(NULL, array('body[und][0][value]' => $this->faq2['body']), t('Save'));
+
+    $this->drupalLogin($view_faq_user);
+    $this->drupalGet('faq-page');
+    $this->assertText(t('Frequently Asked Questions'), t('FAQ page is available for view faq page permissions.'));
+    $this->assertText($this->faq1['title'], t('Created FAQ node 1 available on FAQ page.'));
+    $this->assertText($this->faq1['taxonomy_' . $this->vocabulary->machine_name . '[und]'], t('Term for node 1 not available on FAQ page.'));
+    $this->assertText($this->faq2['title'], t('Created FAQ node 2 available on FAQ page.'));
+    $this->assertText($this->faq2['taxonomy_' . $this->vocabulary->machine_name . '[und]'], t('Term for node 2 not available on FAQ page.'));
+
+    // TODO: Add update and Delete of FAQ nodes
+
+  }
+
+}
+
+
+class FaqExistsFaq_AskTestCase extends Faq_AskTestCase {
+
+  /**
+   * Implementation of getInfo().
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Does FAQ page exist?'),
+      'description' => t('Verify that FAQ page exists when FAQ Ask module is enabled.'),
+      'group' => t('FAQ-Ask'),
+    );
+  }
+
+  /**
+   * Check for existing FAQ page and the posibility to create a FAQ by user
+   */
+  public function testFaq_AskExist() {
+
+    // Create and log in user with create FAQ permissions
+    $this->drupalLogin($this->ask_user);
+
+    $this->drupalGet("faq_ask");
+
+    // Verify that all the fields are there
+//    $this->assertFieldById('edit-taxonomy-tags-' . $this->tax['id']);
+//    $this->assertFieldByName('taxonomy[tags][' . $this->tax['id'] . ']');
+    $this->assertFieldById('edit-title');
+    $this->assertFieldByName('title');
+    $this->assertFieldById('edit-detailed-question');
+    $this->assertFieldByName('detailed_question');
+
+    // The answer field should not be there
+    $this->assertNoFieldByName('body');
+
+    // No published status field
+    // $this->assertNoFieldChecked('status');  // Turns out this one is not accessible for someone asking questions
+
+    // Leave the logged in state
+    $this->drupalLogout();
+  }
+}
+
+
+class CRAUDFaq_AskTestCase extends Faq_AskTestCase {
+
+  /**
+   * Implementation of getInfo().
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('CRAUD Unanswered Question'),
+      'description' => t('Create, Read, Answer, Update and Delete an Unanswered question'),
+      'group' => t('FAQ-Ask'),
+    );
+  }
+
+  /**
+   * Test creating an unanswered FAQ and verify its status
+   * Also switches on notifcation of asker and verifies that
+   * anonymous are sent an e-mail by cron run
+   */
+  public function testFaq_AskCreate() {
+
+    $this->drupalLogin($this->admin_user);
+
+    // Check anonymous creation of questions
+    $this->turnBlockOff('faq_ask', 'ask_a_question');
+    // Enable asker and expert notification
+    $this->setFaqAskSettings(array('faq_ask_asker_notify' => TRUE, 'faq_ask_notify' => TRUE));
+
+    // Change rights for anonymous user - Enable asking a question and viewing the faq page
+    $this->setPermissions(NULL, array('ask question', 'create faq content'));
+
+    // Done with admin user
+    $this->drupalLogout();
+
+    // Set up faq-ask
+
+    // Anonymous user have access
+    $this->drupalGet('faq_ask');
+    $this->assertText(t('Ask a Question'), t('Ask a Question page is available for anonymous users.'));
+    $this->assertNoFieldByName('body', $value = '', 'Body field (answer) is not visible in form.');
+
+    // Verify preloaded term
+    /*
+    $this->drupalGet('faq_ask/' . '1');  // Load url with term 1
+    $this->assertFieldByName('taxonomy[tags][1]', $this->term1['name'], 'Term preloaded on question form.');
+    */
+    $taxonfield = 'taxonomy_' . $this->vocabulary->machine_name . '[und]';
+
+    // Fill in the Create FAQ node 1 form and post it - no email address
+    // Issue #1569684 by jlea9378: Not a valid e-mail address
+    $this->faq1 = array();
+    $this->faq1['title'] = $this->randomName(8);
+    $this->faq1[$taxonfield] = $this->term->name;  // Add existing term
+    $this->faq1['detailed_question'] = $this->randomName(16);
+    $this->drupalPost('node/add/faq', $this->faq1, t('Save'));
+
+    $this->faq1['body'] = $this->randomName(16);
+
+    // Check that new FAQ node has actually been created
+    $this->assertText(t('FAQ @title has been created.', array('@title' => $this->faq1['title'])));
+    $this->assertText(t('Your question has been submitted. It will appear in the FAQ listing as soon as it has been answered.'), 'Confirmation message detected');
+
+    // Fill in the Create FAQ node 1 form and post it
+    $this->faq3 = array();
+    $this->faq3['title'] = $this->randomName(8);
+    $this->faq3[$taxonfield] = $this->term->name;  // Add existing term
+    $this->faq3['detailed_question'] = $this->randomName(16);
+    $this->faq3['faq_email'] = $this->randomName(8) . '@' . $this->randomName(8) . '.com';
+    $this->drupalPost('faq_ask', $this->faq3, t('Preview'));  // Preview first
+
+    // Verify preview
+//    $this->assertText('Not answered yet.', 'Not answered yet text shown.');
+    $this->assertLink($this->faq3['title'], $index = 0, 'Link to question found');
+
+    // Verify field content is still available
+    $this->assertFieldByName('title', $this->faq3['title'], 'Title field content kept after preview.');
+    $this->assertFieldByName($taxonfield, $this->faq3[$taxonfield], 'Taxonomy term field content kept after preview.');
+    $this->assertFieldByName('detailed_question', $this->faq3['detailed_question'], 'Detailed question field content kept after preview.');
+    $this->assertFieldByName('faq_email', $this->faq3['faq_email'], 'E-mail field content kept after preview.');
+
+    // Post and save the question
+    $this->drupalPost(NULL, array(), t('Save'));  // Now save
+
+    // Check that new FAQ node has actually been created
+    $this->assertText(t('FAQ @title has been created.', array('@title' => $this->faq3['title'])));
+    $this->assertText(t('Your question has been submitted. An e-mail will be sent to @mail when answered.', array('@mail' => $this->faq3['faq_email'])));
+
+    // Verify redirection to 'faq-page'
+    $this->faqVerifyUrl('faq-page', 'Redirected to the faq-page');
+    $this->assertText(t('Access denied'), 'No access to the faq-page');
+
+    $this->drupalLogin($this->admin_user);
+    // Change rights for anonymous user - Enable asking a question and also viewing the faq page
+    $this->setPermissions(NULL, array('ask question', 'create faq content', 'view faq page'));
+
+    $this->turnBlockOff('faq_ask', 'unanswered');
+    // Change rights for anonymous user - Enable viewing the FAQ-Page.
+    $this->setPermissions(NULL, array('view faq page'));
+
+    //*******************************************************************************
+    // Verify expert notification
+    // The email is sent in plain text. This means that <strong> and <i> are translated to * and /
+
+    $mails = $this->drupalGetMails(array('to' => $this->answer_user->mail));
+    $mail = $mails[1];  // Check the last one
+
+    $this->assertEqual($mail['subject'], t('You have a question waiting on @site', array('@site' => variable_get('site_name', 'Drupal'))), 'Subject to anonymous correct' );
+
+    // Find the body text of the e-mail
+    $lines = explode(chr(10) . chr(10), $mail['body']);  // Of some reason all mail lines are separated by two newlines
+    $this->pass('<pre>' . print_r($this->faq3, TRUE) . '</pre>');
+    $this->pass('<pre>' . print_r($lines, TRUE) . '</pre>');
+    $this->assertEqual(trim($lines[0]), t('Dear @name,', array('@name' => $this->answer_user->name)), 'First e-mail line to expert correct' );
+
+    $this->assertEqual(trim(str_replace(chr(10), ' ', $lines[1])), $t = t('The following question has been posted in the "@term" category by Anonymous (not verified).', array('@term' => $this->term->name)), 'Second e-mail line reads:<br/>' . $lines[1] . '<br/>' . $t . ' expected.');
+//    $this->assertEqual(trim($lines[1]), t('The following question has been posted.'), 'First e-mail line to expert correct');
+    $this->assertEqual(trim(str_replace(chr(10), ' ', $lines[2])), t('*/@title/*', array('@title' => $this->faq3['title'])), 'Third e-mail line: ' . $lines[2]);
+    $this->assertEqual(trim(str_replace(chr(10), ' ', $lines[3])), t('/@detailed/', array('@detailed' => $this->faq3['detailed_question'])), 'Fourth e-mail line: ' . $lines[3]);
+    $this->assertEqual(trim(str_replace(chr(10), ' ', $lines[4])), t('In order to answer it you will first need to login [1] to the site.', array('@url' => url('user', array('options' => array('absolute' => TRUE))))), 'Fifth e-mail line: ' . $lines[4]);
+
+    $node = $this->drupalGetNodeByTitle($this->faq3['title']);
+    $url_options = array(
+      'options' => array('absolute' => TRUE),
+      'query'   => array('token' => drupal_get_token('faq_ask/answer/' . $node->nid)));
+
+    $options = array(
+      '@url' => url('faq_ask/answer/' . $node->nid, $url_options),
+    );
+    $this->assertEqual(trim(str_replace(chr(10), ' ', $lines[5])), t('Once logged in, you may proceed directly to the question [2] to answer it.', $options), 'Sixth e-mail line: ' . $lines[5]);
+    $this->assertEqual(trim(str_replace(chr(10), ' ', $lines[6])), t('By clicking on the above question link you will be redirected to the login form if you are currently logged out.'), 'Seventh e-mail line: ' . $lines[6]);
+
+    $this->verboseEmail(2);
+    $this->assertMail('to', $this->answer_user->mail, t('E-mail was sent to expert: @mail', array('@mail' => $this->answer_user->mail)));
+
+    // Verify that the answer question link is correct and works
+    $strings = explode('?q=', $lines[7]);
+    $token = explode('=', array_pop(explode('&', trim($strings[2]))));
+    $token_array = array(str_replace('amp;', '', $token[0]) => $token[1]);    // Should result in something like array('token' => 'vd1yS1Q2TQxBv9LQC7kTdzZxg-Ynl0lseAcHPkN18D8')
+    $answer_url = trim($strings[2]);
+    $answer_url_base = array_shift(explode('&', trim($strings[2]))); // Get the 'faq_ask/answer/2' - part
+    $this->pass('<pre>' . var_export($answer_url_base, TRUE) . '</pre>');  // Show us the node loaded
+    $this->pass('<pre>' . var_export($token_array, TRUE) . '</pre>');  // Show us the node loaded
+    $answer_query = '';
+
+    //******************************************************************************
+    // Log in user with create FAQ permissions
+    $this->drupalLogin($this->ask_user);
+
+    // Verify that the body field is not visible to the asker without answer permissions
+    $this->drupalGet('node/add/faq');
+    $this->assertNoText(t('Body'), t('Body field not visible to asker'));
+    // Create a FAQ Ask node.
+    $edit = array();
+    $edit['title'] = $this->randomName(8);
+    $edit['taxonomy_' . $this->vocabulary->machine_name . '[und]'] = $this->term->name;
+    $edit['detailed_question'] = $this->randomName(64);
+    $edit['faq_notify'] = TRUE;    // Create a notification message
+
+    $this->drupalPost('node/add/faq', $edit, t('Save'));
+    $this->assertText(t('FAQ @title has been created.', array('@title' => $edit['title'])));
+//    $this->assertText(t('Your question has been submitted. It will appear in the FAQ listing as soon as it has been answered.'));
+    $this->assertText(t('Your question has been submitted. An e-mail will be sent to @mail when answered.', array('@mail' => $this->ask_user->mail)));
+    // Check status for FAQ node - should be not published
+    $node = $this->drupalGetNodeByTitle($edit['title']);
+    //$this->pass('<pre>' . var_export($node, TRUE) . '</pre>');  // Show us the node loaded
+    $this->assertFalse($node->status);
+
+    // FAQ node should not be visible for user with view faq permissions
+    $this->drupalLogin($this->ask_user);
+    $this->drupalGet("faq-page");  // Load faq page
+    $this->assertNoText($edit['title']);  // Node should not be listed here
+    $this->drupalGet('node/' . $node->nid);  // But should be possible to open the node directly by the author who created it
+    $this->assertResponse(200);
+
+    $this->drupalLogin($this->admin_user);
+    $this->turnBlockOn('faq_ask', 'unanswered');
+    // Question is reassigned only when anonymous
+    $this->setFaqAskSettings(array('faq_ask_expert_own' => '1'));  // Reassigned only when anonymous
+
+
+    // Verify answer link from e-mail to answer faq3 question
+    $this->drupalLogout();
+    $this->drupalGet($answer_url);
+    $this->assertText('User account', t('Answer link with token redirects to login page when clicked and not logged in.'));
+    $this->assertText('Log in', t('Answer link with token redirects to login page when clicked and not logged in.'));
+    $this->drupalLogin($this->answer_user);
+    $this->drupalGet($answer_url_base, array('query' => $token_array));
+    $this->assertText($t = t('Edit FAQ @title', array('@title' => $this->faq3['title'])), t('On answering page of question when using link in e-mail: @text', array('@text' => $t)));
+    $this->drupalPost(NULL, array('body[und][0][value]' => $this->randomName(64)), t('Save'));
+
+
+
+    // Log in user with answer question. Must also have edit faq and view faq page permission
+    $this->drupalLogin($this->answer_user);
+
+    // Open unanswered question
+    // Verify that logged in user has no access to the unanswered node display
+    $this->faqVerifyNoAccess('node/' . $node->nid);
+    $this->drupalGet('node/' . $node->nid . '/edit');  // Open edit page with node
+    $this->assertResponse(200);
+
+    // Select question posted by registered user
+    $this->clickLink($edit['title']);  // Click the node name in unanswered questions box
+    // Verify status message when question is reassigned
+    $this->assertNoText(t('This question is being assigned to @name.', array('@name' => $this->answer_user->name)), t('Question is not assigned to expert'));
+
+    // Post an answer to the question
+    $this->drupalPost(NULL, array('body[und][0][value]' => $this->randomName(64)), t('Save'));
+
+    // Click the anonymous user question
+
+    $this->clickLink($this->faq1['title']);  // Click the node name in unanswered questions box
+    // Verify status message when question is reassigned
+    $this->assertText(t('This question is being assigned to @name.', array('@name' => $this->answer_user->name)), t('Question is assigned to expert'));
+
+    // Create and log in user with view FAQ permissions
+    $faq_view_user = $this->drupalCreateUser(array('view faq page'));
+    $this->drupalLogin($faq_view_user);
+
+    // Verify visibility on faq page
+    $this->drupalGet("faq-page");  // Load faq page
+    $this->assertText($edit['title']);  // Node should be listed here
+    $this->drupalGet('node/' . $node->nid);  // It should also be possible to open the node directly
+
+    // Update FAQ
+    // Log in user with answer question. Must also have edit faq and view faq page permission
+    $this->drupalLogin($this->answer_user);
+    $edit2['title'] = 'title-' . $this->randomName(8);
+    $edit2['body[und][0][value]']  = 'body-' . $this->randomName(64);
+    $this->drupalPost( 'node/' . $node->nid . '/edit',
+              array( 'title' => $edit2['title'],
+                'body[und][0][value]' => $edit2['body[und][0][value]']),
+              t('Save'));
+    $this->assertText(t('FAQ @title has been updated.', array('@title' => $edit2['title'])));
+    $this->assertText($edit2['title'], 'Title has changed');
+    $this->assertText($edit2['body[und][0][value]'], 'Body has changed');
+
+    // Delete FAQ
+    // Try deleting faq by edit faq permission
+    $this->drupalGet(  'node/' . $node->nid . '/edit');
+    $this->assertNoText('Delete', 'Body has changed');
+
+    // Log in user with delete FAQ permissions
+    $this->drupalLogin($this->admin_user);
+    $this->drupalPost(  'node/' . $node->nid . '/edit', array(), t('Delete'));
+    $this->assertText(t('Are you sure you want to delete @title?', array('@title' => $edit2['title'])));
+    $this->drupalPost(  'node/' . $node->nid . '/delete', array(), t('Delete'));
+    $this->assertText(t('FAQ @title has been deleted.', array('@title' => $edit2['title'])));
+
+    $this->cronRun();  // Verify answer messages being sent
+
+    $faq3_node = $this->drupalGetNodeByTitle($this->faq3['title']);
+    // Get the e-mail to the anonymous asker
+    $mail = array_shift($this->drupalGetMails(array('to' => $this->faq3['faq_email'])));
+
+    $this->assertEqual($mail['subject'], t('A question you asked has been answered on @site', array('@site' => variable_get('site_name', 'Drupal'))), 'Subject to anonymous correct' );
+
+    $lines = explode(chr(10) . chr(10), $mail['body']);
+    $this->assertEqual(trim($lines[0]), t('Dear user,'), 'First e-mail line to anonymous correct' );
+    $this->assertEqual(trim($lines[1]), t('The question: "@title" you asked on @site has been answered.', array('@site' => variable_get('site_name', 'Drupal'), '@title' => $this->faq3['title'])), 'Second e-mail line to anonymous correct');
+
+    $lines[2] = str_replace(chr(10), ' ', $lines[2]);
+    // Creates something like:     "To view the answer, please visit the question you created on http://d7.example.com/?q=node/2."
+//    $this->assertEqual(trim($lines[2]), t('To view the answer, please visit the question you created on @url.', array('@url' => url('node/' . $faq3_node->nid, array('options' => array('absolute' => TRUE))))), 'Third e-mail line :' . $lines[2] );
+    $this->assertEqual(trim($lines[3]), t('Thank you for visiting.'), 'Fourth e-mail line:' . $lines[3]);
+    $this->verboseEmail(2);
+    $this->assertMail('to', $this->faq3['faq_email'], t('E-mail was sent to anonymous asker: @mail', array('@mail' => $this->faq3['faq_email'])));
+//    $this->assertMail('subject', t('A question you asked has been answered on'), t('E-mail was sent to the registered asker'));
+/*
+    $byteline = '';
+    for ($i = 0; $i < strlen($mail['body']); $i++)
+    {
+      $byteline .= ' ' . ord($mail['body'][$i]);
+    }
+    //foreach ((array)($mail['body']) as $i => $c) $byteline[$i] = ord($c);
+    //$bytestring = implode(' ', $byteline);
+*/
+    $this->pass('<pre>' . print_r($lines, TRUE) . '</pre>');
+  }
+}
+
+
+class BlockFaq_AskTestCase extends Faq_AskTestCase {
+
+  /**
+   * Implementation of getInfo().
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Ask a Question Block'),
+      'description' => t('Ask a question via the Ask a Question Block'),
+      'group' => t('FAQ-Ask'),
+    );
+  }
+
+  /**
+   * Ask a question via the block
+   * Does this:
+   * 1. Changes the block title on the ask a question block
+   * 2. Swithes it on
+   * 3. Posts a question via the block form using an asker user
+   * 4. Turns unanswered block off
+   * 5. Verifies question visibility to the answer role
+   * 6. Answers the question
+   * 7. Hides the question block
+   * 8. Enables the question block again
+   */
+  function testAskQuestionBlock() {
+
+    $this->drupalLogin($this->admin_user);
+
+    // Select the Ask a Question block to be configured and moved.
+    $block = array();
+    $block['module'] = 'faq_ask';
+    $block['delta'] = 'ask_a_question';  // Ask a Question Block
+    $block['title'] = $this->randomName(8);
+
+    // Set block title to confirm that interface works and override any custom titles.
+    $this->drupalPost('admin/structure/block/manage/' . $block['module'] . '/' . $block['delta'] . '/' . 'configure', array('title' => $block['title']), t('Save block'));
+    $this->assertText(t('The block configuration has been saved.'), t('Block title set.'));
+    $bid = db_query_range("SELECT * FROM {block} WHERE module = '%s'", 0, 1, array($block['module'], $block['delta']))->fetchObject();
+
+    // Check to see if the block was created by checking that it's in the database.
+    $this->assertNotNull($bid, t('Block found in database'));
+
+    // Swich off User login block
+    $this->turnBlockOff('user', 'login');
+
+    // Set the created block to a specific region.
+    $this->turnBlockOn('faq_ask', 'ask_a_question');
+
+    // Confirm that the block is being displayed.
+    $this->drupalLogin($this->ask_user);
+    $this->assertText(t($block['title']), t('Block successfully being displayed on the page.'));
+
+    // Show front page of site
+    $this->drupalGet('node');
+
+    // Fill in a form and save
+    $edit = array();
+    $edit['title'] = 'Q-' . $this->randomName(8);
+    $edit['detailed_question'] = 'DetailedQ-' . $this->randomName(16);
+    $edit['taxonomy_' . $this->vocabulary->machine_name . '[und]'] = $this->term->name;
+    $this->drupalPost('node', $edit, t('Save'));
+
+    // Check that the question is posted and unanswered
+    $this->assertText(t('FAQ @title has been created.', array('@title' => $edit['title'])));
+    $this->assertText(t('Your question has been submitted. It will appear in the FAQ listing as soon as it has been answered.'));
+
+    // Check status for FAQ node - should be not published
+    $node = $this->drupalGetNodeByTitle($edit['title']);
+    $this->assertFalse($node->status);
+
+    // Turn unanswered block off
+    $this->drupalLogin($this->admin_user);
+    $this->turnBlockOff('faq_ask', 'unanswered');
+
+    // FAQ node should not be visible for user with view faq permissions
+    $this->drupalLogin($this->ask_user);
+    $this->drupalGet("faq-page");  // Load faq page
+    $this->assertNoText($edit['title']);  // Node should not be listed here
+    $this->drupalGet('node/' . $node->nid);  // But should be possible to open the node directly by the author who created it
+    $this->assertResponse(200);
+
+    // Turn on unanswered block;
+    $this->drupalLogin($this->admin_user);
+    $this->turnBlockOn('faq_ask', 'unanswered');
+    $this->turnBlockOff('faq_ask', 'ask_a_question');
+
+    $question = $this->askQuestion($this->ask_user);
+    // Log in user with answer question. Must also have edit faq and view faq page permission
+    $this->drupalLogin($this->answer_user);
+    $this->assertText('Unanswered questions', t('Unanswered block is visible'));
+    $this->assertText($edit['title'], t('Title of first question visible'));
+    $this->assertText($question['title'], t('Title of second question visible'));
+
+    // Open unanswered question
+    // Verify that logged in user has no access to the unanswered node display
+    $this->faqVerifyNoAccess('node/' . $node->nid);
+    $this->drupalGet('node/' . $node->nid . '/edit');  // Open edit page with node
+    $this->assertResponse(200);
+
+    // Select question
+    $this->clickLink($edit['title']); // Click the node name in unanswered questions box
+
+    // Post an answer to the question
+    $edit['answer'] = $this->randomName(64);
+    $this->drupalPost(NULL, array('body[und][0][value]' => $edit['answer']), t('Save'));
+    // Check status for FAQ node - should now be published
+    $q = $this->drupalGetNodeByTitle($edit['title']);
+
+    // Create and log in user with view FAQ permissions
+    $faq_view_user = $this->drupalCreateUser(array('view faq page', 'access content'));
+    $this->drupalLogin($faq_view_user);
+
+    // Verify visibility on faq page
+    $this->drupalGet("faq-page");  // Load faq page
+    $this->assertText($edit['title'], t('Question title found on FAQ-Page'));  // Node should be listed here
+    $this->assertText($edit['detailed_question'], t('Detailed question text found on FAQ-Page'));  // Node should be listed here
+    $this->assertText($edit['answer'], t('Answer to question found on FAQ-Page'));  // Node should be listed here
+    $this->drupalGet('node/' . $node->nid);  // It should also be possible to open the node directly
+
+
+    // Turn off the block
+    $this->drupalLogin($this->admin_user);
+    $this->turnBlockOff('faq_ask', 'ask_a_question');
+    $this->drupalLogin($faq_view_user);
+
+    // Confirm that the block was moved to the proper region.
+    $this->assertNoText(t($block['title']), t('Block no longer appears on page.'));
+
+    // For convenience of developers, put the navigation block back.
+    $this->drupalLogin($this->admin_user);
+    $this->turnBlockOn('faq_ask', 'ask_a_question');
+    $this->drupalLogin($faq_view_user);
+
+  }
+
+}

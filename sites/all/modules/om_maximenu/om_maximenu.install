@@ -1,0 +1,25 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Install script to install the OM Maximenu
+ *
+ * @author: Daniel Honrade http://drupal.org/user/351112
+ *
+ */
+
+/**
+ * Implementation of hook_install().
+ *
+function om_maximenu_install() {
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function om_maximenu_uninstall() {
+  variable_del('om_maximenu');
+  variable_del('om_maximenu_backup');  
+}
+

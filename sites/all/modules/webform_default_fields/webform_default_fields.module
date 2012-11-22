@@ -1,0 +1,164 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Main Webform Default Fields routines
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function webform_default_fields_menu() {
+  $items = array();
+
+  foreach (_webform_default_fields_webform_node_types() as $type) {
+    $type_url_str = $type['url'];
+    $type_name = $type['name'];
+    // Main fields form
+    $items['admin/structure/types/manage/' . $type_url_str . '/webform-fields'] = array(
+      'title' => $type_name . ': Default Webform Fields',
+      'page callback' => 'webform_default_fields_list',
+      'access arguments' => array('administer webform default fields'),
+      'type' => MENU_LOCAL_TASK,
+      'weight' => 1,
+    );
+
+    $nid = _webform_default_fields_container_node($type_name);
+
+    // Redirect master node webforms to content type fields page
+    $items['node/' . $nid . '/webform/components'] = array(
+      'page callback' => 'webform_default_fields_redirect_master',
+      'type' => MENU_CALLBACK,
+      'access arguments' => array('administer webform default fields'),
+    );
+    $items['node/' . $nid] = $items['node/' . $nid . '/webform/components'];
+  }
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function webform_default_fields_permission() {
+  return array(
+    'administer webform default fields' => array(
+      'title' => t('Administer Webform Default Fields'),
+      'description' => t('Grants access to the "Webform Default Fields" tab on content types management page. Generally an administrative permission.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function webform_default_fields_form_webform_admin_settings_alter(&$form, &$form_state) {
+  $form['#submit'][] = 'webform_default_fields_form_webform_admin_settings_submit';
+}
+
+/**
+ * Webform settings form submit handler.
+ */
+function webform_default_fields_form_webform_admin_settings_submit($form, &$form_state) {
+  drupal_flush_all_caches();
+}
+
+/**
+ * Implements hook_insert().
+ */
+function webform_default_fields_node_insert($node) {
+  if (($nid = variable_get('webform_default_fields_nid_' . $node->type, 0))) {
+    module_load_include('inc', 'webform', 'includes/webform.components');
+
+    webform_ensure_record($node);
+    $master_node = node_load($nid, NULL, TRUE);
+
+    foreach ($master_node->webform['components'] as $component) {
+      $component['nid'] = $node->nid;
+      $node->webform['components'][] = $component;
+      webform_component_insert($component);
+    }
+  }
+}
+
+/**
+ * Page callback
+ */
+function webform_default_fields_list() {
+  $content_type = arg(4);
+
+  $nid = _webform_default_fields_container_node($content_type);
+  drupal_set_title(t('@type: Webform Default Fields', array('@type' => $content_type)), PASS_THROUGH);
+
+  module_load_include('inc', 'webform', 'includes/webform.components');
+  return webform_components_page(webform_menu_load($nid));
+}
+
+/**
+ * Redirect webform fields page to content type fields callback
+ */
+function webform_default_fields_redirect_master() {
+  $node = node_load(arg(1));
+  drupal_goto('admin/structure/types/manage/' . $node->type . '/webform-fields');
+}
+
+/**
+ * Get node types which are webform-enabled
+ *
+ * @return array Content types list
+ */
+function _webform_default_fields_webform_node_types() {
+  $webform_enabled_types = webform_variable_get('webform_node_types');
+  $types = array();
+
+  foreach (node_type_get_types() as $type) {
+    $type_name = $type->type;
+
+    // Ensure content type is webform-enabled
+    if (!in_array($type_name, $webform_enabled_types)) {
+      continue;
+    }
+
+    $type_url_str = str_replace('_', '-', $type_name);
+
+    $types[] = array('url' => $type_url_str, 'name' => $type_name);
+  }
+  return $types;
+}
+
+/**
+ * Create "master-node" for content type
+ *
+ * Master node contains all the data about webform
+ *   fields for linked content type
+ *
+ * @param string $content_type
+ */
+function _webform_default_fields_create_container_node($content_type) {
+  $node = new stdClass();
+  $node->title = 'Webform Default Fields Master Node';
+  $node->type = $content_type;
+  $node->status = 0;
+  $node->webform = array(
+    'confirmation' => '',
+    'roles' => array_keys(user_roles())
+  );
+  node_save($node);
+  webform_ensure_record($node);
+  return $node->nid;
+}
+
+/**
+ * Get Master node by content type
+ *
+ * @param string $content_type Target content type
+ * @return int Master node NID
+ */
+function _webform_default_fields_container_node($content_type) {
+  if (!($nid = variable_get('webform_default_fields_nid_' . $content_type, 0))) {
+    $nid = _webform_default_fields_create_container_node($content_type);
+    variable_set('webform_default_fields_nid_' . $content_type, $nid);
+  }
+  return $nid;
+}

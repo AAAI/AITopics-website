@@ -1,0 +1,13 @@
+; $Id: extlink.info,v 1.4 2010/10/17 00:42:23 quicksketch Exp $
+name = External Links
+description = Adds icon next to external links on the site.
+package = User interface
+core = 7.x
+configure = admin/config/user-interface/extlink
+files[] = extlink.module
+; Information added by drupal.org packaging script on 2010-10-17
+version = "7.x-1.12"
+core = "7.x"
+project = "extlink"
+datestamp = "1287276383"
+

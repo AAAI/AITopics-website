@@ -1,0 +1,190 @@
+<?php
+/**
+ * @file
+ */
+
+ // $Id$ 
+/**
+ * @file
+ * Enables users to ask questions about specific pages on a site (and get answers from others)
+ *
+ * Questions are associated with specific paths on the site.
+ *
+ * This module creates two blocks:
+ *   - 'Popular Questions': Displays the questions for a path, sorted by most frequently viewed
+ *   - 'Recent Questions': Displays the questions for a path, sorted by most recently asked
+ *
+ * The module also provides a page view, 'Relevant Questions', under the path 'relevant_questions/*' (the '*' wildcard represents a specific path the questions are about, e.g., 'node/1').
+ *
+ * The block views provide a "See More" link when the number of questions associated with the current path exceeds the maximum. This link leads to the page view.
+ * Also, both the page and the block views provide an "Ask New" link when the user has permission to 'create questions'.
+ *
+ * When you install the module, go to Administer -> Site Building -> Blocks to install the block(s) you want
+ * in the regions you want. Just like other blocks, administrators can set the paths for which each block is displayed
+ *
+ * You can set the maximum number of questions that can be displayed in the blocks. This is a standard views setting.
+ *   1. Go to Site Building -> Views.
+ *   2. Edit the view 'relevant_questions'.
+ *   3. Edit the "Items to display" setting of the default view inputting the value you would like.
+ *
+ */
+
+include_once('relevant_answers.features.inc');
+
+ /**
+ * Implementation of hook_help()
+ */
+function relevant_answers_help($path, $arg) {
+  switch ($path) {
+    case 'admin/modules#description':
+      return t('Enables users to ask questions and get answers about specific pages on a site.');
+  }
+}
+
+
+/**
+ * Returns a string containing the current path
+ */
+function relevant_answers_get_path() {
+  $path = isset($_GET['q']) ? $_GET['q'] : '';
+  return check_plain($path);
+}
+
+/*
+ * Implement hook_node_view
+ */
+function relevant_answers_node_view($node, $view_mode, $langcode) {
+  if ($node->type == 'question') {
+//    $path = $node->field_question_path['und'][0]['value'];
+      $path = answers_field_get_value($node, 'field_question_path');
+
+    if ($path) {
+      $links['return_to_page'] = relevant_answers_get_return_to_page_link($path);
+      $node->content['links']['relevant_answers'] = array(
+        '#theme' => 'links__node__questions',
+        '#links' => $links,
+        '#attributes' => array('class' => array('links relevant-answers-links inline')),
+      );
+    }
+  }
+}
+
+/*
+ * Implement hook_form_alter
+ *
+ */
+function relevant_answers_form_alter(&$form, &$form_state, $form_id) {
+
+  if ($form_id == 'question_node_form') {
+
+    // hide the field
+    $form['field_question_path']['#prefix'] = '<div style="display: none;">';
+    $form['field_question_path']['#suffix'] = '</div>';
+
+
+    // if there is a path set, it will be listed in compressed form. Get it, decompress it, and set the field
+    $compressed_path = isset($_GET['path']) ? $_GET['path'] : '';
+    if ($compressed_path) {
+      $original_path = relevant_answers_decompress_string($compressed_path);
+      $langcode = field_language('node', $form_state['node'], 'field_question_path');
+      $form['field_question_path'][$langcode][0]['value']['#value'] = $original_path;
+    }
+
+  }
+}
+
+function relevant_answers_views_pre_render(&$view) {
+   if($view->name == 'relevant_questions') {
+     //Add links to the relevant questions views
+     $view->attachment_after = theme('links', relevant_answers_get_view_links($view));
+  }
+}
+
+
+function relevant_answers_get_view_links($view) {
+  $display = $view->display[$view->current_display];
+  $attributes = array('class' => 'links relevant-questions-links inline');
+  $links = array();
+
+  $original_path = implode('/', $view->args);
+  $compressed_path = relevant_answers_compress_string($original_path);
+  
+  // If the user has permission to create questions, provide a link to do so
+  if (user_access('create question content')) {
+    $links[] = array(
+      'title' => 'Ask New', 
+      'href' => 'node/add/question',
+      'query' => array('path' => $compressed_path),
+    );
+  }
+
+  // If the current display is a block, consider adding a 'See More' link
+  if ($display->id == 'popular_relevant_questions_block' || $display->id == 'recent_relevant_questions_block') {
+    if ($link = relevant_answers_get_more_link($view, $display, $original_path)) {
+      $links[] = $link;
+    }
+  }
+
+  // If the view is the page view, let the user return to the original path
+  if ($display->id == 'relevant_questions_page') {
+    $links[] = relevant_answers_get_return_to_page_link($original_path);
+  }
+
+  return array('links' => $links, 'attributes' => $attributes);
+}
+
+function relevant_answers_get_more_link($view, $display, $original_path) {
+  $link = NULL;
+  $actual_count = _relevant_answers_count_questions($original_path);
+  $max_count = $display->display_options['pager']['options']['items_per_page'];
+ 
+  // If there are more questions than currently shown, create a link ...
+  if ($actual_count > $max_count) {
+    $page_path = strtr('relevant_questions/%', array('%' => $original_path));
+    $link = array(
+      'title' => t('See More'), 
+      'href' => $page_path,
+    );
+  }
+
+  return $link;
+}
+
+function relevant_answers_get_return_to_page_link($path) {
+  return array(
+    'title' => t('Return to page'),
+    'href'  => $path,
+  );
+}
+
+/*
+ * Get a count of the number of questions associated with this path
+ */
+function _relevant_answers_count_questions($path) {
+  $query = "SELECT COUNT(*) FROM {field_data_field_question_path} WHERE field_question_path_value = :path";
+  return (db_query($query, array(':path' => $path))->fetchField());
+}
+
+  
+/*
+ * This approach to encoding URLs based on:
+ * http://www.drupalcoder.com/blog/passing-urls-as-path-arguments-in-urls
+ *
+ */
+function relevant_answers_compress_string($string) {
+  $string = gzcompress($string, 9);
+  $string = base64_encode($string);
+  $string = str_replace(array('+', '/', '='), array('-', '_', ''), $string);
+  return $string;
+}
+
+function relevant_answers_decompress_string($string) {
+  $string = str_replace(array('-', '_'), array('+', '/'), $string);
+  $mod4 = strlen($string) % 4;
+  if ($mod4) {
+    $string .= substr('====', $mod4);
+  }
+  $string = base64_decode($string);
+  return gzuncompress($string);
+}
+

@@ -1,0 +1,13 @@
+name = Multiselect FAPI Example
+description = Example usage of the Multiselect module via Form API calls.
+package = Example modules
+core = "7.x"
+version = VERSION
+
+files[] = multiselect_fapi_example.module
+; Information added by drupal.org packaging script on 2012-05-12
+version = "7.x-1.9"
+core = "7.x"
+project = "multiselect"
+datestamp = "1336842370"
+

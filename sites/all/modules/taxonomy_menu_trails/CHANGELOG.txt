@@ -1,0 +1,41 @@
+Taxonomy Menu Trails 7.x-2.2, 2012-04-23
+----------------------------------------------
+- Issue #1501968: set active trail for all menus, including inactive ones
+
+Taxonomy Menu Trails 7.x-2.1, 2012-04-08
+----------------------------------------------
+- Issue #1482110 by joseph11: language aware term negotiation
+- Issue #1496374: menu_cache_clear_all() in not needed on 7.x-2.x
+- Issue #1268450 by Berdir: provide hook to allow term path override
+- Issue #1478760: configurable taxonomy term path patterns
+- Skip unnecessary settings processing on bundle form validation/submission
+
+Taxonomy Menu Trails 7.x-2.0, 2012-03-11
+----------------------------------------------
+- Issue #1413080: compatibility with D7.12+, drop D7.8 and earlier support
+- Issue #1419154: optionally set breadcrumb, like it was it 7.x-1.x branch.
+  Admin is able to choose when breadcrumb is set (always, never, if empty)
+- Issue #1463962: fix empty title in breadcrumb when term page is a view
+
+Taxonomy Menu Trails 7.x-1.3, 2011-12-18
+----------------------------------------------
+- Issue #1305956: fix strict warning on node page and on pages matching pattern
+
+Taxonomy Menu Trails 7.x-1.2, 2011-10-09
+----------------------------------------------
+- Issue #1129760: implement custom entity path patterns
+- Issue #1274016 by maho: More efficient way to check menu item existence
+- Keep original title on pages where active trail is modified
+
+Taxonomy Menu Trails 7.x-1.1, 2011-04-22
+----------------------------------------------
+- Issue #1133686 Dmitriy.trt: fix WSOD for cached forms we alter
+
+Taxonomy Menu Trails 7.x-1.0, 2011-04-17
+----------------------------------------------
+- Issue #1071154 by mikewink, Dmitriy.trt: Initial port to D7
+- by mikewink, Dmitriy.trt: Vertical tab summary for node type form
+- by markabur, Dmitriy.trt: workaround for Menu Block support
+- New method of active trail changing (possible in D7 only)
+- "Deepest-in-menu" term selection method
+- Select from menu items rather than terms

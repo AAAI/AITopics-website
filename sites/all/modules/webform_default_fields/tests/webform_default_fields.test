@@ -1,0 +1,85 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Webform Default Fields module tests.
+ */
+
+class WebformDefaultFieldsTestCase extends DrupalWebTestCase {
+  private $_content_type = 'webform';
+  private $_field_counter = 0;
+
+  /**
+   * Implements getInfo().
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('Webform Default Fields'),
+      'description' => t('Adds a node and check it has default webform fields.'),
+      'group' => t('Webform Default Fields'),
+    );
+  }
+
+  /**
+   * Implements setUp().
+   */
+  function setUp() {
+    // Enable Webform Default Fields.
+    parent::setUp('webform_default_fields', 'webform');
+    module_enable(array('webform_default_fields', 'webform'));
+    module_load_include('inc', 'webform', 'includes/webform.components');
+  }
+
+  private function _addTestComponent() {
+    $nid = _webform_default_fields_container_node($this->_content_type);
+
+    $component = array(
+      'nid' => $nid,
+      'pid' => 0,
+      'form_key' => $this->_field_counter . uniqid(),
+      'name' => 'Test field ' . $this->_field_counter,
+      'type' => 'textfield',
+      'extra' => array(
+        'title_display' => 'before',
+        'disabled' => 0,
+        'unique' => 0,
+        'conditional_operator' => '=',
+      ),
+      'mandatory' => 0,
+      'weight' => $this->_field_counter,
+    );
+
+    webform_component_insert($component);
+
+    $this->_field_counter++;
+  }
+
+  /**
+   * Implemenation of tearDown().
+   */
+  function tearDown() {
+    module_disable(array('webform_default_fields', 'webform'));
+    variable_set('webform_default_fields_nid_' . $this->_content_type, 0);
+    $this->_counter = 0;
+    parent::tearDown();
+  }
+
+  function testNodeAdding() {
+    $this->_addTestComponent();
+    $new_node = new stdClass();
+    $new_node->type = $this->_content_type;
+    node_save($new_node);
+    $this->assertEqual(1, count($new_node->webform['components']));
+  }
+
+  function testNodeAddingWithTwoFields() {
+    $this->_addTestComponent();
+    $this->_addTestComponent();
+
+    $new_node = new stdClass();
+    $new_node->type = $this->_content_type;
+    node_save($new_node);
+    $this->assertEqual(2, count($new_node->webform['components']));
+  }
+}

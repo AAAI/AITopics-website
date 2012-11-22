@@ -1,0 +1,43 @@
+/* $Id$ */
+
+/**
+ * @file
+ * OM Maximenu Simple Skin
+ *
+ * @author: Daniel Honrade http://drupal.org/user/351112
+ *
+ */
+
+/* OM Maximenu Content - simple style - general */
+.om-maximenu-simple .om-maximenu-top { height: 25px; background: url(images/simple1.png) 0 0 repeat-x; position: relative; }
+.om-maximenu-simple .om-maximenu-top-left { position: absolute; top: 0; left: -25px; height: 25px; width: 25px; background: url(images/simple1.png) 0 -50px no-repeat; }
+.om-maximenu-simple .om-maximenu-top-right { position: absolute; top: 0; right: -25px; height: 25px; width: 25px; background: url(images/simple1.png) -25px -50px no-repeat; }
+
+.om-maximenu-simple .om-maximenu-middle { background: none #fff; }
+.om-maximenu-simple .om-maximenu-middle-left { background: url(images/simple2.png) left top repeat-y; margin-left: -25px; }
+.om-maximenu-simple .om-maximenu-middle-right { padding: 5px 20px; background: url(images/simple3.png) right top repeat-y; margin-right: -25px; }
+
+.om-maximenu-simple .om-maximenu-bottom { height: 25px; background: url(images/simple1.png) 0 -25px repeat-x; position: relative; }
+.om-maximenu-simple .om-maximenu-bottom-left { position: absolute; bottom: 0; left: -25px; height: 25px; width: 25px; background: url(images/simple1.png) 0 -75px no-repeat; }
+.om-maximenu-simple .om-maximenu-bottom-right { position: absolute; bottom: 0; right: -25px; height: 25px; width: 25px; background: url(images/simple1.png) -25px -75px no-repeat; }
+
+
+/* OM Maximenu Content - simple style - main menu */
+.om-maximenu-simple.om-maximenu-main-menu .om-maximenu-content .om-maximenu-top { display: none; }
+ 
+/* OM Maximenu Content - simple style - block down/down */
+.om-maximenu-simple.om-maximenu-block.om-maximenu-row.om-maximenu-block-down .om-maximenu-content .om-maximenu-top { display: none; }
+.om-maximenu-simple.om-maximenu-block.om-maximenu-row.om-maximenu-block-up .om-maximenu-content .om-maximenu-bottom { display: none; }
+
+
+/* OM Maximenu Content - simple style - block left */
+
+/* OM Maximenu Content - simple style - block right */
+
+/* OM Maximenu Content - simple style - float top/bottom */
+.om-maximenu-simple.om-maximenu-float.om-maximenu-row.om-maximenu-top .om-maximenu-content .om-maximenu-top { display: none; }
+.om-maximenu-simple.om-maximenu-float.om-maximenu-row.om-maximenu-bottom .om-maximenu-content .om-maximenu-bottom { display: none; }
+
+
+
+

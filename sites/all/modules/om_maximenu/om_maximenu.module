@@ -1,0 +1,327 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * OM Maximenu.
+ *
+ * @author: Daniel Honrade http://drupal.org/user/351112
+ *
+ */
+
+/**
+ * @include
+ *
+ *  Reusable code library
+ *
+ */ 
+@include_once dirname(__FILE__) . '/inc/om_maximenu.utils.inc';
+@include_once OM_MAXIMENU_PATH . '/inc/om_maximenu.effects.inc';
+@include_once OM_MAXIMENU_PATH . '/inc/om_maximenu.render.inc';
+
+/**
+ * @include
+ *
+ * A separate help file which links to all OM Maximenu forms.
+ *
+ */
+@include_once OM_MAXIMENU_PATH . '/inc/om_maximenu.help.inc'; 
+
+
+/**
+ * Implementation of hook_menu().
+ *
+ */
+function om_maximenu_menu() {
+  
+  $items = array();  
+  
+  $items['admin/structure/om-maximenu'] = array(
+    'title' => t('OM Maximenu'),
+    'page callback' => 'drupal_get_form',
+    'access callback' => 'user_access', 
+    'access arguments' => array('administer om maximenu'),
+    'page arguments' => array('om_maximenu_admin', 'list'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'inc/om_maximenu.admin.inc',
+    'description' => t('Add power menus, import existing menus.'),    
+  );
+  $items['admin/structure/om-maximenu/basic-editing'] = array(
+    'title' => t('Basic Editing'),
+    'page callback' => 'drupal_get_form',
+    'access callback' => 'user_access', 
+    'access arguments' => array('administer om maximenu'),
+    'page arguments' => array('om_maximenu_admin', 'list'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'file' => 'inc/om_maximenu.admin.inc',
+    'description' => t('Add power menus, import existing menus.'),    
+    'weight' => 0,       
+  );
+  $items['admin/structure/om-maximenu/add'] = array(
+    'title' => t('Add'),
+    'page callback' => 'drupal_get_form',
+    'access callback' => 'user_access', 
+    'access arguments' => array('administer om maximenu'),
+    'page arguments' => array('om_maximenu_admin', 'add'),
+    'type' => MENU_CALLBACK,
+    'file' => 'inc/om_maximenu.admin.inc',
+  );
+  $items['admin/structure/om-maximenu/%/edit'] = array(
+    'title' => t('Edit'),
+    'page callback' => 'drupal_get_form',
+    'access callback' => 'user_access', 
+    'access arguments' => array('administer om maximenu'),
+    'page arguments' => array('om_maximenu_admin', 'edit'),
+    'type' => MENU_CALLBACK,
+    'file' => 'inc/om_maximenu.admin.inc',
+  ); 
+  $items['admin/structure/om-maximenu/%/delete'] = array(
+    'title' => t('Delete'),
+    'page callback' => 'drupal_get_form',
+    'access callback' => 'user_access', 
+    'access arguments' => array('administer om maximenu'),
+    'page arguments' => array('om_maximenu_admin', 'delete'),
+    'type' => MENU_CALLBACK,
+    'file' => 'inc/om_maximenu.admin.inc',
+  );           
+  $items['admin/structure/om-maximenu/maxedit'] = array(
+    'title' => t('Maxedit'),
+    'page callback' => 'drupal_get_form',
+    'access callback' => 'user_access', 
+    'access arguments' => array('administer om maximenu'),
+    'page arguments' => array('om_maximenu_admin'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'inc/om_maximenu.admin.inc',
+    'weight' => 3,       
+  ); 
+  $items['admin/structure/om-maximenu/blocks/%/%'] = array(
+    'title' => t('Blocks'),
+    'page callback' => 'drupal_get_form',
+    'access callback' => 'user_access', 
+    'access arguments' => array('administer om maximenu'),
+    'page arguments' => array('om_maximenu_blocks_get'),
+    'type' => MENU_CALLBACK,
+    'file' => 'inc/om_maximenu.blocks.inc',
+  );   
+  if (module_exists('om_tools')) {
+    // This is directly using OM Tools form for advanced editing.
+    // It basically opens up $om_maximenu array variable for you to edit,
+    // it also creates 2 file backups, current and a copy,
+    // performs save current, backup, update backup, restore from backup, 
+    // download from current or copy backup
+    // Any module can implement this functionality just by copying this section
+    $items['admin/structure/om-maximenu/advanced-editing'] = array(
+      'title' => t('Advanced Editing'),
+      'page callback' => 'drupal_get_form',
+      'access callback' => 'user_access', 
+      'access arguments' => array('administer om maximenu'),
+      'page arguments' => array('om_tools_admin_advanced', 'om_maximenu', 'OM Maximenu'),
+      'type' => MENU_LOCAL_TASK,
+      'file path' => drupal_get_path('module', 'om_tools'),
+      'file' => 'inc/om_tools.admin.inc',
+      'weight' => 19,
+    );
+  } 
+  $items['admin/structure/om-maximenu/import'] = array(
+    'title' => t('Import'),
+    'page callback' => 'drupal_get_form',
+    'access callback' => 'user_access', 
+    'access arguments' => array('administer om maximenu'),
+    'page arguments' => array('om_maximenu_import'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'inc/om_maximenu.import.inc',
+    'weight' => 20,       
+  ); 
+  return $items;
+}
+
+/**
+ * Implementation of hook_perm().
+ *
+ */
+function om_maximenu_permission() {
+  return array(
+    'administer om maximenu' => array(
+      'title' => t('Administer OM Maximenu'), 
+      'description' => t('Perform administration tasks for OM Maximenu.'),
+    ),
+  );
+}
+
+
+/**
+ * Implementation of hook_block().
+ *
+ */
+function om_maximenu_block_info() {
+  global $_om_maximenu_variable;
+  $maximenu = $_om_maximenu_variable;
+    
+  $blocks = array();
+  if (!empty($maximenu)) {
+    foreach ($maximenu as $delta => $content) {
+      if ($content['output'] == 'block') {    
+        $blocks['om-maximenu-' . $delta] = array(
+          'info' => t('OM Maximenu: ' . $maximenu[$delta]['title']),
+          'cache' => DRUPAL_NO_CACHE, 
+          //'cache' => DRUPAL_CACHE_PER_ROLE,
+        );
+      }
+    }
+  }
+  return $blocks;
+}
+
+
+/**
+ * Implementation of hook_block_view().
+ *
+ */
+function om_maximenu_block_view($delta = '') {
+
+  // rendered om maximenu variable
+  $content = om_maximenu_block_load($delta);
+  if (!empty($content)) {
+     $block = array();
+     $block['subject'] = $content['title'];
+     $block['content'] = $content['content'];
+     return $block;
+  }
+}
+
+
+/**
+ * Override or insert om variables into the templates.
+ *
+ * As Main Menu
+ *
+ */
+function om_maximenu_preprocess_page(&$vars) {
+  
+  // rendered om maximenu variable
+  $maximenu = om_maximenu_load();
+
+  if (!empty($maximenu)) {
+    foreach ($maximenu as $menu_key => $menu_content) {
+      // OM Base Theme
+      if ($menu_content['output'] == 'main_menu') $vars['main_menu_tree'] = $menu_content['content'];
+    }
+  }
+}
+
+
+
+/**
+
+ * Override or insert om variables into the templates.
+ *
+ * As Floating Menus
+ * - Configurable positions
+ *
+ */
+function om_maximenu_process_html(&$vars) {
+  
+  // rendered om maximenu variable
+  $maximenu = om_maximenu_load();
+
+  if (!empty($maximenu)) {
+    $modal_windows = '';
+    foreach ($maximenu as $menu_key => $menu_content) {  
+      // OM Maximenu Floating menu
+      if ($menu_content['output'] == 'float') $vars['page_bottom'] .= $menu_content['content'];
+
+      // OM Maximenu Modal Content
+      if (isset($menu_content['modal_windows'])) $modal_windows .= $menu_content['modal_windows'];
+    }
+    $vars['page_bottom'] .= !empty($modal_windows) ? '<div id="om-maximenu-mask"></div><div id="om-maximenu-modal-widows">' . $modal_windows . '</div>': '';
+  }
+}
+
+
+/**
+  * Implementation of hook_theme().
+  *
+  */
+function om_maximenu_theme() {
+
+  return array(
+    'om_maximenu_links_order' => array(
+       'render element' => 'form',
+       'file' => 'inc/om_maximenu.admin.inc',
+    ), 
+    'om_maximenu_blocks_attach' => array(
+       'render element' => 'form',
+       'file' => 'inc/om_maximenu.blocks.inc',
+    ),                           
+    'om_maximenu_wrapper' => array(
+      'template' => 'tpl/om-maximenu-wrapper',
+      'variables' => array('links' => array(), 'content' => NULL),
+    ),
+    'om_maximenu_content' => array(
+      'template' => 'tpl/om-maximenu-content',
+      'variables' => array('block' => array(), 'module' => NULL, 'delta' => NULL, 'om_classes' => NULL, 'title' => NULL, 'block_title' => NULL,),
+    ),
+    'om_maximenu_submenu' => array(
+      'template' => 'tpl/om-maximenu-submenu',
+      'variables' => array('links' => array(), 'menu_key' => 1),
+    ),
+    'om_maximenu_submenu_links' => array(
+      'template' => 'tpl/om-maximenu-submenu-links',
+      'variables' => array('content' => array(), 'maximenu_name' => NULL, 'skin' => NULL, 'disabled' => 0, 'key' => 0, 'code' => 0, 'count' => 0, 'total' => 1),
+    ),
+    'om_maximenu_submenu_content' => array(
+      'template' => 'tpl/om-maximenu-submenu-content',
+      'variables' => array('content' => array(),  'maximenu_name' => NULL, 'key' => 0, 'skin' => NULL),
+    ),
+    'om_maximenu_tabbed' => array(
+      'template' => 'tpl/om-maximenu-tabbed',
+      'variables' => array('links' => array(), 'menu_key' => 1),
+    ),
+    'om_maximenu_tabbed_links' => array(
+      'template' => 'tpl/om-maximenu-tabbed-links',
+      'variables' => array('content' => array(), 'maximenu_name' => NULL, 'key' => 0, 'code' => 0, 'count' => 0, 'total' => 1),
+    ),    
+    'om_maximenu_tabbed_content' => array(
+      'template' => 'tpl/om-maximenu-tabbed-content',
+      'variables' => array('links' => array(), 'maximenu_name' => NULL),
+    ),
+    'om_maximenu_modal' => array(
+      'template' => 'tpl/om-maximenu-modal',
+      'variables' => array('links' => array(), 'menu_key' => 1),
+    ),
+    'om_maximenu_modal_links' => array(
+      'template' => 'tpl/om-maximenu-modal-links',
+      'variables' => array('content' => array(), 'maximenu_name' => NULL, 'key' => 0, 'code' => 0, 'count' => 0, 'total' => 1),
+    ),    
+    'om_maximenu_modal_content' => array(
+      'template' => 'tpl/om-maximenu-modal-content',
+      'variables' => array('links' => array(), 'maximenu_name' => NULL),
+    ),    
+    'om_maximenu_accordion' => array(
+      'template' => 'tpl/om-maximenu-accordion',
+      'variables' => array('links' => array(), 'menu_key' => 1),
+    ),
+    'om_maximenu_accordion_links' => array(
+      'template' => 'tpl/om-maximenu-accordion-links',
+      'variables' => array('content' => array(), 'maximenu_name' => NULL, 'key' => 0),
+    ),   
+    'om_maximenu_accordion_content' => array(
+      'template' => 'tpl/om-maximenu-accordion-content',
+      'variables' => array('content' => array(), 'maximenu_name' => NULL, 'key' => 0),
+    ),
+    'om_maximenu_roundabout' => array(
+      'template' => 'tpl/om-maximenu-roundabout',
+      'variables' => array('links' => array(), 'menu_key' => 1),
+    ),
+    'om_maximenu_roundabout_links' => array(
+      'template' => 'tpl/om-maximenu-roundabout-links',
+      'variables' => array('content' => array(), 'maximenu_name' => NULL, 'key' => 0, 'code' => 0, 'count' => 0, 'total' => 1),
+    ), 
+    'om_maximenu_roundabout_content' => array(
+      'template' => 'tpl/om-maximenu-roundabout-content',
+      'variables' => array('content' => array(), 'maximenu_name' => NULL, 'key' => 0),
+    ),
+  );
+}
+
+

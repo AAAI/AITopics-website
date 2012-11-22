@@ -1,0 +1,4 @@
+name = Item counts
+description = Count number of items for topic-panel pairs.
+core = 7.x
+package = AITopics

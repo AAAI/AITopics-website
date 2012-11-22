@@ -1,0 +1,236 @@
+<?php
+
+/**
+ * @file
+ * (Un)installation functions for Views RSS: iTunes Elements module.
+ */
+
+/**
+ * Required minimum Views RSS module build.
+ */
+define('VIEWS_RSS_ITUNES_REQUIRED_BUILD', '7.x-2.x-dev-20120215');
+
+/**
+ * Implements hook_requirements().
+ */
+function views_rss_itunes_requirements($phase) {
+  $requirements = array();
+  if (!defined('VIEWS_RSS_BUILD') || array_pop(explode('-', VIEWS_RSS_BUILD)) < array_pop(explode('-', VIEWS_RSS_ITUNES_REQUIRED_BUILD))) {
+    $t = get_t();
+    $requirements['views_rss_itunes'] = array(
+      'title' => $t('Views RSS: iTunes Elements'),
+      'description' => $t('Your current build of <a href="@views_rss_url">Views RSS</a> module (!views_rss_build) is too old for this version of <em>Views RSS: iTunes Elements</em> module to work properly. Minimum version required is <strong>!views_rss_required</strong>. Please upgrade.', array(
+        '@views_rss_url' => url('http://drupal.org/project/views_rss'),
+        '!views_rss_build' => defined('VIEWS_RSS_BUILD') ? VIEWS_RSS_BUILD : $t('undefined'),
+        '!views_rss_required' => VIEWS_RSS_ITUNES_REQUIRED_BUILD,
+      )),
+      'severity' => REQUIREMENT_ERROR,
+      'value' => NULL,
+    );
+  }
+  return $requirements;
+}
+
+/**
+ * Implements hook_install().
+ */
+function views_rss_itunes_install() {
+
+  // Make sure that "iTunes Category" vocabulary does not exist
+  // (it could still be there from previous module installations).
+  $exists = FALSE;
+  $vocabularies = taxonomy_get_vocabularies();
+  foreach ($vocabularies as $vocabulary) {
+    if ($vocabulary->machine_name == 'views_rss_itunes_category') {
+      variable_set('views_rss_itunes_category_vid', $vocabulary->vid);
+      $exists = TRUE;
+    }
+  }
+  if ($exists === FALSE) {
+
+    // Create "iTunes Category" vocabulary.
+    $vocabulary = (object) array(
+      'name' => 'iTunes Category',
+      'machine_name' => 'views_rss_itunes_category',
+      'module' => 'views_rss_itunes',
+    );
+    $ret = taxonomy_vocabulary_save($vocabulary);
+    variable_set('views_rss_itunes_category_vid', $vocabulary->vid);
+
+    // Create main iTunes categories as first-level terms.
+    $first_level_terms = array(
+      'arts' => array(
+        'name' => 'Arts',
+        'vid' => $vocabulary->vid,
+      ),
+      'business' => array(
+        'name' => 'Business',
+        'vid' => $vocabulary->vid,
+      ),
+      'comedy' => array(
+        'name' => 'Comedy',
+        'vid' => $vocabulary->vid,
+      ),
+      'education' => array(
+        'name' => 'Education',
+        'vid' => $vocabulary->vid,
+      ),
+      'games_and_hobbies' => array(
+        'name' => 'Games & Hobbies',
+        'vid' => $vocabulary->vid,
+      ),
+      'government_and_organizations' => array(
+        'name' => 'Government & Organizations',
+        'vid' => $vocabulary->vid,
+      ),
+      'health' => array(
+        'name' => 'Health',
+        'vid' => $vocabulary->vid,
+      ),
+      'kids_and_family' => array(
+        'name' => 'Kids & Family',
+        'vid' => $vocabulary->vid,
+      ),
+      'music' => array(
+        'name' => 'Music',
+        'vid' => $vocabulary->vid,
+      ),
+      'news_and_politics' => array(
+        'name' => 'News & Politics',
+        'vid' => $vocabulary->vid,
+      ),
+      'religion_and_spirituality' => array(
+        'name' => 'Religion & Spirituality',
+        'vid' => $vocabulary->vid,
+      ),
+      'science_and_medicine' => array(
+        'name' => 'Science & Medicine',
+        'vid' => $vocabulary->vid,
+      ),
+      'society_and_culture' => array(
+        'name' => 'Society & Culture',
+        'vid' => $vocabulary->vid,
+      ),
+      'sports_and_recreation' => array(
+        'name' => 'Sports & Recreation',
+        'vid' => $vocabulary->vid,
+      ),
+      'technology' => array(
+        'name' => 'Technology',
+        'vid' => $vocabulary->vid,
+      ),
+      'tv_and_film' => array(
+        'name' => 'TV & Film',
+        'vid' => $vocabulary->vid,
+      ),
+    );
+    foreach ($first_level_terms as $key => $term_data) {
+      $term = (object) $term_data;
+      $ret = taxonomy_term_save($term);
+      $first_level_terms[$key] = (array) $term;
+    }
+
+    // Create iTunes subcategories as second-level terms.
+    $second_level_terms = array(
+      'arts' => array(
+        array('name' => 'Design'),
+        array('name' => 'Fashion & Beauty'),
+        array('name' => 'Food'),
+        array('name' => 'Literature'),
+        array('name' => 'Performing Arts'),
+        array('name' => 'Visual Arts'),
+      ),
+      'business' => array(
+        array('name' => 'Business News'),
+        array('name' => 'Careers'),
+        array('name' => 'Investing'),
+        array('name' => 'Management & Marketing'),
+        array('name' => 'Shopping'),
+      ),
+      'education' => array(
+        array('name' => 'Education'),
+        array('name' => 'Education Technology'),
+        array('name' => 'Higher Education'),
+        array('name' => 'K-12'),
+        array('name' => 'Language Courses'),
+        array('name' => 'Training'),
+      ),
+      'games_and_hobbies' => array(
+        array('name' => 'Automotive'),
+        array('name' => 'Aviation'),
+        array('name' => 'Hobbies'),
+        array('name' => 'Other Games'),
+        array('name' => 'Video Games'),
+      ),
+      'government_and_organizations' => array(
+        array('name' => 'Local'),
+        array('name' => 'National'),
+        array('name' => 'Non-Profit'),
+        array('name' => 'Regional'),
+      ),
+      'health' => array(
+        array('name' => 'Alternative Health'),
+        array('name' => 'Fitness & Nutrition'),
+        array('name' => 'Self-Help'),
+        array('name' => 'Sexuality'),
+      ),
+      'religion_and_spirituality' => array(
+        array('name' => 'Buddhism'),
+        array('name' => 'Christianity'),
+        array('name' => 'Hinduism'),
+        array('name' => 'Islam'),
+        array('name' => 'Judaism'),
+        array('name' => 'Other'),
+        array('name' => 'Spirituality'),
+      ),
+      'science_and_medicine' => array(
+        array('name' => 'Medicine'),
+        array('name' => 'Natural Sciences'),
+        array('name' => 'Social Sciences'),
+      ),
+      'society_and_culture' => array(
+        array('name' => 'History'),
+        array('name' => 'Personal Journals'),
+        array('name' => 'Philosophy'),
+        array('name' => 'Places & Travel'),
+      ),
+      'sports_and_recreation' => array(
+        array('name' => 'Amateur'),
+        array('name' => 'College & High School'),
+        array('name' => 'Outdoor'),
+        array('name' => 'Professional'),
+      ),
+      'technology' => array(
+        array('name' => 'Gadgets'),
+        array('name' => 'Tech News'),
+        array('name' => 'Podcasting'),
+        array('name' => 'Software How-To'),
+      ),
+    );
+    foreach ($second_level_terms as $key1 => $terms) {
+      foreach ($terms as $key2 => $term_data) {
+        $term_data['parent'] = $first_level_terms[$key1]['tid'];
+        $term_data['vid'] = $vocabulary->vid;
+        $term = (object) $term_data;
+        $ret = taxonomy_term_save($term);
+        $second_level_terms[$key1][$key2] = (array) $term;
+      }
+    }
+  }
+
+  // Clear Views cache to force-rebuild namespaces and feed elements.
+  cache_clear_all('views_rss:', 'cache_views', TRUE);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function views_rss_itunes_uninstall() {
+  if (db_table_exists('cache_views')) {
+    cache_clear_all('views_rss:', 'cache_views', TRUE);
+  }
+  variable_del('views_rss_itunes_category_vid');
+  drupal_set_message(t('Please note that taxonomy vocabulary "iTunes Category" has not been deleted, as it could still be used by site\'s content. If you don\'t need it anymore, please <a href="!taxonomy_url">delete it manually</a>.', array(
+    '!taxonomy_url' => url('admin/structure/taxonomy/views_rss_itunes_category/edit'),
+  )));
+}

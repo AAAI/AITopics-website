@@ -1,0 +1,12 @@
+name = Workflow UI
+description = "Provides administrative UI for workflow."
+package = Workflow
+dependencies[] = workflow
+core = 7.x
+configure = admin/config/workflow/workflow
+; Information added by drupal.org packaging script on 2012-01-05
+version = "7.x-1.0"
+core = "7.x"
+project = "workflow"
+datestamp = "1325791244"
+

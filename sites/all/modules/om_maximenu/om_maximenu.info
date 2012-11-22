@@ -1,0 +1,19 @@
+name = "OM Maximenu"
+package = OM
+description = "OM Maximenu, add any block inside your menus"
+core = "7.x"
+files[] = om_maximenu.install
+files[] = om_maximenu.module
+files[] = inc/om_maximenu.admin.inc
+files[] = inc/om_maximenu.utils.inc
+scripts[] = js/om_maximenu.js
+stylesheets[all][] = css/om_maximenu.css
+configure = admin/structure/om-maximenu
+
+
+; Information added by drupal.org packaging script on 2012-01-08
+version = "7.x-1.43"
+core = "7.x"
+project = "om_maximenu"
+datestamp = "1325990154"
+

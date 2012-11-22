@@ -1,0 +1,314 @@
+<?php
+
+/**
+ * @file
+ * Allows users to select multiple items in an easier way than the normal node-reference widget.
+ */
+
+
+/**
+ * Implements hook_help().
+ */
+function multiselect_help($path, $arg) {
+  $output = '';
+  switch ($path) {
+    case 'admin/help#multiselect':
+      $output = '<p>' . t('Provides a CCK and Form API widget for editing fields that allows users to select from a list of options in a left box and have them visually moved into the right box when options are chosen.') . '</p>';
+      $output .= '<h2>' . t('Methods of Implementing a Multiselect Widget') . '</h2>';
+      $output .= '<h3>' . t('Method 1: Using CCK') . '</h3>';
+      $output .= '<p>' . t('When creating a new content field, select "Multiselect" as your widget type. You can use Multiselect on fields of type "list", "list_text", "list_number", "node_reference", "taxonomy_term_reference", and "user_reference".') . '</p>';
+      $output .= '<h3>' . t('Method 2: Coding Your Own Module') . '</h3>';
+      $output .= '<p>' . t('If you\'re developing a custom module and wish to use the Multiselect widget in place of a traditional "select" widget, you may use the Drupal 7 Form API. Included with the module is an example module called "multiselect_fapi_example" that creates a simple form on a page that stores the selected options in the Drupal "variables" table. The page is made available at the path: /multiselect_fapi_example.') . '</p>';
+      break;
+  }
+  return $output;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function multiselect_form_alter(&$form, &$form_state, $form_id) {
+  // Provide additional help for the field settings form.
+  switch ($form_id) {
+    case 'field_ui_field_edit_form':
+      if (isset($form['instance']['widget'])) {
+        $widget_type = $form['instance']['widget']['type']['#value'];
+        $field_type = $form['#field']['type'];
+        $label = $form['instance']['label']['#default_value'];
+
+        if (in_array($widget_type, array('multiselect'))) {
+          if (in_array($field_type, array('list', 'list_number', 'list_text', 'taxonomy_term_reference'))) {
+            // CCK user_reference and node_reference fields don't need allowed values list.
+            // For other field types, if no 'allowed values' were set yet, add a reminder message.
+            if (empty($form['field']['settings']['allowed_values']['#default_value'])) {
+              drupal_set_message(t("You need to specify the 'allowed values' for this field."), 'warning');
+            }
+          }
+        }
+      }
+      break;
+  }
+}
+
+/**
+ * Implement hook_field_widget_info().
+ */
+function multiselect_field_widget_info() {
+  return array(
+    'multiselect' => array(
+      'label' => t('Multiselect'),
+      'field types' => array('list', 'list_text', 'list_number', 'node_reference', 'taxonomy_term_reference', 'user_reference'),
+      'behaviors' => array(
+        'multiple values' => FIELD_BEHAVIOR_CUSTOM,
+        'default value' => FIELD_BEHAVIOR_CUSTOM,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_form().
+ * Build the form widget using Form API (as much as possible).
+ */
+function multiselect_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  /* START copy from options.module */
+  // Abstract over the actual field columns, to allow different field types to
+  // reuse those widgets.
+  $value_key = key($field['columns']);
+
+  $type = str_replace('options_', '', $instance['widget']['type']);
+  //$multiple = $field['cardinality'] > 1 || $field['cardinality'] == FIELD_CARDINALITY_UNLIMITED;
+  $multiple = $field['cardinality'];
+  $required = $element['#required'];
+  $has_value = isset($items[0][$value_key]);
+  $properties = _options_properties($type, $multiple, $required, $has_value);
+
+  // Prepare the list of options.
+  $options = _options_get_options($field, $instance, $properties, NULL, NULL);
+
+  // Put current field values in shape.
+  $default_value = _options_storage_to_form($items, $options, $value_key, $properties);
+  /* END copy from options.module */
+
+  $widget = _multiselect_build_widget_code($options, $items, $element, $required);
+
+  // Build the basic select box using Form API.
+  $element += array(
+    '#type' => 'select',
+    '#title' => $element['#title'],
+    '#description' => $element['#description'],
+    '#required' => $required,
+    '#multiple' => $multiple,
+    '#options' => $options,
+    //'#options' => $selected_options,
+    '#size' => 10,
+    '#prefix' => $widget['prefix_pre'] . $widget['prefix_options'] . $widget['prefix_post'],
+    '#suffix' => "\n</div>\n",
+    '#attributes' => array('class' => array($widget['selfield'], 'multiselect_sel'), 'id' => array($element['#field_name'])),
+    '#default_value' => $default_value,
+    '#value_key' => $value_key,
+    '#element_validate' => array('options_field_widget_validate'),
+    '#properties' => $properties,
+  );
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_error().
+ */
+function multiselect_field_widget_error($element, $error) {
+  switch ($error['error']) {
+    case 'field_cardinality':
+      form_error($element, $error['message']);
+      break;
+  }
+}
+
+/**
+ * Copied from D6 CCK content module. Not sure where this went in D7.
+ * Filter out HTML from allowed values array while leaving entities unencoded.
+ */
+function _multiselect_allowed_values_filter_html(&$options) {
+  foreach ($options as $key => $opt) {
+    if (is_array($opt)) {
+      _multiselect_allowed_values_filter_html($options[$key]);
+    }
+    else {
+      $options[$key] = html_entity_decode(strip_tags($opt), ENT_QUOTES);
+    }
+  }
+}
+
+function _multiselect_html_for_box_options($options) {
+  $boxhtml = '';
+  foreach ($options as $value => $name) {
+    $boxhtml .= "<option value=\"" . $value . "\">" . $name . "</option>\n";
+  }
+  return $boxhtml;
+}
+
+/**
+ * Build the widget HTML code.
+ * @param $options = array of options available for use in the widget
+ * @param $items = array of previously selected options (or default values in FAPI calls)
+ * @param $element = the form element being created
+ * return $widget = an array of html items and values for use in the final presentation of widget.
+ */
+function _multiselect_build_widget_code($options, $items, $element, $required = FALSE) {
+  // Insert Javascript and CSS for this widget.
+  $path = drupal_get_path('module', 'multiselect');
+  drupal_add_js($path . '/multiselect.js');
+  drupal_add_css($path . '/multiselect.css');
+
+  // For this specific widget, HTML should be filtered out and entities left unencoded.
+  // See content_allowed_values / content_filter_xss / filter_xss.
+  _multiselect_allowed_values_filter_html($options);
+
+  // Create some arrays for use later in the function.
+  $selected_options = array();
+  $unselected_options = array();
+  // Add selected items to the array first
+  if (is_array($items)) {
+    foreach ($items as $key => $value) {
+      if (is_array($value) && array_key_exists('value', $value)) { // With CCK, it's an array.
+        $selected_options[$value['value']] = $value['value'];
+      }
+      elseif (is_array($value) && array_key_exists('tid', $value)) { // With CCK, it's an array. Taxonomy
+        $selected_options[$value['tid']] = $value['tid'];
+      }
+      elseif (is_array($value) && array_key_exists('nid', $value)) { // With CCK, it's an array. Node ref
+        $selected_options[$value['nid']] = $value['nid'];
+      }
+      elseif (is_array($value) && array_key_exists('uid', $value)) { // With CCK, it's an array. User ref
+        $selected_options[$value['uid']] = $value['uid'];
+      }
+      elseif (array_key_exists($value, $options)) { // With FAPI, it's not.
+        $selected_options[$value] = $options[$value];
+      }
+    }
+  }
+  else { // There's only one selected option.
+    if (array_key_exists($items, $options)) {
+      $selected_options[$items] = $options[$items];
+    }
+  }
+  // Add the remaining options to the arrays
+  foreach ($options as $key => $value) {
+    if (!isset($selected_options[$key])) {
+      $unselected_options[$key] = $value;
+      //$selected_options[$key] = $value;
+    }
+  }
+
+  // Set up useful variables.
+  $selfield = $element['#field_name'] . "_sel";
+  $unselfield = $element['#field_name'] . "_unsel";
+
+  // Call methods to create prefix. (ie the non-selected table, etc)
+  $prefix_pre = '<div class="form-item multiselect"><label for="edit-title">' . t($element['#title']) . ':';
+  if ($required) {
+    $prefix_pre .= '<span class="form-required" title="' . t('This field is required.') . '"> * </span>';
+  }
+  $prefix_pre .= "</label>\n";
+  $prefix_pre .= "<div id=\"multiselect_labels" . "_" . $element['#field_name'] . "\" class=\"multiselect_labels\"><div id=\"label_unselected" . "_" . $element['#field_name'] . "\" class=\"label_unselected\">" . t('Available Options') . ":</div>\n";
+  $prefix_pre .= "<div id=\"label_selected" . "_" . $element['#field_name'] . "\" class=\"label_selected\">" . t('Selected Options') . ":</div>\n</div>\n";
+  $prefix_pre .= "<div id=\"multiselect_available" . "_" . $element['#field_name'] . "\" class=\"multiselect_available\">";
+  if (array_key_exists('#size', $element)) {
+    $size = $element['#size']; // Modules can pass in the size of the select boxes.
+  }
+  else {
+    $size = '10'; // Default size.
+  }
+  $prefix_pre .= "<select name=\"" . $unselfield . "\" multiple=\"multiple\" class=\"form-multiselect " . $unselfield . " multiselect_unsel\" id=\"" . $element['#field_name'] . "\" size=\"" . $size . "\">\n";
+  $prefix_options = _multiselect_html_for_box_options($unselected_options);
+  $prefix_post = "</select>\n</div>\n";
+  $prefix_post .= "<ul id=\"multiselect_btns" . "_" . $element['#field_name'] . "\" class=\"multiselect_btns\">
+<li class=\"multiselect_add\" id=\"" . $element['#field_name'] . "\"><a href=\"javascript:;\">Add</a></li>
+<li class=\"multiselect_remove\" id=\"" . $element['#field_name'] . "\"><a href=\"javascript:;\">Remove</a></li>
+</ul>";
+
+  $widget['selected_options'] = $selected_options;
+  $widget['unselected_options'] = $unselected_options;
+  $widget['selfield'] = $selfield;
+  $widget['unselfield'] = $unselfield;
+  $widget['prefix_pre'] = $prefix_pre;
+  $widget['prefix_options'] = $prefix_options;
+  $widget['prefix_post'] = $prefix_post;
+
+  return $widget;
+}
+
+// ! FAPI Section
+/**
+ * FAPI section. Add as a new FAPI element. TODO!!!Looking at form.inc and http://drupal.org/node/169815
+ */
+
+/**
+ * Implements hook_element_info().
+ */
+function multiselect_element_info() {
+  $type['multiselect'] = array(
+    '#input' => TRUE,
+    '#multiple' => TRUE,
+    '#process' => array('form_process_select', 'ajax_process_form'),
+    '#theme' => 'multiselect',
+    '#theme_wrappers' => array('form_element'),
+  );
+  return $type;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function multiselect_theme() {
+  return array(
+    'multiselect' => array(
+      'arguments' => array('element' => NULL),
+      'render element' => 'element',
+    ),
+  );
+}
+
+/**
+ * Returns HTML for a select form element.
+ *
+ * It is possible to group options together; to do this, change the format of
+ * $options to an associative array in which the keys are group labels, and the
+ * values are associative arrays in the normal $options format.
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - element: An associative array containing the properties of the element.
+ *     Properties used: #title, #value, #options, #description, #extra,
+ *     #multiple, #required, #name, #attributes, #size.
+ *
+ * @ingroup themeable
+ */
+function theme_multiselect($variables) {
+  $element = $variables['element'];
+  element_set_attributes($element, array('id', 'name', 'size', 'multiple', 'default_value', 'required'));
+  _form_set_class($element, array('form-multiselect'));
+  $options = $element['#options']; // All available options as defined by the element
+  $items = $element['#default_value']; // All selected options are referred to as "items".
+  $element['#field_name'] = $element['#name']; // CCK calls the #name "#field_name", so let's duplicate that..
+  $required = $element['#required'];
+
+  $widget = _multiselect_build_widget_code($options, $items, $element, $required);
+
+  // Add a couple of things into the attributes.
+  $element['#attributes']['class'][] = $widget['selfield'];
+  $element['#attributes']['class'][] = "multiselect_sel";
+  $element['#attributes']['id'] = $element['#field_name'];
+
+  return $widget['prefix_pre'] . $widget['prefix_options'] . $widget['prefix_post'] . '<div class="form-item form-type-select"><select' . drupal_attributes($element['#attributes']) . '>' . _multiselect_html_for_box_options($widget['selected_options']) . '</select></div>' . "\n</div>\n";
+}
+
+/**
+ * Implementation of form_type_hook_value().
+ */
+function form_type_multiselect_value($element, $edit = FALSE) {
+  if (func_num_args() == 1) {
+    return $element['#default_value'];
+  }
+}

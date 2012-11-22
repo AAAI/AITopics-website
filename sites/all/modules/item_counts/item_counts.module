@@ -1,0 +1,112 @@
+<?php
+
+function item_counts_menu() {
+  $items['item-counts'] = array(
+    'page callback' => 'item_counts_page',
+    'access arguments' => array('access content'),
+    'title' => 'Item counts',
+    );
+  return $items;
+}
+
+function _item_counts_get_item_count($topic, $panel, $highlighted) {
+  $query = db_select('taxonomy_index', 't1');
+  $query->addTag('node_access');
+  $query->join('taxonomy_index', 't2', 't1.nid = t2.nid');
+  $query->join('node', 'n', 'n.nid = t1.nid');
+  $query->addExpression('COUNT(t1.nid)');
+  $query->condition('t1.tid', $topic->tid);
+  $query->condition('t2.tid', $panel->tid);
+  $query->condition('n.sticky', $highlighted);
+  
+  $count = 0;
+  $result = $query->execute();
+  foreach ($result as $row) {
+    $count = $row->expression;
+    break;
+  }
+  return $count;
+}
+
+function _item_counts_get_topic($topic) {
+  $query = db_select('taxonomy_index', 't1');
+  $query->join('node', 'n', 'n.nid = t1.nid');
+  $query->condition('t1.tid', $topic->tid);
+  $query->condition('n.type', 'page');
+  $query->addField('n', 'nid', 'nid');
+  $result = $query->execute();
+  foreach ($result as $row) {
+    return node_load($row->nid);
+  }
+}
+
+function _item_counts_get_row($topic, $good_starting_places, $general_readings) {
+  $topic_uri = entity_uri('taxonomy_term', taxonomy_term_load($topic->tid));
+
+  $topic_node = _item_counts_get_topic($topic);
+  
+  if($topic->depth == 0) {
+    $topic_link = "<strong>".l($topic->name, $topic_uri['path'])."</strong>";
+    if(!empty($topic_node->field_quality_control_issues)) {
+      $topic_link .= "<br/>";
+      foreach($topic_node->field_quality_control_issues['und'] as $issue) {
+        $topic_link .= "<i>".$issue['value']."</i><br/>";
+      }
+    }
+  } else {
+    $topic_link = "&nbsp; &nbsp;".l($topic->name, $topic_uri['path']);
+    if(!empty($topic_node->field_quality_control_issues)) {
+      $topic_link .= "<br/>";
+      foreach($topic_node->field_quality_control_issues['und'] as $issue) {
+        $topic_link .= "&nbsp; &nbsp;<i>".$issue['value']."</i><br/>";
+      }
+    }
+  }
+  
+  $count_good_highlighted = _item_counts_get_item_count($topic, $good_starting_places, 1);
+  $count_good_unhighlighted = _item_counts_get_item_count($topic, $good_starting_places, 0);
+  $count_general_highlighted = _item_counts_get_item_count($topic, $general_readings, 1);
+  $count_general_unhighlighted = _item_counts_get_item_count($topic, $general_readings, 0);
+  
+  return array(
+    $topic_link,
+    $count_good_highlighted, $count_good_unhighlighted,
+    $count_general_highlighted, $count_general_unhighlighted);
+}
+
+function item_counts_page() {
+  $topics_vid = taxonomy_vocabulary_machine_name_load("topics")->vid;
+  $topics_tree = taxonomy_get_tree($topics_vid);
+  usort($topics_tree, function($a, $b) {
+      return strcmp($a->name, $b->name);
+    });
+
+  $tmp = taxonomy_get_term_by_name("Good Starting Places", "link_categories");
+  reset($tmp);
+  $good_starting_places = $tmp[key($tmp)];
+  $tmp = taxonomy_get_term_by_name("General Readings", "link_categories");
+  reset($tmp);
+  $general_readings = $tmp[key($tmp)];
+
+  $table_rows = array();
+  foreach ($topics_tree as $topic) {
+    if($topic->depth == 0) {
+      $table_rows[]= _item_counts_get_row($topic, $good_starting_places, $general_readings);
+
+      foreach ($topics_tree as $subtopic) {
+        if($subtopic->parents[0] == $topic->tid) {
+          $table_rows[]= _item_counts_get_row($subtopic, $good_starting_places, $general_readings);
+        }
+      }
+    }
+  }
+
+  return theme('table', array(
+      'header' => array(
+        'Topic',
+        'Good Starting Places<br/>Highlighted count',
+        'Good Starting Places<br/>Unhighlighted count',
+        'General Readings<br/>Highlighted count',
+        'General Readings<br/>Unhighlighted count'),
+      'rows' => $table_rows));
+}

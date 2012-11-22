@@ -1,0 +1,15 @@
+<?php
+
+function publication_search_apachesolr_field_mappings() {
+  $mappings = array(
+    'per-field' => array(
+      'field_authors' => array(
+        'indexing_callback' => 'apachesolr_fields_default_indexing_callback',
+      ),
+    ),
+  );
+
+  return $mappings;
+}
+
+

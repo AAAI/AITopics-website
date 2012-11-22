@@ -1,0 +1,18 @@
+name = Webform Default Fields
+description = Specify default webform fields for each content type and new nodes of this content type will be created with this webform fields.
+package = Webform
+
+dependencies[] = webform
+
+files[] = tests/webform_default_fields.test
+testing_api = 2.x
+
+core = 7.x
+version = "7.x-1.0-dev"
+
+; Information added by drupal.org packaging script on 2011-09-28
+version = "7.x-1.3"
+core = "7.x"
+project = "webform_default_fields"
+datestamp = "1317220608"
+

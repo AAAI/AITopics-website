@@ -1,0 +1,13 @@
+diff --git a/expire.module b/expire.module
+index 3026c3b..8423881 100644
+--- a/expire.module
++++ b/expire.module
+@@ -345,7 +345,7 @@ function expire_get_menu_structure($menu, $found, $needle, $first, &$found_globa
+         }
+       }
+       expire_get_menu_structure($sub_menu, $needle, $found, FALSE, $found_global, $menu_out);
+-      $structure[$item['link']['link_path']][] = $sub;
++      $structure[$item['link']['link_path']][] = $sub_menu;
+       if ($item['link']['page_callback'] != '' && $found_global) {
+         // Get Parent of kid
+         $menu_out[] = $item['link']['link_path'];

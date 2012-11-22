@@ -1,0 +1,308 @@
+From a66a40b75abb9c435b1d72702db3ae6a2be01243 Mon Sep 17 00:00:00 2001
+From: Jesse Hofmann-Smith <jesse@opensourcery.com>
+Date: Fri, 18 May 2012 16:41:52 -0700
+Subject: [PATCH] Issue #1432092 Added caption filter tinymce button/popup
+ window
+
+---
+ caption_filter.module                    |   84 ++++++++++++++++++++++++++++++
+ js/caption-filter-tinymce-button.js      |   79 ++++++++++++++++++++++++++++
+ js/caption-filter-tinymce-button.tpl.php |   20 +++++++
+ js/caption-filter-tinymce.js             |   38 +++++++++++++-
+ js/caption-filter.gif                    |  Bin 0 -> 122 bytes
+ js/langs/en.js                           |    3 +
+ 6 files changed, 223 insertions(+), 1 deletions(-)
+ create mode 100644 js/caption-filter-tinymce-button.js
+ create mode 100644 js/caption-filter-tinymce-button.tpl.php
+ create mode 100644 js/caption-filter.gif
+ create mode 100644 js/langs/en.js
+
+diff --git a/caption_filter.module b/caption_filter.module
+index 2ca7d0d..4d63d9d 100644
+--- a/caption_filter.module
++++ b/caption_filter.module
+@@ -304,3 +304,87 @@ function caption_filter_field_widget_caption_validate($element, &$form_state) {
+     form_error($element, t('The <em>Title</em> field must be enabled to use it as a caption.'));
+   }
+ }
++
++/**
++ * Implements hook_menu().
++ */
++function caption_filter_menu() {
++  // Dialog callback for the TinyMCE button.
++  $items['caption_filter/tinymce'] = array(
++    'title' => 'Image caption',
++    'page callback' => 'caption_filter_tinymce_button',
++    'access arguments' => array('access content'),
++    'type' => MENU_CALLBACK,
++  );
++  return $items;
++}
++
++/**
++ * Menu page callback; the TinyMCE button dialog.
++ */
++function caption_filter_tinymce_button() {
++  // Suppress the admin menu in the popup.
++  module_invoke('admin_menu', 'suppress');
++  if (module_exists('wysiwyg') && $editor = wysiwyg_get_editor('tinymce')) {
++    drupal_add_js($editor['library path'] . '/tiny_mce_popup.js');
++  }
++  drupal_add_js(drupal_get_path('module', 'caption_filter') . '/js/caption-filter-tinymce-button.js');
++  drupal_add_js(drupal_get_path('module', 'caption_filter') . '/js/caption-filter.js');
++
++  $form = drupal_get_form('caption_filter_tinymce_button_form');
++  $output = theme('caption_filter_tinymce_button', array('form' => $form));
++
++  // Write directly to the window and quit rather than returning so the modal
++  // doesn't get themed as a Drupal page.
++  echo $output;
++  exit;
++}
++
++/**
++ * Form builder; the TinyMCE button dialog.
++ */
++function caption_filter_tinymce_button_form() {
++  $form['#action'] = '#';
++  $form['#attributes'] = array('onsubmit' => 'CaptionFilterButton.insert(); return false;');
++  $form['caption'] = array(
++    '#title' => t('Caption'),
++    '#type' => 'textfield',
++    '#default_value' => '',
++    '#attributes' => array('class' => array('field', 'mceFocus')),
++  );
++  $form['align'] = array(
++    '#title' => t('Float'),
++    '#type' => 'select',
++    '#options' => array(
++      0 => '{#not_set}',
++      'left' => t('Left'),
++      'right' => t('Right'),
++    ),
++    '#default_value' => 0,
++    '#attributes' => array('class' => array('field')),
++  );
++  $form['actions'] = array(
++    '#type' => 'container',
++    '#attributes' => array('class' => array('mceActionPanel')),
++  );
++  $form['actions']['insert'] = array(
++    '#markup' => '<input type="button" id="insert" name="insert" value="{#insert}" onclick="CaptionFilterButton.insert();" />',
++  );
++  $form['actions']['cancel'] = array(
++    '#markup' => '<input type="button" id="cancel" name="cancel" value="{#cancel}" onclick="tinyMCEPopup.close();" />',
++  );
++  return $form;
++}
++
++/**
++ * Implements hook_theme().
++ */
++function caption_filter_theme($existing, $type, $theme, $path) {
++  return array(
++    'caption_filter_tinymce_button' => array(
++      'variables' => array('form' => array()),
++      'path' => drupal_get_path('module', 'caption_filter') . '/js',
++      'template' => 'caption-filter-tinymce-button',
++    ),
++  );
++}
+diff --git a/js/caption-filter-tinymce-button.js b/js/caption-filter-tinymce-button.js
+new file mode 100644
+index 0000000..adee9b0
+--- /dev/null
++++ b/js/caption-filter-tinymce-button.js
+@@ -0,0 +1,79 @@
++/**
++ * @file
++ * Functionality for implementing the caption filter button in tinyMCE.
++ */
++var CaptionFilterButton = {
++  init : function() {
++    var ed = tinyMCEPopup.editor;
++    var node = ed.selection.getNode();
++    var p = ed.dom.getParents(node, 'DIV');
++    var f = document.forms[0];
++
++    // Only pre-populate values if we're inside an existing caption.
++    if (p[0] && ed.dom.hasClass(p[0], 'caption-inner')
++      && p[1] && ed.dom.hasClass(p[1], 'caption')) {
++      // Parse the entire caption block to get the original [caption] tag.
++      var tag = Drupal.captionFilter.toTag(p[1].outerHTML);
++
++      // Extract the caption.
++      var caption = tag.match(/^\[caption.*\]\<img.*\><p class="caption-text">(.*)<\/p>\[\/caption\]$/);
++      if (caption[1]) {
++        f.caption.value = caption[1];
++      }
++
++      // Extract the alignment.
++      var align = tag.match(/^\[caption align=\"(.*)\"\].*\[\/caption\]$/);
++      if (align[1]) {
++        f.align.value = align[1];
++      }
++    }
++  },
++
++  insert : function() {
++    var ed = tinyMCEPopup.editor;
++    var node = ed.selection.getNode();
++    var p = ed.dom.getParents(node, 'DIV');
++    var align = document.forms[0].align.value;
++    var caption = document.forms[0].caption.value;
++    var image;
++    var tag;
++    var replace = false;
++    // If we're inside an existing caption...
++    if (p[0] && ed.dom.hasClass(p[0], 'caption-inner')
++      && p[1] && ed.dom.hasClass(p[1], 'caption')) {
++      replace = true;
++      // Recall the original [caption] tag.
++      tag = Drupal.captionFilter.toTag(p[1].outerHTML);
++      // Select the outer DIV so we can replace the entire thing.
++      ed.selection.select(p[1]);
++        // If we're in an existing caption, parse it from the [caption] tag.
++      var parse = tag.match(/^\[caption.*\](\<img.*\>)<p class="caption-text">(.*)<\/p>\[\/caption\]$/);
++        if (parse[1]) {
++          image = parse[1];
++        }
++    }
++    // Get the image HTML.
++    else if (node.nodeName === 'IMG') {
++      // If we're on the image, just use it.
++      image = node.outerHTML;
++    }
++    var newtag = '[caption';
++    if (align == 'right' || align == 'left') {
++      newtag += ' align="' + align + '"';
++    }
++    newtag += ']' + image + '<p class="caption-text">' + caption + '</p>' + '[/caption]';
++
++    // Create the new [caption] tag.
++    
++    if (replace === true){
++    	ed.dom.remove(p[1], false);
++        ed.execCommand('mceReplaceContent', false, newtag);
++ 
++    } else {
++        ed.execCommand('mceReplaceContent', false, newtag);
++    }
++    tinyMCEPopup.close();
++  }
++};
++
++tinyMCEPopup.onInit.add(CaptionFilterButton.init, CaptionFilterButton);
+diff --git a/js/caption-filter-tinymce-button.tpl.php b/js/caption-filter-tinymce-button.tpl.php
+new file mode 100644
+index 0000000..7241414
+--- /dev/null
++++ b/js/caption-filter-tinymce-button.tpl.php
+@@ -0,0 +1,20 @@
++<?php
++/**
++ * @file
++ * Template for the TinyMCE button dialog.
++ *
++ * Available variables:
++ * - $form: the form array.
++ */
++?>
++<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
++  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
++<html xmlns="http://www.w3.org/1999/xhtml">
++<head>
++<title><?php print drupal_get_title(); ?></title>
++<?php print drupal_get_js(); ?>
++</head>
++<body>
++  <?php print drupal_render($form); ?>
++</body>
++</html>
+diff --git a/js/caption-filter-tinymce.js b/js/caption-filter-tinymce.js
+index 8e26f7b..d5f6f5c 100644
+--- a/js/caption-filter-tinymce.js
++++ b/js/caption-filter-tinymce.js
+@@ -9,12 +9,48 @@
+  * @see http://core.svn.wordpress.org/branches/3.2/wp-admin/js/editor.dev.js
+  */
+ (function() {
++  // Load the plugin-specific language pack.
++  tinymce.PluginManager.requireLangPack('captionfilter');
++
+   tinymce.create('tinymce.plugins.CaptionFilter', {
+ 
+     init : function(ed, url) {
+       var t = this;
+       t.url = url;
+ 
++      // Register the command.
++      ed.addCommand('CaptionFilter', function() {
++        ed.windowManager.open({
++          file : Drupal.settings.basePath + 'index.php?q=caption_filter/tinymce',
++          width : 400 + parseInt(ed.getLang('captionfilter.delta_width', 0)),
++          height : 200 + parseInt(ed.getLang('captionfilter.delta_height', 0)),
++          inline : 1
++        }, {
++          plugin_url : url
++        });
++      });
++
++      // Register the button.
++      ed.addButton('captionfilter', {
++        title : 'captionfilter.desc',
++        cmd : 'CaptionFilter',
++        image : url + '/caption-filter.gif'
++      });
++
++      // Add a handler to activate/deactivate the button.
++      ed.onNodeChange.add(function(ed, command, node) {
++        var p = ed.dom.getParent(node, 'DIV');
++        var selection = ed.selection.getContent();
++
++        // Enable if an image is selected, or if inside an existing caption.
++        command.setDisabled('captionfilter',
++          !(node.nodeName === 'IMG' && selection) &&
++          !(p && ed.dom.hasClass(p, 'caption-inner'))
++        );
++        // Light up the button if inside an existing caption.
++        command.setActive('captionfilter', p && ed.dom.hasClass(p, 'caption-inner'));
++      });
++
+       function _do_filter(ed, o) {
+         o.content = Drupal.captionFilter.toHTML(o.content, 'tinymce');
+       };
+@@ -107,7 +143,7 @@
+                 align = cmd.substr(7).toLowerCase();
+                 wrapperClass = 'caption-' + align;
+                 ed.dom.addClass(captionWrapper, wrapperClass);
+-  
++
+                 if (align == 'center')
+                   ed.dom.addClass(captionWrapper, 'mceIEcenter');
+                 else
+diff --git a/js/caption-filter.gif b/js/caption-filter.gif
+new file mode 100644
+index 0000000000000000000000000000000000000000..9bcffe66b0a0907efebcc88618b487bb8ec8a63e
+GIT binary patch
+literal 122
+zcmZ?wbhEHb6k!lyIK;*P1Pu)h2M!!Ke*E~shu=Sa`t%<R6o0ZXaxt(o=zvs!)G{#J
+zSM0j;Z$qP}_+Eu5XN&V(Y;q3iQpqd}o~9?}3rv|TcItpm&mz_Trn5CXnr^lnzW($?
+V2=DwO%UFI*v0D+Ut<1<^4FLO}GKl~H
+
+literal 0
+HcmV?d00001
+
+diff --git a/js/langs/en.js b/js/langs/en.js
+new file mode 100644
+index 0000000..f686d2c
+--- /dev/null
++++ b/js/langs/en.js
+@@ -0,0 +1,3 @@
++tinyMCE.addI18n('en.captionfilter', {
++  desc : 'Add a caption to an image',
++});
+-- 
+1.7.5.4
+

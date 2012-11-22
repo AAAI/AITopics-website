@@ -1,0 +1,70 @@
+/* $Id$ */
+
+/**
+ * @file
+ * OM Maximenu Bubble Skin
+ *
+ * @author: Daniel Honrade http://drupal.org/user/351112
+ *
+ */
+ 
+/* OM Maximenu Content - bubble style - general */
+.om-maximenu-bubble .om-maximenu-arrow { position: absolute; background: url(images/bubble1.png) 0 0 no-repeat; }
+
+.om-maximenu-bubble .om-maximenu-top { height: 15px; position: relative; top: 0; background: url(images/bubble1.png) 0 -25px repeat-x; }
+.om-maximenu-bubble .om-maximenu-top-left { position: absolute; top: 0; left: -20px; height: 15px; width: 20px; background: url(images/bubble1.png) 0 -40px no-repeat; }
+.om-maximenu-bubble .om-maximenu-top-right { position: absolute; top: 0; right: -20px; height: 15px; width: 20px; background: url(images/bubble1.png) -20px -40px no-repeat; }
+
+.om-maximenu-bubble .om-maximenu-middle { background: none #fff; }
+.om-maximenu-bubble .om-maximenu-middle-left { background: url(images/bubble2.png) left top repeat-y; margin-left: -20px; }
+.om-maximenu-bubble .om-maximenu-middle-right { padding: 5px 20px; background: url(images/bubble3.png) right top repeat-y; margin-right: -20px; }
+
+.om-maximenu-bubble .om-maximenu-bottom { position: relative; height: 20px; background: url(images/bubble1.png) 0 -5px repeat-x; }
+.om-maximenu-bubble .om-maximenu-bottom-left { position: absolute; bottom: 0; left: -20px; height: 20px; width: 20px; background: url(images/bubble1.png) 0 -60px no-repeat; }
+.om-maximenu-bubble .om-maximenu-bottom-right { position: absolute; bottom: 0; right: -20px; height: 20px; width: 20px; background: url(images/bubble1.png) -20px -60px no-repeat; }
+
+.om-maximenu-bubble.om-maximenu-block .om-maximenu-content { top: 25px; padding: 14px 0 0;  }
+.om-maximenu-bubble.om-maximenu-block .om-maximenu-content .om-maximenu-arrow { left: 15px; width: 40px; height: 20px; background-position: 0 -80px; }
+
+/* OM Maximenu Content - bubble style - main menu */
+.om-maximenu-bubble.om-maximenu-main-menu .om-maximenu-content { top: 25px; padding: 14px 0 0;  }
+.om-maximenu-bubble.om-maximenu-main-menu .om-maximenu-content .om-maximenu-arrow { top: 0; left: 15px; position: absolute; width: 40px; height: 20px; background-position: 0 -80px; }
+
+/* OM Maximenu Content - bubble style - block - general */
+.om-maximenu-bubble.om-maximenu-block .om-maximenu-content { top: 25px; padding: 14px 0 0;  }
+.om-maximenu-bubble.om-maximenu-block .om-maximenu-content .om-maximenu-arrow { left: 15px; position: absolute; width: 40px; height: 20px; background-position: 0 -80px; }
+
+/* OM Maximenu Content - bubble style - block dropdown */
+.om-maximenu-bubble.om-maximenu-block.om-maximenu-block-down .om-maximenu-content .om-maximenu-arrow { top: 0; }
+
+/* OM Maximenu Content - bubble style - block dropup */
+.om-maximenu-bubble.om-maximenu-block.om-maximenu-block-up .om-maximenu-content .om-maximenu-arrow { bottom: -5px; background-position: 0 -100px; }
+
+/* OM Maximenu Content - bubble style - block dropright */
+.om-maximenu-bubble.om-maximenu-block.om-maximenu-block-right .om-maximenu-content .om-maximenu-arrow { top: 40px; left: -29px; width: 20px; height: 40px; background-position: 0 -120px ; }
+.om-maximenu-bubble.om-maximenu-block.om-maximenu-block-right .om-maximenu-content { padding: 0; margin-left: 20px; }
+
+/* OM Maximenu Content - bubble style - block dropleft */
+.om-maximenu-bubble.om-maximenu-block.om-maximenu-block-left .om-maximenu-content .om-maximenu-arrow { top: 40px; right: -29px; left: auto; width: 20px; height: 40px; background-position: -20px -120px; }
+.om-maximenu-bubble.om-maximenu-block.om-maximenu-block-left .om-maximenu-content { padding: 0; margin-right: 20px; }
+
+/* OM Maximenu Content - bubble style - float horizonal */
+.om-maximenu-bubble.om-maximenu-float.om-maximenu-row.om-maximenu-top .om-maximenu-content { top: 25px; padding: 14px 0 0;  }
+.om-maximenu-bubble.om-maximenu-float.om-maximenu-row.om-maximenu-top .om-maximenu-content .om-maximenu-arrow { top: 0; width: 40px; height: 20px; background-position: 0 -80px; }
+
+.om-maximenu-bubble.om-maximenu-float.om-maximenu-row.om-maximenu-bottom .om-maximenu-content { bottom: 25px; padding: 0 0 5px;  }
+.om-maximenu-bubble.om-maximenu-float.om-maximenu-row.om-maximenu-bottom .om-maximenu-content .om-maximenu-arrow { bottom: 0; width: 40px; height: 20px; background-position: 0 -100px; }
+
+.om-maximenu-bubble.om-maximenu-float.om-maximenu-middle .om-maximenu-content .om-maximenu-arrow { left: 10px; }
+.om-maximenu-bubble.om-maximenu-float.om-maximenu-left .om-maximenu-content .om-maximenu-arrow { left: 10px; }
+.om-maximenu-bubble.om-maximenu-float.om-maximenu-right .om-maximenu-content .om-maximenu-arrow { right: 10px; }
+
+/* OM Maximenu Content - bubble style - float column */
+.om-maximenu-bubble.om-maximenu-float.om-maximenu-column.om-maximenu-left .om-maximenu-content .om-maximenu-arrow { top: 40px; left: -29px; right: auto; width: 20px; height: 40px; background-position: 0 -120px ; }
+.om-maximenu-bubble.om-maximenu-float.om-maximenu-column.om-maximenu-left .om-maximenu-content { padding: 0; margin-left: 20px; }
+
+.om-maximenu-bubble.om-maximenu-float.om-maximenu-column.om-maximenu-right .om-maximenu-content .om-maximenu-arrow { top: 40px; right: -29px; left: auto; width: 20px; height: 40px; background-position: -20px -120px; }
+.om-maximenu-bubble.om-maximenu-float.om-maximenu-column.om-maximenu-right .om-maximenu-content { padding: 0; margin-right: 20px; }
+
+
+

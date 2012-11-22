@@ -1,0 +1,136 @@
+/**
+ * Footheme footheme.css
+ *
+ * Use this file to add your custom styles.
+ *
+ * You can change the name of this file, just
+ * remember to update the name in the info file
+ * as well.
+ */
+
+#header, #branding {
+    height: 100px;
+    max-height: 100px;
+}
+
+#branding, #header, #header .header-inner, #menu-bar, #primary-menu-bar {
+    background: #ffffff;
+}
+
+#main-content img {
+    float: right;
+    margin-left: 10px;
+    margin-bottom: 10px;
+}
+
+.block-content {
+    padding: 0;
+    padding-left: 10px;
+}
+
+#logo {
+    padding: 10px 0 0 25px;
+}
+
+#menu-bar {
+    line-height: 20px;
+    min-height: 20px;
+}
+
+a:hover, a:focus {
+    color: #5656c0;
+}
+
+.views-field-field-publication-date {
+    white-space: nowrap;
+}
+
+/* Typography */
+
+blockquote {
+    margin: 10px;
+}
+
+blockquote p {
+    margin-top: 0.4em;
+    margin-bottom: 0.8em;
+}
+
+.article .article-content,
+.comment .comment-content {
+    line-height: 1.8em;
+}
+
+/* Search */
+
+.ac_results li {
+    font-size: 0.917em;
+}
+
+.ac_over {
+    background-color: #000080 !important;
+}
+
+.ac_odd {
+    background: #dddddd;
+}
+
+.apachesolr_autocomplete.message {
+    color: #333333;
+}
+
+#search-form {
+    display: none;
+}
+
+ol.search-results {
+    margin-left: 0;
+}
+
+.search-info-user, .search-info-date {
+    display: none;
+}
+
+/* Small form tweaks */
+
+label {
+    display: inline;
+}
+
+.region-header .form-submit,
+.form-select {
+    font-size: 0.917em;
+    border-color: #dddddd;
+    color: inherit;
+}
+
+input.form-submit,
+input.form-text,
+.rc-4 .article-teaser,
+.rc-4 .comment,
+.rc-4 .block-inner {
+    -moz-border-radius: 0;
+    -webkit-border-radius: 0;
+    -khtml-border-radius: 0;
+    border-radius: 0;
+}
+
+.form-text:focus,
+.form-checkbox:focus,
+.form-radio:focus,
+.form-select:focus {
+    border: 1px solid #333333;
+    background: #dddddd;
+}
+
+.form-submit, .form-submit:focus, .form-submit:hover {
+    color: inherit;
+    border-color: #dddddd;
+    border-style: outset;
+    border-width: 2px;
+    background: #dddddd;
+}
+
+.views-exposed-form .views-exposed-widget .form-submit {
+    margin-top: 0.5em;
+}

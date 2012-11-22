@@ -1,0 +1,8 @@
+name = Ask question submit redirect
+description = Redirect to the topic page after a question is asked.
+package = AITopics
+core = 7.x
+version = 7.x-1.x
+
+
+

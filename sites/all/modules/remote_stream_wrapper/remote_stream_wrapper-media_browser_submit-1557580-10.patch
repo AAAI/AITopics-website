@@ -1,0 +1,23 @@
+diff --git a/remote_stream_wrapper.module b/remote_stream_wrapper.module
+index c671e5f..c02e599 100644
+--- a/remote_stream_wrapper.module
++++ b/remote_stream_wrapper.module
+@@ -292,17 +292,6 @@ function remote_stream_wrapper_file_add_form_submit($form, &$form_state) {
+   }
+   else {
+     $form_state['file'] = $file;
+-  }
+-
+-  if (drupal_valid_path('file/' . $file->fid . '/edit')) {
+-    $destination = array('destination' => 'admin/content/file');
+-    if (isset($_GET['destination'])) {
+-      $destination = drupal_get_destination();
+-      unset($_GET['destination']);
+-    }
+-    $form_state['redirect'] = array('file/' . $file->fid . '/edit', array('query' => $destination));
+-  }
+-  else {
+-    $form_state['redirect'] = 'admin/content/file';
++    $form_state['redirect'] = array('media/browser', array('query' => array('render' => 'media-popup', 'fid' => $file->fid)));
+   }
+ }

@@ -1,0 +1,19 @@
+name = Custom Search Taxonomy
+description = Adds taxonomy selectors to Custom Search.
+core = 7.x
+package = Custom Search
+
+dependencies[] = custom_search
+dependencies[] = taxonomy
+
+files[] = custom_search_taxonomy.admin.inc
+files[] = custom_search_taxonomy.module
+files[] = custom_search_taxonomy.install
+
+configure = admin/config/search/custom_search/taxonomy
+; Information added by drupal.org packaging script on 2012-06-02
+version = "7.x-1.10"
+core = "7.x"
+project = "custom_search"
+datestamp = "1338652580"
+
