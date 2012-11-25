@@ -13,6 +13,7 @@
     .grid-item-left {
         float: left;
         width: 48%;
+        clear: both;
     }
     
     .grid-item-right {
@@ -52,6 +53,7 @@
   .grid-item-right {
       float: none;
       width: 100%;
+      clear: both;
   }
 }
 
@@ -72,6 +74,7 @@
   .grid-item-right {
       float: none;
       width: 100%;
+      clear: both;
   }
 
   #menu-bar .menu-wrapper > ul > li {
@@ -122,6 +125,7 @@
   .grid-item-right {
       float: none;
       width: 100%;
+      clear: both;
   }
 }
 
@@ -836,3 +840,6 @@ table.cols-2 > tbody > tr > td {
     margin: 0.25em 0.75em;
 }
 
+div.grid-items {
+    clear: both;
+}

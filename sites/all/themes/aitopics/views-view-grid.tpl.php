@@ -13,13 +13,13 @@
   <h3><?php print $title; ?></h3>
 <?php endif; ?>
 
+<div class="grid-items">
 <?php foreach ($rows as $columns): ?>
-  <div style="clear: both">
-    <?php foreach ($columns as $counter => $item): ?>
-      <div class="grid-item-<?php if($counter % 2 == 0) { echo "left"; } else { echo "right"; } ?>">
-        <?php print $item; ?>
-      </div>
-    <?php endforeach; ?>
-  </div>
+  <?php foreach ($columns as $counter => $item): ?>
+    <div class="grid-item grid-item-<?php if($counter % 2 == 0) { echo "left"; } else { echo "right"; } ?>">
+    <?php print $item; ?>
+    </div>
+  <?php endforeach; ?>
 <?php endforeach; ?>
-<div style="clear: both;" />
+</div>
+<div style="clear:both" />

@@ -30,8 +30,8 @@ class views_plugin_pager_infinite_scroll extends views_plugin_pager_full {
         $items_selector = '.views-row';
         break;
       case 'grid':
-        $content_selector = 'div.view-content > table > tbody';
-        $items_selector = 'tr';
+        $content_selector = 'div.view-content > div.grid-items';
+        $items_selector = 'div.grid-item';
         break;
       case 'list':
        if (array_key_exists('wrapper_class', $style_options) && !empty($style_options['wrapper_class'])) {
