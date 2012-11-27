@@ -292,6 +292,8 @@
 
     <?php if(isset($service_links_rendered)) { echo $service_links_rendered; } ?>
 
+    <div style="clear: both;"/>
+
     <div class="topics-container">
     <?php if(isset($node)) { render_topics_subtopics($node); } ?>
     </div>
