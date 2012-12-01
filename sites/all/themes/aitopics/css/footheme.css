@@ -862,3 +862,7 @@ div.field-name-field-editors div.field-items div.field-item {
 div.field-name-field-editors div.field-items div.field-item {
     margin: 0 1em;
 }
+
+/* IE 5.5+ png fix */
+img, div { behavior: url(/sites/all/themes/aitopics/iepngfix.htc) }
+
