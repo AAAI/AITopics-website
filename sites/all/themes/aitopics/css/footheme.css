@@ -171,6 +171,10 @@ fieldset.vertical-tabs-pane > legend {
     margin-left: 0;
 }
 
+.block .article h2.article-title {
+    font-size: 1.45em;
+}
+
 .article .article-title {
     border: none;
 }
@@ -432,7 +436,7 @@ h2.title a {
 }
 
 h3 { 
-    font-size: 1.3em !important;
+    font-size: 1.2em !important;
     padding: 0 !important;
 }
 
