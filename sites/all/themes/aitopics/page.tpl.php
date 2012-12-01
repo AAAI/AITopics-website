@@ -78,7 +78,9 @@
             
             <header class="clearfix">
               <?php if(isset($node) && $item_type != 'Misc Page' && $item_type != 'Page'): ?>
-                  <div class="nodetype-name"><?php if($item_type == 'News') { echo "AI in the News"; } else { echo $item_type; } ?></div>
+                <div class="nodetype-name">
+                  <?php if($item_type == 'News') { echo "AI in the News"; } else { echo $item_type; } ?>
+                </div>
               <?php endif; ?>
               <?php if ($title): ?>
                   <?php if(isset($node) && !empty($node->field_original_link)): ?>

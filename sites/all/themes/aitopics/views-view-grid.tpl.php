@@ -22,4 +22,4 @@
   <?php endforeach; ?>
 <?php endforeach; ?>
 </div>
-<div style="clear:both" />
+<div style="clear:both"></div>

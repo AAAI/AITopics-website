@@ -100,7 +100,7 @@
 
 <div id="node-<?php print $node->nid; ?>" class="<?php print $classes; ?> clearfix"<?php print $attributes; ?>>
 
-    <div class="nodetype nodetype-<?php echo $item_type; ?>">
+  <div class="nodetype nodetype-<?php echo $item_type; ?>">
 
     <?php if($status == 0) { echo '<div class="messages warning">This item is unpublished</div>'; } ?>
 
@@ -155,7 +155,7 @@
 
 <div id="node-<?php print $node->nid; ?>" class="<?php print $classes; ?> clearfix"<?php print $attributes; ?>>
 
-    <div class="nodetype nodetype-<?php echo $item_type; ?>">
+  <div class="nodetype nodetype-<?php echo $item_type; ?>">
 
     <?php if($status == 0) { echo '<div class="messages warning">This item is unpublished</div>'; } ?>
 
@@ -176,7 +176,7 @@
       ?>
       <?php $summary = field_get_items('node', $node, 'body');
             print render(field_view_value('node', $node, 'body', $summary[0], 'teaser')); ?>
-   </div>
+    </div>
 
     <table>
     <tr>
@@ -309,7 +309,7 @@ if(!empty($field_editors)) {
     <?php if(isset($node)) { render_tags($node); } ?>
     </div>
 
-    <div style="clear: both;"/>
+    <div style="clear: both;"></div>
 
     <?php if(isset($service_links_rendered)) { echo $service_links_rendered; } ?>
 
