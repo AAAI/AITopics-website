@@ -4,6 +4,8 @@ function feedback_webform_form_alter(&$form, $form_state, $form_id) {
     $path = isset($_GET['q']) ? $_GET['q'] : '<front>';
     $link = url($path, array('absolute' => TRUE));
     $form['submitted']['url']['#value'] = $link;
+
+    drupal_set_message("Thanks for your feedback!");
   }
 }
 ?>
