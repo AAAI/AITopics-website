@@ -843,3 +843,18 @@ table.cols-2 > tbody > tr > td {
 div.grid-items {
     clear: both;
 }
+
+
+div.editors {
+    text-align: right;
+}
+
+div.field-name-field-editors,
+div.field-name-field-editors div.field-items,
+div.field-name-field-editors div.field-items div.field-item {
+    display: inline;
+}
+
+div.field-name-field-editors div.field-items div.field-item {
+    margin: 0 1em;
+}

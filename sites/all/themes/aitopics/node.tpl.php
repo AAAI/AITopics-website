@@ -227,6 +227,8 @@
 
     <?php if($status == 0) { echo '<div class="messages warning">This item is unpublished</div>'; } ?>
 
+    <?php if($sticky == 1) { echo '<div class="messages status">This item is highlighted</div>'; } ?>
+
     <?php print render($title_prefix); ?>
     <?php if (!$page): ?>
     <h2<?php print $title_attributes; ?>><?php if(!empty($field_original_link)) { display_link($field_original_link[0], $title); } else { echo "<a href=\"$node_url\">$title</a>"; } ?></h2>
@@ -290,7 +292,15 @@
       <?php endif; ?>
     </div>
 
-
+<?php 
+if(!empty($field_editors)) {
+  print '<div class="editors">Topic editor';
+  if(count($field_editors) > 1) { print 's'; }
+  print ': ';
+  print render(field_view_field('node', $node, 'field_editors', 'default'));
+  print '</div>';
+}
+?>
 
     <div class="topics-container">
     <?php if(isset($node)) { render_topics_subtopics($node); } ?>
