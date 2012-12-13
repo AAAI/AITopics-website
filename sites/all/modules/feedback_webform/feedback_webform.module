@@ -5,7 +5,7 @@ function feedback_webform_form_alter(&$form, $form_state, $form_id) {
     $link = url($path, array('absolute' => TRUE));
     $form['submitted']['url']['#value'] = $link;
 
-    drupal_set_message("Thanks for your feedback!");
+    //drupal_set_message("Thanks for your feedback!");
   }
 }
 ?>
