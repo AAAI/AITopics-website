@@ -483,8 +483,12 @@ blockquote p {
 }
 
 #block-search-form {
-    width: 350px;
+    width: 400px;
     text-align: right;
+}
+
+.region-header #block-search-form input.form-text {
+    width: 280px;
 }
 
 .search-result h3.title {
