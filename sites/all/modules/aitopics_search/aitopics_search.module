@@ -81,7 +81,7 @@ function aitopics_search_views_query_alter(&$view, &$query) {
               '***TITLE***' => 'node.title') as $match => $field) {
 
             if($conds[0]['value'] == '%'.$match.'%') {
-              $condition['field'] = new DatabaseCondition("OR");
+              $condition['field'] = new DatabaseCondition("AND");
               foreach($search_query_words as $search_query_word) {
                 $condition['field']->condition($field, '%'.$search_query_word.'%', 'LIKE');
               }
@@ -115,7 +115,7 @@ function aitopics_search_apachesolr_search_page_alter(&$build) {
 
   $build['search_results'] = array(
     '#theme' => 'aitopics_search_test',
-    '#query' => implode(" OR ", $search_query_words),
+    '#query' => implode(" AND ", $search_query_words),
     '#custom_results' => array(
       'redirects' => $redirects,
       'topics' => $topics,
