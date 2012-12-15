@@ -35,9 +35,13 @@
   <?php endif; ?>
 <?php
     preg_match("/\/search\/site\/([^\?]*)/", $_SERVER['REQUEST_URI'], $m);
-$search_query = urldecode($m[1]);
-$form = preg_replace('/value=""/', 'value="'.htmlentities($search_query).'"', $search_form);
-$form = preg_replace('/size="15"/', 'size=30', $form);
-print $form;
+if(count($m) > 1) {
+    $search_query = urldecode($m[1]);
+    $form = preg_replace('/value=""/', 'value="'.htmlentities($search_query).'"', $search_form);
+    $form = preg_replace('/size="15"/', 'size=30', $form);
+    print $form;
+} else {
+    print $search_form;
+}
 ?>
 </div>
