@@ -25,7 +25,11 @@ function _item_counts_get_item_count($topic, $panel, $highlighted) {
     $count = $row->expression;
     break;
   }
-  return $count;
+  if($count == 0 && $highlighted) {
+    return "<img src=\"/misc/message-16-warning.png\"/ > <strong>$count</strong>";
+  } else {
+    return $count;
+  }
 }
 
 function _item_counts_get_topic($topic) {
