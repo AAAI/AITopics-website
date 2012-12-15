@@ -1,12 +1,21 @@
-<blockquote>Searched for: <strong><?php echo $query; ?></strong> in topics, authors, titles, and full-text.</blockquote>
+<blockquote>
+<p>Terms: <strong><?php echo $query; ?></strong></p>
+<p>Searched topics, authors, titles, and full-text.
+     <?php if(count($search_query_words) > 1): ?>
+     Use quotes to group terms, e.g. "<?php print $search_query_words[0].' '.$search_query_words[1]; ?>"
+     <?php endif; ?>
+</p>
+</blockquote>
 
 <?php if(!empty($custom_results['redirects'])): ?>
-<h2>Did you mean?</h2>
+<blockquote>
+<h2>Where you looking for...</h2>
 <ul>
 <?php foreach($custom_results['redirects'] as $redirect): ?>
 <li><?php echo "<b>$redirect</b>"; ?></li>
 <?php endforeach; ?>
 </ul>
+</blockquote>
 <?php endif; ?>
 
 <?php if(FALSE !== strpos($custom_results['topics'], "<h2")): ?>

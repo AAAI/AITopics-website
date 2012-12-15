@@ -49,11 +49,8 @@ function _aitopics_search_match_redirects($search_query_words) {
   if(FALSE !== strpos($search_str, "publication")) {
     array_push($redirects, l("Classic publications", "classics"));
   }
-  if(FALSE !== strpos($search_str, "contact")) {
+  if(FALSE !== strpos($search_str, "contact") || FALSE !== strpos($search_str, "feedback")) {
     array_push($redirects, l("Contact us", "contact"));
-  }
-  if(FALSE !== strpos($search_str, "feedback")) {
-    array_push($redirects, l("Leave us feedback", "feedback"));
   }
   if(FALSE !== strpos($search_str, "login")) {
     array_push($redirects, l("Editor login", "user/login"));
@@ -61,10 +58,15 @@ function _aitopics_search_match_redirects($search_query_words) {
   if(FALSE !== strpos($search_str, "faq")) {
     array_push($redirects, l("FAQs", "misc/faqs"));
   }
+  if(FALSE !== strpos($search_str, "aitopics") || FALSE !== strpos($search_str, "about")) {
+    array_push($redirects, l("About Us", "misc/about-us"));
+  }
   if(FALSE !== strpos($search_str, "privacy")) {
     array_push($redirects, l("Privacy & Terms for AITopics", "misc/privacy-terms"));
   }
-  if(FALSE !== strpos($search_str, "sitemap") || FALSE !== strpos($search_str, "site map")) {
+  if(FALSE !== strpos($search_str, "sitemap")
+    || FALSE !== strpos($search_str, "site map")
+    || FALSE !== strpos($search_str, "index")) {
     array_push($redirects, l("Sitemap", "sitemap"));
   }
 
@@ -108,10 +110,11 @@ function aitopics_search_views_query_alter(&$view, &$query) {
 
 function aitopics_search_apachesolr_search_page_alter(&$build) {
   $search_query_words = _aitopics_search_get_query();
+  $redirects = _aitopics_search_match_redirects($search_query_words);
+  $topics = "";
+  $title_authors = "";
 
   if(!_aitopics_search_is_paged()) {
-
-    $redirects = _aitopics_search_match_redirects($search_query_words);
 
     $view = views_get_view('search_views');
     $topics = $view->preview('topics');
@@ -123,7 +126,7 @@ function aitopics_search_apachesolr_search_page_alter(&$build) {
       $term = strtoupper(preg_quote($query_word));
       preg_match_all('/(<td class="views-field views-field-(field-)?(title|author)[^>]+)(.*?)<\/td>/s', $title_authors, $matches);
       foreach($matches[0] as $match) {
-        $emboldened = preg_replace("/$term/i", "<strong>$term</strong>", $match);
+        $emboldened = preg_replace("/(\W)$term(\W)/i", '\1<strong>'.$term.'</strong>\2', $match);
         $emboldened = preg_replace("/(<a.*?href=\".*?)<strong>($term)<\/strong>(.*?\")/is", '\1'.strtolower($term).'\3', $emboldened);
         $title_authors = str_replace($match, $emboldened, $title_authors);
       }
@@ -138,6 +141,7 @@ function aitopics_search_apachesolr_search_page_alter(&$build) {
 
   $build['search_results'] = array(
     '#theme' => 'aitopics_search_test',
+    '#search_query_words' => $search_query_words,
     '#query' => implode(" AND ", $search_query_words),
     '#custom_results' => array(
       'redirects' => $redirects,
@@ -150,7 +154,10 @@ function aitopics_search_theme() {
   return array(
     'aitopics_search_test' => array(
       'template' => 'aitopics_search_results',
-      'variables' => array('query' => NULL, 'custom_results' => NULL, 'solr_results' => NULL),
+      'variables' => array(
+        'search_query_words' => NULL, 'query' => NULL,
+        'custom_results' => NULL, 'solr_results' => NULL
+        ),
       ),
     );
 }
