@@ -176,11 +176,14 @@
     <div class="summary">
       <?php if(!empty($field_representative_image)) {
               $image = field_get_items('node', $node, 'field_representative_image');
-              print str_replace("/>", "align=\"left\"/>", render(field_view_value('node', $node, 'field_representative_image', $image[0], 'teaser')));
+              $out = field_view_value('node', $node, 'field_representative_image', $image[0], 'teaser');
+              print str_replace("/>", "align=\"left\"/>", render($out));
             }
       ?>
       <?php $summary = field_get_items('node', $node, 'body');
-            print render(field_view_value('node', $node, 'body', $summary[0], 'teaser')); ?>
+            $out = field_view_value('node', $node, 'body', $summary[0], 'teaser');
+            print render($out);
+      ?>
     </div>
 
     <table>
