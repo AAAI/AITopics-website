@@ -127,7 +127,7 @@ function aitopics_search_apachesolr_search_page_alter(&$build) {
       preg_match_all('/(<td class="views-field views-field-(field-)?(title|author)[^>]+)(.*?)<\/td>/s', $title_authors, $matches);
       foreach($matches[0] as $match) {
         $emboldened = preg_replace("/(\W)$term(\W)/i", '\1<strong>'.$term.'</strong>\2', $match);
-        $emboldened = preg_replace("/(<a.*?href=\".*?)<strong>($term)<\/strong>(.*?\")/is", '\1'.strtolower($term).'\3', $emboldened);
+        $emboldened = preg_replace("/(<a.*?href=\"[^\"]*?)<strong>($term)<\/strong>([^\"]*?\")/is", '${1}'.strtolower($term).'${3}', $emboldened);
         $title_authors = str_replace($match, $emboldened, $title_authors);
       }
     }
