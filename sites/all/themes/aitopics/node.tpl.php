@@ -253,7 +253,8 @@
             }
       ?>
       <?php $summary = field_get_items('node', $node, 'body');
-            print render(field_view_value('node', $node, 'body', $summary[0], 'full')); ?>
+            $out = field_view_value('node', $node, 'body', $summary[0], 'full');
+            print render($out); ?>
     </div>
 
 
