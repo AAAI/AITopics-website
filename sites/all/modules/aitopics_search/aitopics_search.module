@@ -1,7 +1,12 @@
 <?php
 
+function _aitopics_search_is_paged() {
+  return preg_match("/\?page=[^0]/", $_SERVER['REQUEST_URI']);
+}
+
 function _aitopics_search_get_query() {
-    preg_match("/\/search\/site\/([^\?]*)/", $_SERVER['REQUEST_URI'], $m);
+  preg_match("/\/search\/site\/([^\?]*)/", $_SERVER['REQUEST_URI'], $m);
+  if(count($m) > 1) {
     $search_query = urldecode($m[1]);
     if(empty($search_query)) {
       preg_match("/\/search\/site\/([^\?]*)/", $_SERVER['HTTP_REFERER'], $m);
@@ -12,14 +17,15 @@ function _aitopics_search_get_query() {
     foreach($matches as $match_array) {
       foreach($match_array as $match) {
         $match = preg_replace('/"/', "", $match);
-        if($match != "" && !in_array($match, array('ai', 'the', 'in', 'a', 'an', 'at'))) {
+        if($match != "") {
           array_push($search_query_words, $match);
         }
       }
     }
     $search_query_words = array_unique($search_query_words);
-
     return $search_query_words;
+  }
+  return array();
 }
 
 function _aitopics_search_match_redirects($search_query_words) {
@@ -68,7 +74,6 @@ function _aitopics_search_match_redirects($search_query_words) {
 
 function aitopics_search_views_query_alter(&$view, &$query) {
   if($view->name == 'search_views') {
-
     $search_query_words = _aitopics_search_get_query();
 
     foreach($query->where as &$condition_group) {
@@ -78,12 +83,20 @@ function aitopics_search_views_query_alter(&$view, &$query) {
 
           foreach(array(
               '***AUTHORS***' => 'field_data_field_authors.field_authors_value',
-              '***TITLE***' => 'node.title') as $match => $field) {
+              '***TITLE***' => 'node.title',
+              '***COMBINED***' => "CONCAT_WS(' ', field_data_field_authors.field_authors_value, node.title)")
+            as $match => $field) {
 
             if($conds[0]['value'] == '%'.$match.'%') {
               $condition['field'] = new DatabaseCondition("AND");
               foreach($search_query_words as $search_query_word) {
-                $condition['field']->condition($field, '%'.$search_query_word.'%', 'LIKE');
+                $condition['field']->condition($field, '[[:<:]]'.preg_quote($search_query_word).'[[:>:]]', 'REGEXP');
+              }
+            }
+            if(is_array($conds[0]['value']) && $conds[0]['value'][':views_combine'] == '%'.$match.'%') {
+              $condition['field'] = new DatabaseCondition("AND");
+              foreach($search_query_words as $search_query_word) {
+                $condition['field']->condition($field.' REGEXP :views_combine', array(':views_combine' => '[[:<:]]'.preg_quote($search_query_word).'[[:>:]]'), '');
               }
             }
           }
@@ -96,16 +109,26 @@ function aitopics_search_views_query_alter(&$view, &$query) {
 function aitopics_search_apachesolr_search_page_alter(&$build) {
   $search_query_words = _aitopics_search_get_query();
 
-  $redirects = _aitopics_search_match_redirects($search_query_words);
+  if(!_aitopics_search_is_paged()) {
 
-  $view = views_get_view('search_views');
-  $topics = $view->preview('topics');
+    $redirects = _aitopics_search_match_redirects($search_query_words);
 
-  $view = views_get_view('search_views');
-  $authors = $view->preview('authors');
+    $view = views_get_view('search_views');
+    $topics = $view->preview('topics');
 
-  $view = views_get_view('search_views');
-  $title = $view->preview('title');
+    $view = views_get_view('search_views');
+    $title_authors = $view->preview('title_authors');
+
+    foreach($search_query_words as $query_word) {
+      $term = strtoupper(preg_quote($query_word));
+      preg_match_all('/(<td class="views-field views-field-(field-)?(title|author)[^>]+)(.*?)<\/td>/s', $title_authors, $matches);
+      foreach($matches[0] as $match) {
+        $emboldened = preg_replace("/$term/i", "<strong>$term</strong>", $match);
+        $emboldened = preg_replace("/(<a.*?href=\".*?)<strong>($term)<\/strong>(.*?\")/is", '\1'.strtolower($term).'\3', $emboldened);
+        $title_authors = str_replace($match, $emboldened, $title_authors);
+      }
+    }
+  }
 
   if(array_key_exists('#markup', $build['search_results'])) {
     $solr_results = array();
@@ -119,8 +142,7 @@ function aitopics_search_apachesolr_search_page_alter(&$build) {
     '#custom_results' => array(
       'redirects' => $redirects,
       'topics' => $topics,
-      'authors' => $authors,
-      'title' => $title),
+      'title_authors' => $title_authors),
     '#solr_results' => $solr_results);
 }
 

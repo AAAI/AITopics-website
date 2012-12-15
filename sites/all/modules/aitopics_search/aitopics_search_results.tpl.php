@@ -1,4 +1,4 @@
-<i>Searched for "<?php echo $query; ?>"</i>
+<blockquote>Searched for: <strong><?php echo $query; ?></strong> in topics, authors, titles, and full-text.</blockquote>
 
 <?php if(!empty($custom_results['redirects'])): ?>
 <h2>Did you mean?</h2>
@@ -10,24 +10,15 @@
 <?php endif; ?>
 
 <?php if(FALSE !== strpos($custom_results['topics'], "<h2")): ?>
-<h2>Matching topic overviews</h2>
 
 <?php print $custom_results['topics']; ?>
 
 <?php endif; ?>
 
 
-<?php if(FALSE !== strpos($custom_results['authors'], "<table")): ?>
-<h2>Results by matching author</h2>
+<?php if(FALSE !== strpos($custom_results['title_authors'], "<table")): ?>
 
-<?php print $custom_results['authors']; ?>
-
-<?php endif; ?>
-
-<?php if(FALSE !== strpos($custom_results['title'], "<table")): ?>
-<h2>Results by matching title</h2>
-
-<?php print $custom_results['title']; ?>
+<?php print $custom_results['title_authors']; ?>
 
 <?php endif; ?>
 
