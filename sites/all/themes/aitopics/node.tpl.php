@@ -120,11 +120,11 @@
       ?>
       <?php $summary = field_get_items('node', $node, 'body');
             print render(field_view_value('node', $node, 'body', $summary[0], 'teaser')); ?>
-<?php if(!empty($field_original_link)) {
-              echo "<p>";
-              display_link($field_original_link['und'][0], 'Link to external resource');
-              echo "</p>";
-} ?>
+      <?php if(!empty($field_original_link)) {
+            echo "<p>";
+            display_link($field_original_link['und'][0], 'Link to external resource');
+            echo "</p>";
+      } ?>
    </div>
 
     <div class="metadata intopic">
@@ -184,9 +184,15 @@
             $out = field_view_value('node', $node, 'body', $summary[0], 'teaser');
             print render($out);
       ?>
+      <?php if(!empty($field_original_link)) {
+            echo "<p>";
+            display_link($field_original_link['und'][0], 'Link to external resource');
+            echo "</p>";
+      } ?>
+
     </div>
 
-    <table>
+    <table class="metadata">
     <tr>
     <td>
     <div class="metadata notintopic">
