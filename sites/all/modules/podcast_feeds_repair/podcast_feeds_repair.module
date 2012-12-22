@@ -1,0 +1,12 @@
+<?php
+
+function podcast_feeds_repair_views_pre_render(&$view) {
+  if($view->name == 'podcasts') {
+    drupal_set_message('<pre>'.htmlentities(print_r($view->result, TRUE)).'</pre>');
+    foreach($view->result as $item) {
+      if($item->field_field_media_file[0]['rendered']['#rss_element']['attributes']['type'] == 'application/x-download') {
+        $item->field_field_media_file[0]['rendered']['#rss_element']['attributes']['type'] = 'audio/mpeg';
+      }
+    }
+  }
+}

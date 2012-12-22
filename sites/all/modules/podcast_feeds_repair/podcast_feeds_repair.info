@@ -1,0 +1,4 @@
+name = Podcast feeds repair
+description = Fix up various minor issues with podcast feeds (e.g. improper remote enclosure mimetypes)
+core = 7.x
+package = AITopics
