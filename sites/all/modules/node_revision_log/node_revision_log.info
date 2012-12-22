@@ -1,0 +1,4 @@
+name = Node Revision Log
+description = Add info about what changed in a node into the revision log if the revision message is empty
+core = 7.x
+package = AITopics

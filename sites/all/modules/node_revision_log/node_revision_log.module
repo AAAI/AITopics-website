@@ -1,0 +1,50 @@
+<?php
+
+function node_revision_log_node_presave($node) {
+  if(empty($node->log)) {
+    $log = '';
+    if($node->title != $node->original->title) {
+      $log .= "Changed title.\n";
+    }
+    if($node->body['und'][0]['value'] != $node->original->body['und'][0]['value']) {
+      $log .= "Changed summary.\n";
+    }
+    try {
+      $topics_new = array();
+      foreach($node->field_topics['und'] as $topic) {
+        array_push($topics_new, array('tid' => $topic['tid']));
+      }
+      if($topics_new != $node->original->field_topics['und']) {
+        $log .= "Changed topics.\n";
+      }
+    } catch (Exception $e) {}
+
+    try {
+      $tags_new = array();
+      foreach($node->field_tags['und'] as $tag) {
+        array_push($tags_new, array('tid' => $tag['tid']));
+      }
+      if($tags_new != $node->original->field_tags['und']) {
+        $log .= "Changed tags.\n";
+      }
+    } catch (Exception $e) {}
+
+    try {
+      if($node->field_original_link['und'][0]['url'] != $node->original->field_original_link['und'][0]['url']) {
+        $log .= "Changed link to external resource.\n";
+      }
+    } catch(Exception $e) {}
+
+    try {
+      if($node->field_publication_date['und'][0]['value'] != $node->original->field_publication_date['und'][0]['value']) {
+        $log .= "Changed publication date.\n";
+      }
+    } catch(Exception $e) {}
+    
+    if(empty($log)) {
+      $node->revision = 0;
+    } else {
+      $node->log = $log;
+    }
+  }
+}
