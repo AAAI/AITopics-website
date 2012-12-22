@@ -83,7 +83,7 @@
                 </div>
               <?php endif; ?>
               <?php if ($title): ?>
-                  <?php if(isset($node) && !empty($node->field_original_link)): ?>
+                  <?php if(isset($node) && !empty($node->field_original_link) && !preg_match('/<em/', $title)): ?>
                       <h1 id="page-title"><?php display_link($node->field_original_link['und'][0], $title); ?></h1>
                   <?php else: ?>
                       <h1 id="page-title"><?php print $title; ?></h1>
