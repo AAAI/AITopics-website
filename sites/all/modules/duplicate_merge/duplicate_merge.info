@@ -1,0 +1,4 @@
+name = Duplicate Merge
+description = Merges duplicate items (topics/tags are merged).
+core = 7.x
+package = AITopics
