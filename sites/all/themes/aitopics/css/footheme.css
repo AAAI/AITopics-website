@@ -177,6 +177,10 @@
     zoom: 1;
 }
 
+.panel-flexible .panel-separator {
+    margin: 0;
+}
+
 #main-content .article-teaser.article-sticky,
 .article-teaser.article-sticky {
     background: white;
@@ -281,8 +285,10 @@ form.node-form .field-type-image {
     margin: 10px;
 }
 
-div.field-name-body div.caption-inner img {
+div.caption div.caption-inner img {
     margin: 0;
+    border: 0px;
+    padding: 0px;
 }
 
 div.field-name-body img.mceIcon {
@@ -480,6 +486,14 @@ h3 {
 
 .block-title {
     font-size: 1.3em;
+}
+
+.block-webform .block-title {
+    padding: 0;
+}
+
+.block-webform .block-inner {
+    margin: 0 20px 0 0;
 }
 
 .summary img {
@@ -867,7 +881,7 @@ table.cols-2 > tbody > tr > td {
 }
 
 .ui-accordion .ui-accordion-content {
-    padding: 1em 0 1em 0.25em;
+    padding: 0.25em 0 0.25em 0.25em;
 }
 
 .ui-accordion .ui-accordion-header {
@@ -903,3 +917,79 @@ div.field-name-field-editors div.field-items div.field-item {
     margin: 0 1em;
 }
 
+/* Calendars */
+
+.calendar-calendar th.days {
+    background: #eee;
+    color: #333;
+}
+
+.calendar-calendar td {
+    color: #333;
+}
+
+.calendar-calendar .month-view .full td.single-day div.monthview,
+.calendar-calendar .week-view .full td.single-day div.weekview,
+.calendar-calendar .day-view .full td.single-day div.dayview {
+    background: white;
+    border: 1px solid #e9e9e9;
+    behavior: url(/sites/all/themes/aitopics/css/PIE.htc);
+    border-radius: 10px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+    -khtml-border-radius: 10px;
+    position: relative;
+    zoom: 1;
+    padding: 5px;
+}
+
+.calendar-calendar td .inner div.calendar div a {
+    text-decoration: none;
+    font-weight: normal;
+}
+
+.calendar-calendar td .inner div.calendar div a:hover,
+.calendar-calendar td .inner div.calendar div a.active:hover,
+.calendar-calendar td .inner div.calendar div a:focus,
+.calendar-calendar td .inner div.calendar div a.active:focus {
+    text-decoration: underline;
+}
+
+.calendar-calendar td a {
+    font-weight: normal;
+}
+
+.calendar-calendar td .inner div.calendar div {
+    padding: 0;
+}
+
+.calendar-calendar .month-view .full td.date-box.today {
+    border: 1px solid #ccc;
+    border-bottom: 0px;
+}
+
+.calendar-calendar .month-view .full tr td.single-day.today {
+    border: 1px solid #ccc;
+    border-top: 0px;
+}
+
+/* Recommendations */
+
+div.metadata.fullview {
+    float: left;
+    width: 45%;
+}
+
+div.recommendations {
+    float: right;
+    width: 45%;
+}
+
+/* Lexicon */
+
+a.lexicon-term img {
+    margin: 0 !important;
+    margin-left: 2px !important;
+    border: 0px !important;
+    padding: 0px !important;
+}

@@ -169,6 +169,29 @@ function display_links($primary_link, $extra_links) {
   print '</div>';
 }
 
+function display_recommendations($links) {
+    print '<ul class="recommended-links">';
+    for($i = 0; $i < count($links); $i++) {
+        print '<li>';
+        display_link($links[$i], $links[$i]['title']);
+        if(preg_match("!/news/!", $links[$i]['url'])) {
+            print " (News)";
+        } else if(preg_match("!/topic/!", $links[$i]['url'])) {
+            print " (Topic overview)";
+        } else if(preg_match("!/publication/!", $links[$i]['url'])) {
+            print " (Publication)";
+        } else if(preg_match("!/link/!", $links[$i]['url'])) {
+            print " (Link)";
+        } else if(preg_match("!/video/!", $links[$i]['url'])) {
+            print " (Video)";
+        } else if(preg_match("!/podcast/!", $links[$i]['url'])) {
+            print " (Podcast)";
+        }
+        print '</li>';
+    }
+    print '</ul>';
+}
+
 /**   
  * Returns HTML for a date element formatted as a single date.
  */

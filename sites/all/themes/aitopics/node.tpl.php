@@ -275,7 +275,7 @@
 
     <?php if(isset($field_original_link)) { display_links($field_original_link, $field_link); } ?>
 
-    <div class="metadata">
+    <div class="metadata fullview">
       <?php if(!empty($field_publication_date)): ?>
         <?php $pubdate = field_get_items('node', $node, 'field_publication_date');
               print render(field_view_value('node', $node, 'field_publication_date', $pubdate[0])); ?>
@@ -306,6 +306,16 @@
         <br/>
       <?php endif; ?>
     </div>
+
+<?php
+if(!empty($field_next_clicks)) {
+    print '<div class="recommendations">';
+    print 'Readers who view this page also view:';
+    display_recommendations($field_next_clicks);
+    print '</div>';
+}
+?>
+    <div style="clear: both;"></div>
 
 <?php 
 if(!empty($field_editors)) {
