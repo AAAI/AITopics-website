@@ -519,6 +519,10 @@ blockquote p {
     margin-bottom: 0.8em;
 }
 
+blockquote em {
+    font-style: normal;
+}
+
 .article .article-content,
 .comment .comment-content {
     line-height: 1.8em;
@@ -986,6 +990,10 @@ div.recommendations {
     width: 45%;
 }
 
+span.related-topics {
+    color: #999;
+}
+
 /* Lexicon */
 
 a.lexicon-term img {
@@ -993,4 +1001,11 @@ a.lexicon-term img {
     margin-left: 2px !important;
     border: 0px !important;
     padding: 0px !important;
+}
+
+/* Misc */
+
+span.log-message {
+    color: #666;
+    font-style: italic;
 }
