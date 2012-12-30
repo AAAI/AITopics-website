@@ -45,61 +45,89 @@ function footheme_preprocess_html(&$vars) {
 
 }
 
-function render_topics_subtopics($node) {
-  if(isset($node) && property_exists($node, 'field_topics') && array_key_exists('und', $node->field_topics)) {
-    $topics = array();
-    $topics_with_children = array();
-    for($i = 0; $i < count($node->field_topics['und']); $i++) {
-      try {
-        $tid = $node->field_topics['und'][$i]['tid'];
-        $term = taxonomy_term_load($tid);
-        $child_uri = entity_uri('taxonomy_term', $term);
+function display_related_topics($tids) {
+  $related = array();
+  foreach($tids as $tid) {
+    $term = taxonomy_term_load($tid);
+    $uri = entity_uri('taxonomy_term', $term);
+    array_push($related, l($term->name, $uri['path']));
+  }
+  print implode(", ", $related);
+}
 
-        $parents = taxonomy_get_parents($tid);
-        if(empty($parents)) {
-          if($node->type != 'page' || $term->name != $node->title) {
-            $topics[$term->name] = l($term->name, $child_uri['path']);
+function render_topics_subtopics_tids($tids, $topic_overview, $page_name, $related_tids) {
+  $topics = array();
+  $topics_with_children = array();
+  foreach($tids as $tid) {
+    try {
+      $term = taxonomy_term_load($tid);
+      $child_uri = entity_uri('taxonomy_term', $term);
+      
+      $parents = taxonomy_get_parents($tid);
+      if(empty($parents) && (!$topic_overview || $term->name != $page_name)) {
+        $topics[$term->name] = l($term->name, $child_uri['path']);
+      } else {
+        foreach($parents as $parent) {
+          $topics_with_children []= $parent->name;
+          $uri = entity_uri('taxonomy_term', $parent);
+          $link = l($parent->name, $uri['path']);
+          if(!$topic_overview || $term->name != $page_name) {
+            $link .= " > ";
+            $link .= l($term->name, $child_uri['path']);
           }
-        } else {
-          foreach($parents as $parent) {
-            $topics_with_children []= $parent->name;
-            $uri = entity_uri('taxonomy_term', $parent);
-            $link = l($parent->name, $uri['path']);
-            if($node->type != 'page' || $term->name != $node->title) {
-              $link .= " > ";
-              $link .= l($term->name, $child_uri['path']);
-            }
-            $topics[$term->name." > ".$parent->name] = $link;
-          }
+          $topics[$term->name." > ".$parent->name] = $link;
         }
       }
-      catch(Exception $e) { }
     }
-    asort($topics);
-    if(!empty($topics)) {
-      ?>
-      <div class="topics">
-      <table>
-      <tr>
-      <td style="vertical-align: middle; width: 35px;">
-        <img src="/sites/all/themes/aitopics/icons/topic-meta.png" width=35 height=35 align="right" />
-      </td>
-      <td style="vertical-align: middle;">
-      <?php
-      $c = 0;
-      foreach($topics as $topic => $link) {
-        if(in_array($topic, $topics_with_children)) { continue; }
-        print $link;
-        $c++;
-        if($c != count($topics)) { print "<br/>"; }
+    catch(Exception $e) { }
+  }
+  
+  asort($topics);
+  if(!empty($topics)) {
+?>
+    <div class="topics">
+    <table>
+    <tr>
+    <td style="vertical-align: middle; width: 35px;">
+    <img src="/sites/all/themes/aitopics/icons/topic-meta.png" width=35 height=35 align="right" />
+    </td>
+    <td style="vertical-align: middle;">
+<?php
+    $c = 0;
+    foreach($topics as $topic => $link) {
+      if(in_array($topic, $topics_with_children)) { continue; }
+      print $link;
+      $c++;
+      if($c != count($topics)) { print "<br/>"; }
+    }
+    
+    if(!empty($related_tids)) {
+      print '<br/><span class="related-topics">Related topics:</span> ';
+      display_related_topics($related_tids);
+    }
+?>
+    </td>
+    </tr>
+    </table>
+    </div>
+<?php
+  }
+}
+
+function render_topics_subtopics($node) {
+  if(isset($node) && property_exists($node, 'field_topics') && array_key_exists('und', $node->field_topics)) {
+    $tids = array();
+    for($i = 0; $i < count($node->field_topics['und']); $i++) {
+      array_push($tids, $node->field_topics['und'][$i]['tid']);
+    }
+    $topic_overview = ($node->type == 'page');
+    $related_tids = array();
+    if(array_key_exists('und', $node->field_related_topics)) {
+      foreach($node->field_related_topics['und'] as $topic) {
+        array_push($related_tids, $topic['tid']);
       }
-      ?>
-      </td>
-      </tr>
-      </table>
-      </div>
-      <?php
     }
+    render_topics_subtopics_tids($tids, $topic_overview, $node->title, $related_tids);
   }
 }
 

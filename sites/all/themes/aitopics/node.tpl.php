@@ -128,12 +128,13 @@
    </div>
 
     <div class="metadata intopic">
-      <?php if(!empty($field_publication_date)): ?>
-        <?php $pubdate = field_get_items('node', $node, 'field_publication_date');
-              print render(field_view_value('node', $node, 'field_publication_date', $pubdate[0], 'teaser')); ?>.
-      <?php endif; ?>
       <?php
         $metadata = array();
+        if(!empty($field_publication_date)) {
+          $pubdate = field_get_items('node', $node, 'field_publication_date', 'und');
+          $val = field_view_value('node', $node, 'field_publication_date', $pubdate[0], 'default');
+          array_push($metadata, render($val));
+        }
         if(!empty($field_authors) && preg_match('/\w/', $field_authors['und'][0]['value'])) {
           array_push($metadata, "By ".$field_authors['und'][0]['value']);
         }
@@ -198,21 +199,21 @@
     <div class="metadata notintopic">
       <?php
         $metadata = array();
-        if(!empty($field_authors) && preg_match('/\w/', $field_authors['und'][0]['value'])) {
-          array_push($metadata, "By ".$field_authors['und'][0]['value']);
+        if(!empty($field_authors) && preg_match('/\w/', $field_authors[0]['value'])) {
+          array_push($metadata, "By ".$field_authors[0]['value']);
         }
-        if(!empty($field_source) && preg_match('/\w/', $field_source['und'][0]['value'])) {
-          array_push($metadata, $field_source['und'][0]['value']);
+        if(!empty($field_source) && preg_match('/\w/', $field_source[0]['value'])) {
+          array_push($metadata, $field_source[0]['value']);
         }
-        if(!empty($field_minutes) && preg_match('/\w/', $field_minutes['und'][0]['value'])) {
-          array_push($metadata, $field_minutes['und'][0]['value']." min");
+        if(!empty($field_minutes) && preg_match('/\w/', $field_minutes[0]['value'])) {
+          array_push($metadata, $field_minutes[0]['value']." min");
         }
         if(empty($field_publication_date) && !empty($field_publication_year_int)) {
-          array_push($metadata, $field_publication_year_int['und'][0]['value']);
+          array_push($metadata, $field_publication_year_int[0]['value']);
         }
         if(!empty($field_publication_date)) {
           $date = field_get_items('node', $node, 'field_publication_date');
-          array_push($metadata, render(field_view_value('node', $node, 'field_publication_date', $date[0], 'teaser')));
+          array_push($metadata, render(field_view_value('node', $node, 'field_publication_date', $date[0], 'default')));
         }
         print implode("<br/>", $metadata);
         if(!empty($metadata)) { print "<br/>"; }
@@ -276,43 +277,45 @@
     <?php if(isset($field_original_link)) { display_links($field_original_link, $field_link); } ?>
 
     <div class="metadata fullview">
-      <?php if(!empty($field_publication_date)): ?>
-        <?php $pubdate = field_get_items('node', $node, 'field_publication_date');
-              print render(field_view_value('node', $node, 'field_publication_date', $pubdate[0])); ?>
-        <br/>
-      <?php endif; ?>
-      <?php if(!empty($field_authors)): ?>
-        By <?php echo $field_authors[0]['value']; ?>
-        <br/>
-      <?php endif; ?>
-      <?php if(!empty($field_source)): ?>
-        <?php echo $field_source[0]['value']; ?>
-        <br/>
-      <?php endif; ?>
-      <?php if(!empty($field_link_category)): ?>
-        <?php $term = taxonomy_term_load($field_link_category[0]['tid']); echo $term->name; ?>
-        <br/>
-      <?php endif; ?>
-      <?php if(!empty($field_minutes)): ?>
-        <?php echo $field_minutes[0]['value']; ?> min
-        <br/>
-      <?php endif; ?>
-      <?php if(empty($field_publication_date) && !empty($field_publication_year_int)): ?>
-        <?php echo $field_publication_year_int[0]['value']; ?>
-        <br/>
-      <?php endif; ?>
-      <?php if(!empty($field_collections)): ?>
-        <?php $term = taxonomy_term_load($field_collections[0]['tid']); echo $term->name; ?>
-        <br/>
-      <?php endif; ?>
+      <?php
+        $metadata = array();
+        if(!empty($field_authors) && preg_match('/\w/', $field_authors[0]['value'])) {
+          array_push($metadata, "By ".$field_authors[0]['value']);
+        }
+        if(!empty($field_source) && preg_match('/\w/', $field_source[0]['value'])) {
+          array_push($metadata, $field_source[0]['value']);
+        }
+        if(!empty($field_minutes) && preg_match('/\w/', $field_minutes[0]['value'])) {
+          array_push($metadata, $field_minutes[0]['value']." min");
+        }
+        if(empty($field_publication_date) && !empty($field_publication_year_int)) {
+          array_push($metadata, $field_publication_year_int[0]['value']);
+        }
+        if(!empty($field_publication_date)) {
+          $date = field_get_items('node', $node, 'field_publication_date');
+          array_push($metadata, render(field_view_value('node', $node, 'field_publication_date', $date[0], 'default')));
+        }
+        if(!empty($field_collections)) {
+          $term = taxonomy_term_load($field_collections[0]['tid']);
+          array_push($metadata, $term->name);
+        }
+        print implode("<br/>", $metadata);
+        if(!empty($metadata)) { print "<br/>"; }
+      ?>
     </div>
 
 <?php
 if(!empty($field_next_clicks)) {
-    print '<div class="recommendations">';
+    if(!empty($metadata)) {
+        print '<div class="recommendations">';
+    }
+
     print 'Readers who view this page also view:';
     display_recommendations($field_next_clicks);
-    print '</div>';
+
+    if(!empty($metadata)) {
+        print '</div>';
+    }
 }
 ?>
     <div style="clear: both;"></div>
