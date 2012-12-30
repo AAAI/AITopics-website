@@ -167,7 +167,8 @@
 
 }
 
-#main-content .article-teaser {
+#main-content .article-teaser,
+li.search-result {
     behavior: url(/sites/all/themes/aitopics/css/PIE.htc);
     border-radius: 10px;
     -moz-border-radius: 10px;
@@ -572,6 +573,10 @@ ol.search-results {
     margin-left: 0;
 }
 
+.search-results .search-snippet-info {
+    padding: 0;
+}
+
 .search-info-user, .search-info-date {
     display: none;
 }
@@ -676,6 +681,10 @@ table.views-view-grid td {
 
 #page div.messages {
     margin: 0px 10px 30px 10px;
+}
+
+table.metadata {
+    margin: 0;
 }
 
 div.nodetype table.metadata td {

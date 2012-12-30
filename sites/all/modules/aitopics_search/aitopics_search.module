@@ -1,5 +1,84 @@
 <?php
 
+function aitopics_search_apachesolr_field_mappings() {
+  $mappings = array(
+    'per-field' => array(
+      'field_source' => array(
+        'indexing_callback' => 'apachesolr_fields_default_indexing_callback',
+        'index_type' => 'string',
+        'facets' => FALSE,
+        ),
+      ),
+    );
+  return $mappings;
+}
+
+/**
+ * Build the documents before sending them to Solr.
+ *
+ * Supports all types of
+ * hook_apachesolr_index_document_build_' . $entity_type($documents[$id], $entity, $env_id);
+ *
+ * The function is the follow-up for apachesolr_update_index but then for
+ * specific entity types
+ *
+ * @param $document
+ * @param $entity
+ * @param $entity_type
+ */
+function aitopics_search_apachesolr_index_document_build_node(ApacheSolrDocument $document, $entity, $env_id) {
+
+  if(array_key_exists('und', $entity->field_representative_image)) {
+    $document->addField('ss_field_representative_image',
+      json_encode($entity->field_representative_image['und'][0]));
+  } else {
+    $document->addField('ss_field_representative_image', "");
+  }
+
+  if($entity->type == 'item' && array_key_exists('und', $entity->field_source)) {
+    $document->addField('tos_field_source', $entity->field_source['und'][0]['value']);
+  } else {
+    $document->addField('tos_field_source', "");
+  }
+
+  if($entity->type == 'item' && array_key_exists('und', $entity->field_authors)) {
+    $document->addField('tos_field_authors', $entity->field_authors['und'][0]['value']);
+  } else {
+    $document->addField('tos_field_authors', "");
+  }
+
+}
+
+/**
+ * Prepare the query by adding parameters, sorts, etc.
+ *
+ * This hook is invoked before the query is cached. The cached query is used
+ * after the search such as for building facet and sort blocks, so parameters
+ * added during this hook may be visible to end users.
+ *
+ * This is otherwise the same as HOOK_apachesolr_query_alter(), but runs before
+ * it.
+ *
+ * @param object $query
+ *  An object implementing DrupalSolrQueryInterface. No need for &.
+ */
+function aitopics_search_apachesolr_query_prepare($query) {
+  $query->addParams(array('fl' => 'sm_field_representative_image'));
+  $query->addParams(array('fl' => 'im_field_topics'));
+  $query->addParams(array('fl' => 'im_field_tags'));
+  $query->addParams(array('fl' => 'tos_field_authors'));
+  $query->addParams(array('fl' => 'tos_field_source'));
+  $query->addParams(array('fl' => 'sm_vid_Collections'));
+  $query->addParams(array('fl' => 'sm_vid_Item_Type'));
+  $query->addParams(array('fl' => 'its_field_minutes'));
+  $query->addParams(array('fl' => 'its_field_publication_year_int'));
+  $query->addParams(array('fl' => 'dm_field_publication_date'));
+  $query->addParams(array('hl.fl' => 'content'));
+  $query->addParams(array('hl.fl' => 'tos_field_source'));
+  $query->addParams(array('hl.fl' => 'tos_field_authors'));
+}
+
+
 function _aitopics_search_is_paged() {
   return preg_match("/\?page=[^0]/", $_SERVER['REQUEST_URI']);
 }
@@ -114,24 +193,24 @@ function aitopics_search_apachesolr_search_page_alter(&$build) {
   $topics = "";
   $title_authors = "";
 
-  if(!_aitopics_search_is_paged()) {
+  /* if(!_aitopics_search_is_paged()) { */
 
-    $view = views_get_view('search_views');
-    $topics = $view->preview('topics');
+  /*   $view = views_get_view('search_views'); */
+  /*   $topics = $view->preview('topics'); */
 
-    $view = views_get_view('search_views');
-    $title_authors = $view->preview('title_authors');
+  /*   $view = views_get_view('search_views'); */
+  /*   $title_authors = $view->preview('title_authors'); */
 
-    foreach($search_query_words as $query_word) {
-      $term = strtoupper(preg_quote($query_word));
-      preg_match_all('/(<td class="views-field views-field-(field-)?(title|author)[^>]+)(.*?)<\/td>/s', $title_authors, $matches);
-      foreach($matches[0] as $match) {
-        $emboldened = preg_replace("/(\W)$term(\W)/i", '\1<strong>'.$term.'</strong>\2', $match);
-        $emboldened = preg_replace("/(<a.*?href=\"[^\"]*?)<strong>($term)<\/strong>([^\"]*?\")/is", '${1}'.strtolower($term).'${3}', $emboldened);
-        $title_authors = str_replace($match, $emboldened, $title_authors);
-      }
-    }
-  }
+  /*   foreach($search_query_words as $query_word) { */
+  /*     $term = strtoupper(preg_quote($query_word)); */
+  /*     preg_match_all('/(<td class="views-field views-field-(field-)?(title|author)[^>]+)(.*?)<\/td>/s', $title_authors, $matches); */
+  /*     foreach($matches[0] as $match) { */
+  /*       $emboldened = preg_replace("/(\W)$term(\W)/i", '\1<strong>'.$term.'</strong>\2', $match); */
+  /*       $emboldened = preg_replace("/(<a.*?href=\"[^\"]*?)<strong>($term)<\/strong>([^\"]*?\")/is", '${1}'.strtolower($term).'${3}', $emboldened); */
+  /*       $title_authors = str_replace($match, $emboldened, $title_authors); */
+  /*     } */
+  /*   } */
+  /* } */
 
   if(array_key_exists('#markup', $build['search_results'])) {
     $solr_results = array();

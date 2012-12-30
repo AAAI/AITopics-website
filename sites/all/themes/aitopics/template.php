@@ -89,7 +89,7 @@ function render_topics_subtopics_tids($tids, $topic_overview, $page_name, $relat
     <table>
     <tr>
     <td style="vertical-align: middle; width: 35px;">
-    <img src="/sites/all/themes/aitopics/icons/topic-meta.png" width=35 height=35 align="right" />
+    <img src="/sites/all/themes/aitopics/icons/topic-meta.png" width="35" height="35" align="right" />
     </td>
     <td style="vertical-align: middle;">
 <?php
