@@ -115,11 +115,14 @@
     <div class="summary">
       <?php if(!empty($field_representative_image)) {
               $image = field_get_items('node', $node, 'field_representative_image');
-              print str_replace("/>", "align=\"left\"/>", render(field_view_value('node', $node, 'field_representative_image', $image[0], 'teaser')));
+              $value = field_view_value('node', $node, 'field_representative_image', $image[0], 'teaser');
+              $rendered = render($value);
+              print str_replace("/>", "align=\"left\"/>", $rendered);
             }
       ?>
       <?php $summary = field_get_items('node', $node, 'body');
-            print render(field_view_value('node', $node, 'body', $summary[0], 'teaser')); ?>
+            $value = field_view_value('node', $node, 'body', $summary[0], 'teaser');
+            print render($value); ?>
       <?php if(!empty($field_original_link)) {
             echo "<p>";
             display_link($field_original_link['und'][0], 'Link to external resource');
@@ -132,8 +135,8 @@
         $metadata = array();
         if(!empty($field_publication_date)) {
           $pubdate = field_get_items('node', $node, 'field_publication_date', 'und');
-          $val = field_view_value('node', $node, 'field_publication_date', $pubdate[0], 'default');
-          array_push($metadata, render($val));
+          $value = field_view_value('node', $node, 'field_publication_date', $pubdate[0], 'default');
+          array_push($metadata, render($value));
         }
         if(!empty($field_authors) && preg_match('/\w/', $field_authors['und'][0]['value'])) {
           array_push($metadata, "By ".$field_authors['und'][0]['value']);
@@ -177,13 +180,13 @@
     <div class="summary">
       <?php if(!empty($field_representative_image)) {
               $image = field_get_items('node', $node, 'field_representative_image');
-              $out = field_view_value('node', $node, 'field_representative_image', $image[0], 'teaser');
-              print str_replace("/>", "align=\"left\"/>", render($out));
+              $value = field_view_value('node', $node, 'field_representative_image', $image[0], 'teaser');
+              print str_replace("/>", "align=\"left\"/>", render($value));
             }
       ?>
       <?php $summary = field_get_items('node', $node, 'body');
-            $out = field_view_value('node', $node, 'body', $summary[0], 'teaser');
-            print render($out);
+            $value = field_view_value('node', $node, 'body', $summary[0], 'teaser');
+            print render($value);
       ?>
       <?php if(!empty($field_original_link)) {
             echo "<p>";
@@ -213,7 +216,8 @@
         }
         if(!empty($field_publication_date)) {
           $date = field_get_items('node', $node, 'field_publication_date');
-          array_push($metadata, render(field_view_value('node', $node, 'field_publication_date', $date[0], 'default')));
+          $value = field_view_value('node', $node, 'field_publication_date', $date[0], 'default');
+          array_push($metadata, render($value));
         }
         print implode("<br/>", $metadata);
         if(!empty($metadata)) { print "<br/>"; }
@@ -240,9 +244,9 @@
 
   <div class="nodetype">
 
-    <?php if($status == 0) { echo '<div class="messages warning">This item is unpublished</div>'; } ?>
+    <?php if($user->uid && $status == 0) { echo '<div class="messages warning">This item is unpublished</div>'; } ?>
 
-    <?php if($sticky == 1) { echo '<div class="messages status">This item is highlighted</div>'; } ?>
+    <?php if($user->uid && $sticky == 1) { echo '<div class="messages status">This item is highlighted</div>'; } ?>
 
     <?php print render($title_prefix); ?>
     <?php if (!$page): ?>
@@ -259,12 +263,14 @@
     <div class="summary">
       <?php if(!empty($field_representative_image)) {
               $image = field_get_items('node', $node, 'field_representative_image');
-              print str_replace("/>", "align=\"right\"/>", render(field_view_value('node', $node, 'field_representative_image', $image[0])));
+              $value = field_view_value('node', $node, 'field_representative_image', $image[0]);
+              $rendered = render($value);
+              print str_replace("/>", "align=\"right\"/>", $rendered);
             }
       ?>
       <?php $summary = field_get_items('node', $node, 'body');
-            $out = field_view_value('node', $node, 'body', $summary[0], 'full');
-            print render($out); ?>
+            $value = field_view_value('node', $node, 'body', $summary[0], 'full');
+            print render($value); ?>
     </div>
 
 
@@ -274,7 +280,11 @@
         echo '</div>';
     } ?>
 
-    <?php if(isset($field_original_link)) { display_links($field_original_link, $field_link); } ?>
+    <?php if(!empty($field_original_link)) {
+          echo "<p>";
+          display_link($field_original_link[0], 'Link to external resource');
+          echo "</p>";
+    } ?>
 
     <div class="metadata fullview">
       <?php
@@ -293,7 +303,8 @@
         }
         if(!empty($field_publication_date)) {
           $date = field_get_items('node', $node, 'field_publication_date');
-          array_push($metadata, render(field_view_value('node', $node, 'field_publication_date', $date[0], 'default')));
+          $value = field_view_value('node', $node, 'field_publication_date', $date[0], 'default');
+          array_push($metadata, render($value));
         }
         if(!empty($field_collections)) {
           $term = taxonomy_term_load($field_collections[0]['tid']);
@@ -325,7 +336,8 @@ if(!empty($field_editors)) {
   print '<div class="editors">Topic editor';
   if(count($field_editors) > 1) { print 's'; }
   print ': ';
-  print render(field_view_field('node', $node, 'field_editors', 'default'));
+  $value = field_view_field('node', $node, 'field_editors', 'default');
+  print render($value);
   print '</div>';
 }
 ?>
@@ -357,14 +369,15 @@ if(!empty($field_editors)) {
 
     <div class="summary">
       <?php $summary = field_get_items('node', $node, 'body');
-            print render(field_view_value('node', $node, 'body', $summary[0], 'full')); ?>
+            $value = field_view_value('node', $node, 'body', $summary[0], 'full');
+            print render($value); ?>
     </div>
 
     <div class="metadata">
       This task is <?php if($node->status == 1) { print "<b>Active</b>"; } else { print "Inactive"; } ?>.<br/>
-      Priority: <?php print render(field_view_value('node', $node, 'field_priority', $field_priority[0])); ?><br/>
+      Priority: <?php $value = field_view_value('node', $node, 'field_priority', $field_priority[0]); print render($value); ?><br/>
       Last updated: <?php print format_date($node->changed, 'short'); ?><br/>
-      <?php print render(field_view_value('node', $node, 'field_responsible', $field_responsible[0])); ?> is responsible for this task.<br/>
+      <?php $value = field_view_value('node', $node, 'field_responsible', $field_responsible[0]); print render($value); ?> is responsible for this task.<br/>
    </div>
 
 <?php else: // not an Item or Task ?>

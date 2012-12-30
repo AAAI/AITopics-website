@@ -122,7 +122,7 @@ function render_topics_subtopics($node) {
     }
     $topic_overview = ($node->type == 'page');
     $related_tids = array();
-    if(array_key_exists('und', $node->field_related_topics)) {
+    if(property_exists($node, 'field_related_topics') && array_key_exists('und', $node->field_related_topics)) {
       foreach($node->field_related_topics['und'] as $topic) {
         array_push($related_tids, $topic['tid']);
       }
