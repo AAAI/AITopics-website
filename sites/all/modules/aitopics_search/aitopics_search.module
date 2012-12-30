@@ -1,18 +1,5 @@
 <?php
 
-function aitopics_search_apachesolr_field_mappings() {
-  $mappings = array(
-    'per-field' => array(
-      'field_source' => array(
-        'indexing_callback' => 'apachesolr_fields_default_indexing_callback',
-        'index_type' => 'string',
-        'facets' => FALSE,
-        ),
-      ),
-    );
-  return $mappings;
-}
-
 /**
  * Build the documents before sending them to Solr.
  *
@@ -63,7 +50,7 @@ function aitopics_search_apachesolr_index_document_build_node(ApacheSolrDocument
  *  An object implementing DrupalSolrQueryInterface. No need for &.
  */
 function aitopics_search_apachesolr_query_prepare($query) {
-  $query->addParams(array('fl' => 'sm_field_representative_image'));
+  $query->addParams(array('fl' => 'ss_field_representative_image'));
   $query->addParams(array('fl' => 'im_field_topics'));
   $query->addParams(array('fl' => 'im_field_tags'));
   $query->addParams(array('fl' => 'tos_field_authors'));
