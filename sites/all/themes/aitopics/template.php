@@ -142,12 +142,52 @@ function render_panel($node) {
 }
 
 function render_collection($node) {
-  if(isset($node) && property_exists($node, 'field_collections') && array_key_exists('und', $node->field_collections)) {
+  if(isset($node) && property_exists($node, 'field_collections') && array_key_exists('und', $node->field_collections) && !empty($node->field_collections['und'])) {
     $term = $node->field_collections['und'][0]['taxonomy_term'];
     $uri = entity_uri('taxonomy_term', $term);
     return "Part of the ".l($term->name, $uri['path'])." collection";
   } else {
     return "";
+  }
+}
+
+function render_persons_of_interest($node) {
+  if(isset($node) && property_exists($node, 'field_persons_of_interest') && array_key_exists('und', $node->field_persons_of_interest) && !empty($node->field_persons_of_interest['und'])) {
+    $persons = array();
+    for($i = 0; $i < count($node->field_persons_of_interest['und']); $i++) {
+      try {
+        $tid = $node->field_persons_of_interest['und'][$i]['tid'];
+        $term = taxonomy_term_load($tid);
+        $uri = entity_uri('taxonomy_term', $term);
+
+        $persons[$term->name] = l($term->name, $uri['path']);
+      }
+      catch(Exception $e) { }
+    }
+    ksort($persons);
+    if(!empty($persons)) {
+      ?>
+      <div class="persons">
+      <table>
+      <tr>
+      <td style="vertical-align: middle; width: 35px;">
+        <img src="/sites/all/themes/aitopics/icons/person.png" width="35" height="29" align="left" />
+      </td>
+      <td style="vertical-align: middle;">
+      <?php
+      $c = 0;
+      foreach($persons as $person => $link) {
+        print $link;
+        $c++;
+        if($c != count($persons)) { print "<br/>"; }
+      }
+      ?>
+      </td>
+      </tr>
+      </table>
+      </div>
+      <?php
+    }
   }
 }
 
@@ -171,7 +211,7 @@ function render_tags($node) {
       <table>
       <tr>
       <td style="vertical-align: middle; width: 35px;">
-        <img src="/sites/all/themes/aitopics/icons/tags.png" width=35 height=29 align="left" />
+        <img src="/sites/all/themes/aitopics/icons/tags.png" width="35" height="29" align="left" />
       </td>
       <td style="vertical-align: middle;">
       <?php

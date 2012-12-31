@@ -348,7 +348,8 @@ if(!empty($field_editors)) {
     <div class="topics-container">
     <?php if(isset($node)) { render_topics_subtopics($node); } ?>
     </div>
-    <div class="tags-container">
+    <div class="persons-tags-container">
+    <?php if(isset($node)) { render_persons_of_interest($node); } ?>
     <?php if(isset($node)) { render_tags($node); } ?>
     </div>
 
