@@ -150,7 +150,7 @@ function theme_apachesolr_autocomplete_highlight($variables) {
   $html .= '<div class="apachesolr_autocomplete suggestion">';
   $html .= '<strong>' . drupal_substr($variables['suggestion'], 0, strlen($variables['keys'])) . '</strong>' . drupal_substr($variables['suggestion'], strlen($variables['keys']));
   $html .= '</div>';
-  if ($variables['count']) {
+  if ($variables['count'] && $variables['show_counts']) {
     if ($first) {
       $html .= "<div class='apachesolr_autocomplete message' style='float:right'>";
       $html .= t('!count results', array('!count' => $variables['count']));
@@ -234,6 +234,7 @@ function apachesolr_autocomplete_suggest_word_completion($keys, $suggestions_to_
  */
 function apachesolr_autocomplete_suggest_additional_term($keys, $suggestions_to_return = 5) {
   $keys = trim($keys);
+  $keys = check_plain($keys);
   if ($keys == '') {
     return array();
   }
@@ -282,6 +283,7 @@ function apachesolr_autocomplete_suggest($keys, $params, $theme_callback, $orig_
   $matches = array();
   $suggestions = array();
   $keys = trim($keys);
+  $show_counts = apachesolr_autocomplete_variable_get_counts();
 
   // We need the keys array to make sure we don't suggest words that are already
   // in the search terms.
@@ -354,7 +356,7 @@ function apachesolr_autocomplete_suggest($keys, $params, $theme_callback, $orig_
     if ($response->response->numFound > 0 && $keys != '') {
       // Add * to array element key to force into a string, else PHP will
       // renumber keys that look like numbers on the returned array.
-      $suggestions['*' . $keys] = theme('apachesolr_autocomplete_highlight', array('keys' => $keys, 'suggestion' => $keys, 'count' => $response->response->numFound));
+      $suggestions['*' . $keys] = theme('apachesolr_autocomplete_highlight', array('keys' => $keys, 'suggestion' => $keys, 'count' => $response->response->numFound, 'show_counts' => $show_counts));
     }
 
     // Build suggestions using returned facets
@@ -369,7 +371,7 @@ function apachesolr_autocomplete_suggest($keys, $params, $theme_callback, $orig_
         if ($suggestion != '') {
           // Add * to array element key to force into a string, else PHP will
           // renumber keys that look like numbers on the returned array.
-          $suggestions['*' . $suggestion] = theme('apachesolr_autocomplete_highlight', array('keys' => $orig_keys, 'suggestion' => $suggestion, 'count' => $count));
+          $suggestions['*' . $suggestion] = theme('apachesolr_autocomplete_highlight', array('keys' => $orig_keys, 'suggestion' => $suggestion, 'count' => $count, 'show_counts' => $show_counts));
         }
       }
     }
@@ -433,6 +435,13 @@ function apachesolr_autocomplete_variable_get_suggest_spellcheck() {
 }
 
 /**
+ * Wrapper around variable_get() for variable apachesolr_autocomplete_counts.
+ */
+function apachesolr_autocomplete_variable_get_counts() {
+  return variable_get('apachesolr_autocomplete_counts', TRUE);
+}
+
+/**
  * Alter the apachesolr.module "advanced settings" form.
  */
 function apachesolr_autocomplete_form_apachesolr_settings_alter(&$form, $form_state) {
@@ -454,5 +463,11 @@ function apachesolr_autocomplete_form_apachesolr_settings_alter(&$form, $form_st
     '#title' => t('Enable spellchecker suggestions on the autocomplete widget'),
     '#description' => t('Suggest corrections to the currently typed-in words. E.g.: typing "rec" or "redd" might suggest "red".'),
     '#default_value' => apachesolr_autocomplete_variable_get_suggest_spellcheck(),
+  );
+  $form['advanced']['apachesolr_autocomplete_counts'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable counts in autocomplete widget suggestions'),
+    '#description' => t('WARNING: Counts shown alongside suggestions might be lower than the actual result count due to stemming and minimum match (mm) settings in solrconfig.xml.'),
+    '#default_value' => apachesolr_autocomplete_variable_get_counts(),
   );
 }

@@ -13,4 +13,5 @@ function apachesolr_autocomplete_uninstall() {
   variable_del('apachesolr_autocomplete_widget');
   variable_del('apachesolr_autocomplete_suggest_keywords');
   variable_del('apachesolr_autocomplete_suggest_spellcheck');
+  variable_del('apachesolr_autocomplete_counts');
 }
