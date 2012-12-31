@@ -466,7 +466,9 @@ function _site_map_taxonomy_tree($vid, $name = NULL, $description = NULL) {
       $term_item .= l($term->name, 'forum/' . $term->tid, array('attributes' => array('title' => $term->description)));
     }
     elseif ($term->count) {
-      $term_item .= l($term->name, 'taxonomy/term/' . $term->tid, array('attributes' => array('title' => $term->description)));
+      $t = taxonomy_term_load($term->tid);
+      $uri = entity_uri('taxonomy_term', $t);
+      $term_item .= l($term->name, $uri['path']);
     }
     else {
       $term_item .= check_plain($term->name);

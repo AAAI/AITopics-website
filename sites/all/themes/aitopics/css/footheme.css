@@ -1016,9 +1016,43 @@ a.lexicon-term img {
     padding: 0px !important;
 }
 
+/* Sitemap */
+
+#site-map div.site-map-taxonomys div.site-map-box-terms {
+    clear: both;
+}
+
+#site-map div.site-map-taxonomys div.site-map-box-terms div.content > ul {
+    padding-left: 0;
+}
+
+#site-map div.site-map-taxonomys div.site-map-box-terms div.content > ul > li {
+    float: left;
+    display: inline;
+    width: 33%;
+}
+
+/* Topics */
+#site-map div.site-map-taxonomys div.site-map-box-terms.site-map-box-terms-1 div.content > ul > li {
+    float: none;
+    font-weight: bold;
+}
+
+#site-map div.site-map-taxonomys div.site-map-box-terms.site-map-box-terms-1 div.content > ul > li > ul > li {
+    display: inline;
+    margin-right: 10px;
+    font-weight: normal;
+}
+
+/* Tags */
+#site-map div.site-map-taxonomys div.site-map-box-terms.site-map-box-terms-3 div.content > ul > li {
+    width: 25%;
+}
+
 /* Misc */
 
 span.log-message {
     color: #666;
     font-style: italic;
 }
+
