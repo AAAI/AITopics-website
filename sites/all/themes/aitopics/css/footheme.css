@@ -10,6 +10,10 @@
 
 /* Layout fixes */
 @media only screen and (min-width:769px) {
+    .region-sidebar-second {
+        margin-top: 50px;
+    }
+
     .grid-item-left {
         float: left;
         width: 48%;

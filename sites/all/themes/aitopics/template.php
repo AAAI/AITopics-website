@@ -131,6 +131,26 @@ function render_topics_subtopics($node) {
   }
 }
 
+function render_panel($node) {
+  if(isset($node) && property_exists($node, 'field_link_category') && array_key_exists('und', $node->field_link_category)) {
+    $term = $node->field_link_category['und'][0]['taxonomy_term'];
+    $uri = entity_uri('taxonomy_term', $term);
+    return "Found in ".l($term->name, $uri['path'])."";
+  } else {
+    return "";
+  }
+}
+
+function render_collection($node) {
+  if(isset($node) && property_exists($node, 'field_collections') && array_key_exists('und', $node->field_collections)) {
+    $term = $node->field_collections['und'][0]['taxonomy_term'];
+    $uri = entity_uri('taxonomy_term', $term);
+    return "Part of the ".l($term->name, $uri['path'])." collection";
+  } else {
+    return "";
+  }
+}
+
 function render_tags($node) {
   if(isset($node) && property_exists($node, 'field_tags') && array_key_exists('und', $node->field_tags)) {
     $tags = array();

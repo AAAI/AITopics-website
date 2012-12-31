@@ -307,9 +307,12 @@
           array_push($metadata, render($value));
         }
         if(!empty($field_collections)) {
-          $term = taxonomy_term_load($field_collections[0]['tid']);
-          array_push($metadata, $term->name);
+          array_push($metadata, render_collection($node));
         }
+        if(!empty($field_link_category)) {
+          array_push($metadata, render_panel($node));
+        }
+
         print implode("<br/>", $metadata);
         if(!empty($metadata)) { print "<br/>"; }
       ?>
