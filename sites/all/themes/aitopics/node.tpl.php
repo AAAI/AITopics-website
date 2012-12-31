@@ -141,7 +141,7 @@
         if(!empty($field_authors) && preg_match('/\w/', $field_authors['und'][0]['value'])) {
           array_push($metadata, "By ".$field_authors['und'][0]['value']);
         }
-        if(!empty($field_source) && preg_match('/\w/', $field_source['und'][0]['value'])) {
+        if(!empty($field_source) && array_key_exists('und', $field_source) && preg_match('/\w/', $field_source['und'][0]['value'])) {
           array_push($metadata, $field_source['und'][0]['value']);
         }
         if(!empty($field_minutes) && preg_match('/\w/', $field_minutes['und'][0]['value'])) {
