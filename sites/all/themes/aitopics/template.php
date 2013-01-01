@@ -132,7 +132,7 @@ function render_topics_subtopics($node) {
 }
 
 function render_panel($node) {
-  if(isset($node) && property_exists($node, 'field_link_category') && array_key_exists('und', $node->field_link_category)) {
+  if(isset($node) && property_exists($node, 'field_link_category') && array_key_exists('und', $node->field_link_category) && !empty($node->field_link_category['und'])) {
     $term = $node->field_link_category['und'][0]['taxonomy_term'];
     $uri = entity_uri('taxonomy_term', $term);
     return "Found in ".l($term->name, $uri['path'])."";
