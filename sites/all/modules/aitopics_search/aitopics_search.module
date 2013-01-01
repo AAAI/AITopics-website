@@ -122,7 +122,7 @@ function _aitopics_search_match_redirects($search_query_words) {
     array_push($redirects, l("Editor login", "user/login"));
   }
   if(FALSE !== strpos($search_str, "faq")) {
-    array_push($redirects, l("FAQs", "misc/faqs"));
+    array_push($redirects, l("FAQs", "faqs"));
   }
   if(FALSE !== strpos($search_str, "aitopics") || FALSE !== strpos($search_str, "about")) {
     array_push($redirects, l("About Us", "misc/about-us"));
