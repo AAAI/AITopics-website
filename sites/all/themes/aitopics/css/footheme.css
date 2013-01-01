@@ -1083,6 +1083,10 @@ article.comment {
 */
 }
 
+div.view-faqs div.ui-accordion-content div.views-field-body {
+    margin: 1em;
+}
+
 /* Misc */
 
 span.log-message {
