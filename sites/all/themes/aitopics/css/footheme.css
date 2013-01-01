@@ -759,6 +759,12 @@ body.nodetype-video #main-content,
     background-repeat: no-repeat;
 }
 
+.nodetype-faq {
+    background-image: url('/sites/all/themes/aitopics/icons/faq-large.png');
+    background-position: top right;
+    background-repeat: no-repeat;
+}
+
 body.nodetype-publication #main-content,
 .nodetype-publication {
     background-image: url('/sites/all/themes/aitopics/icons/publication-large.png');
@@ -910,6 +916,10 @@ table.cols-2 > tbody > tr > td {
     overflow: visible;
 }
 
+.ui-accordion .ui-accordion-header {
+    background: transparent;
+}
+
 .ui-accordion h3.ui-accordion-header,
 .ui-accordion h4.ui-accordion-header {
     margin-top: 0.5em;
@@ -1057,6 +1067,20 @@ a.lexicon-term img {
 /* Tags */
 #site-map div.site-map-taxonomys div.site-map-box-terms.site-map-box-terms-3 div.content > ul > li {
     width: 25%;
+}
+
+/* Comments (FAQ replies) */
+article.comment {
+/*
+    behavior: url(/sites/all/themes/aitopics/css/PIE.htc);
+    border-radius: 10px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+    -khtml-border-radius: 10px;
+    position: relative;
+    zoom: 1;
+    border: 1px solid #E9E9E9;
+*/
 }
 
 /* Misc */

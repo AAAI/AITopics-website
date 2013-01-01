@@ -79,23 +79,26 @@
  */
 ?>
 
-<?php $item_term = FALSE;
-      if(isset($field_item_type) && is_array($field_item_type) && array_key_exists('und', $field_item_type)) {
-         $item_term = taxonomy_term_load($field_item_type['und'][0]['tid']);
-      }
-      if($item_term === FALSE && isset($field_item_type)) {
-         $item_term = taxonomy_term_load($field_item_type[0]['tid']);
-      }
-      $item_type = ""; $item_type_str = "";
-      if(is_object($item_term)) { $item_type = strtolower($item_term->name); $item_type_str = $item_term->name; }
-      if($node->type == 'page') { $item_type = 'page'; $item_type_str = 'Topic overview'; }
-      if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Misc page'; }
+<?php
+$item_term = FALSE;
+if(isset($field_item_type) && is_array($field_item_type) && array_key_exists('und', $field_item_type)) {
+  $item_term = taxonomy_term_load($field_item_type['und'][0]['tid']);
+}
+if($item_term === FALSE && isset($field_item_type)) {
+  $item_term = taxonomy_term_load($field_item_type[0]['tid']);
+}
+$item_type = ""; $item_type_str = "";
+if(is_object($item_term)) { $item_type = strtolower($item_term->name); $item_type_str = $item_term->name; }
+if($node->type == 'page') { $item_type = 'page'; $item_type_str = 'Topic overview'; }
+if($node->type == 'faq') { $item_type = 'faq'; $item_type_str = 'FAQ'; }
+if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Misc page'; }
 ?>
 
-<?php if($item_type_str == 'Link' || $item_type_str == 'News' || $item_type_str == 'Podcast' || $item_type_str == 'Publication' || $item_type_str == 'Video' || $item_type_str == 'Topic overview' || $item_type_str == 'Misc page'): ?>
+<?php if($item_type_str == 'Link' || $item_type_str == 'News' || $item_type_str == 'Podcast' || $item_type_str == 'Publication' || $item_type_str == 'Video' || $item_type_str == 'Topic overview' || $item_type_str == 'Misc page' || $item_type_str == 'FAQ'): ?>
 
 <?php $req = request_path(); ?>
 
+<?php /* A teaser in a topic overview */ ?>
 <?php if($teaser && (substr($req, 0, 5) == "topic" || substr($req, 0, 5) == "links" || substr($req, 0, 11) == "publication")): ?>
 
 <div id="node-<?php print $node->nid; ?>" class="<?php print $classes; ?> clearfix"<?php print $attributes; ?>>
@@ -160,6 +163,7 @@
 
 </div>
 
+<?php /* Teaser not in a topic overview */ ?>
 <?php elseif($teaser): ?>
 
 <div id="node-<?php print $node->nid; ?>" class="<?php print $classes; ?> clearfix"<?php print $attributes; ?>>
@@ -238,7 +242,7 @@
 </div>
 
 
-<?php else: // full node view ?>
+<?php else: /* full node view */ ?>
 
 <div id="node-<?php print $node->nid; ?>" class="<?php print $classes; ?> clearfix"<?php print $attributes; ?>>
 
@@ -268,11 +272,12 @@
               print str_replace("/>", "align=\"right\"/>", $rendered);
             }
       ?>
-      <?php $summary = field_get_items('node', $node, 'body');
-            $value = field_view_value('node', $node, 'body', $summary[0], 'full');
-            print render($value); ?>
+      <?php
+          $summary = field_get_items('node', $node, 'body');
+          $value = field_view_value('node', $node, 'body', $summary[0], 'full');
+          print render($value);
+      ?>
     </div>
-
 
     <?php if(!empty($field_embedding)) {
         echo '<div style="text-align: center; margin: 2em;">';

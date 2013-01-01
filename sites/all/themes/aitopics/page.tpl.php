@@ -1,10 +1,17 @@
-<?php $item_term = FALSE;
-      if(isset($node) && property_exists($node, 'field_item_type') && is_array($node->field_item_type) && array_key_exists('und', $node->field_item_type)) { $item_term = taxonomy_term_load($node->field_item_type['und'][0]['tid']); }
-      if(isset($node) && $item_term === FALSE && isset($node->field_item_type)) { $item_term = taxonomy_term_load($node->field_item_type[0]['tid']); }
-      $item_type = "";
-      if(is_object($item_term)) { $item_type = $item_term->name; }
-      if(isset($node) && $node->type == 'page') { $item_type = 'Page'; }
-      if(isset($node) && $node->type == 'misc_page') { $item_type = 'Misc Page'; }
+<?php 
+$item_term = FALSE;
+if(isset($node) && property_exists($node, 'field_item_type') &&
+  is_array($node->field_item_type) && array_key_exists('und', $node->field_item_type)) {
+  $item_term = taxonomy_term_load($node->field_item_type['und'][0]['tid']);
+}
+if(isset($node) && $item_term === FALSE && isset($node->field_item_type)) {
+  $item_term = taxonomy_term_load($node->field_item_type[0]['tid']);
+}
+$item_type = "";
+if(is_object($item_term)) { $item_type = $item_term->name; }
+if(isset($node) && $node->type == 'page') { $item_type = 'Page'; }
+if(isset($node) && $node->type == 'faq') { $item_type = 'FAQ'; }
+if(isset($node) && $node->type == 'misc_page') { $item_type = 'Misc Page'; }
 ?>
 <div class="texture-overlay">
   <div id="page" class="container">
