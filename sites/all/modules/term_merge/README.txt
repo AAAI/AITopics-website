@@ -1,7 +1,8 @@
 Term Merge
 ------------------------
-by Max Nylin, max@articstudios.se.
-
+by:
+ * Max Nylin <max@articstudios.se>
+ * Oleksandr Trotsenko
 
 Description
 -----------
@@ -17,6 +18,20 @@ all fields referring to those terms to refer to the replacement term instead.
 Currently, the module only acts on fields. It would be desirable to update
 other possible places where deleted terms are used.
 
+Integration
+-------------
+Currently module integrates with the following core and contributed modules:
+ * Redirect module (http://drupal.org/project/redirect). During term merging
+ you may set up SEO friendly redirects from the branch terms to point to the
+ trunk term
+
+Requirements
+-------------
+The modules requires enabled the following modules:
+ * Taxonomy module (ships with Drupal core)
+ * Entity API (http://drupal.org/project/entity)
+
 Installation
 ------------
- * Copy the module's directory to your modules directory and activate the module.
+ * Copy the module's directory to your modules directory and activate the
+ module.
