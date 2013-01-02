@@ -1087,6 +1087,10 @@ div.view-faqs div.ui-accordion-content div.views-field-body {
     margin: 1em;
 }
 
+div.view-faqs {
+    margin-bottom: 50px;
+}
+
 /* Misc */
 
 span.log-message {
