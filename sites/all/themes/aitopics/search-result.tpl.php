@@ -74,7 +74,12 @@ if(!empty($result['fields']['sm_vid_Item_Type'])) {
 
 $rep_image = array();
 if(!empty($result['fields']['ss_field_representative_image'])) {
-  $rep_image = json_decode($result['fields']['ss_field_representative_image']);
+  $rep_image = json_decode($result['fields']['ss_field_representative_image'], TRUE);
+}
+
+$primary_link = array();
+if(!empty($result['fields']['ss_field_original_link'])) {
+  $primary_link = json_decode($result['fields']['ss_field_original_link'], TRUE);
 }
 
 $topics = array();
@@ -92,14 +97,14 @@ if(!empty($result['fields']['im_field_topics'])) {
     <div class="nodetype-name"><?php if($item_type_str == 'News') { echo "AI in the News"; } else { echo $item_type_str; } ?></div>
 
     <?php print render($title_prefix); ?>
-    <h2 class="title"<?php print $title_attributes; ?>><?php echo "<a href=\"$url\">$title</a>"; ?></h2>
+    <h2<?php print $title_attributes; ?>><?php if(!empty($primary_link)) { display_link($primary_link, $title); } else { echo "<a href=\"$url\">$title</a>"; } ?></h2>
     <?php print render($title_suffix); ?>
 
     <div class="summary search-snippet-info">
       <?php
         if(!empty($rep_image)) {
             print "<a href=\"$url\">\n";
-            print "<img typeof=\"foaf:Image\" src=\"http://aitopics.org/sites/default/files/styles/thumbnail/public/".substr($rep_image->uri, 8)."\" align=\"left\">\n";
+            print "<img typeof=\"foaf:Image\" src=\"http://aitopics.org/sites/default/files/styles/thumbnail/public/".substr($rep_image['uri'], 8)."\" align=\"left\">\n";
             print "</a>";
         }
       ?>
@@ -107,6 +112,13 @@ if(!empty($result['fields']['im_field_topics'])) {
       <p class="search-snippet"<?php print $content_attributes; ?>>... <?php print $snippet; ?></p>
       <?php endif; ?>
     </div>
+
+    <?php if(!empty($primary_link)) {
+            echo "<p>";
+            display_link($primary_link, 'Link to external resource');
+            echo "</p>";
+    } ?>
+
 
     <table class="metadata">
     <tr>
