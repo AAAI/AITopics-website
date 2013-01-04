@@ -327,10 +327,6 @@ a:hover, a:focus {
     color: #5656c0;
 }
 
-#block-system-main-menu {
-    margin-top: -20px !important;
-}
-
 .nav li a:link,
 .nav li a:visited {
     color: navy;
@@ -926,7 +922,7 @@ table.cols-2 > tbody > tr > td {
     overflow: visible;
 }
 
-.ui-accordion li.first {
+.ui-accordion.accordion-menu-name-topics li.first {
     font-weight: bold;
 }
 
@@ -1110,3 +1106,4 @@ div.views-field-rendered-entity {
 .block .item-list a.facetapi-limit-link {
     margin-left: 15px;
 }
+
