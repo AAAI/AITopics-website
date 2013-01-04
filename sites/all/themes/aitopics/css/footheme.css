@@ -1087,6 +1087,15 @@ div.view-faqs {
     margin-bottom: 50px;
 }
 
+/* Redirect */
+#page div.messages.redirect {
+    background-color: #e6f4ff;
+    border: 1px solid navy;
+    color: #333;
+    font-weight: bold;
+    margin: 10px 10px 10px 0;
+}
+
 /* Misc */
 
 span.log-message {

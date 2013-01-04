@@ -18,6 +18,8 @@
   base theme = pixture_reloaded
 
 
+  scripts[] = js/redirect-notice.js
+
 ;----------// Styles
   ; We only need to include two stylesheets - we must include colors.css
   ; and at least one more for our custom CSS.

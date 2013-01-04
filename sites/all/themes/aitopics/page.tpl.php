@@ -60,6 +60,8 @@ if(isset($node) && $node->type == 'misc_page') { $item_type = 'Misc Page'; }
     <div id="columns"><div class="columns-inner clearfix">
       <div id="content-column"><div class="content-inner">
 
+        <div id="redirect-notice"></div>
+
         <?php print render($page['highlight']); ?> <!-- /highlight -->
 
         <?php $tag = $title ? 'section' : 'div'; ?>
