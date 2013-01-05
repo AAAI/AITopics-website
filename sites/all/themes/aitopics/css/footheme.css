@@ -473,6 +473,10 @@ h1 {
     margin-bottom: 0 !important;
 }
 
+h1#page-title {
+    padding-bottom: 0.75em;
+}
+
 h2 {
     margin-top: 0.4em;
     font-size: 1.4em;
@@ -1088,12 +1092,26 @@ div.view-faqs {
 }
 
 /* Redirect */
+
 #page div.messages.redirect {
     background-color: #e6f4ff;
     border: 1px solid navy;
     color: #333;
     font-weight: bold;
     margin: 10px 10px 10px 0;
+}
+
+/* Tributes/Interviews/etc. pages */
+
+ul.persons-of-interest  {
+    width: 30%;
+    float: left;
+    margin-left: 15px;
+}
+
+ul.persons-of-interest li {
+    display: block;
+    margin-bottom: 0.5em;
 }
 
 /* Misc */

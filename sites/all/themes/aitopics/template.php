@@ -304,3 +304,21 @@ function aitopics_vertical_tabs($variables) {
   return $output;
 }
 
+function aitopics_preprocess_views_view_summary(&$vars) {
+  if($vars['view']->name == 'persons_of_interest') {
+    $items = array();
+    foreach($vars['rows'] as $result){
+      // remove links that aren't from the right vocabulary;
+      // we detect this by checking for a number in the link rather than a term name
+      if(!preg_match("!/\d+$!", $result->url)) {
+        $items[] = $result;
+      }
+    }
+
+    $vars['rows'] = $items;
+  }
+}
+
+function dsm($arr) {
+  drupal_set_message('<pre>'.print_r($arr, 1).'</pre>');
+}
