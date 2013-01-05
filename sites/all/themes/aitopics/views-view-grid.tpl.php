@@ -13,10 +13,19 @@
   <h3><?php print $title; ?></h3>
 <?php endif; ?>
 
+<?php
+$count = 0;
+foreach($rows as $columns) {
+  foreach($columns as $counter => $item) {
+    $count++;
+  }
+}
+?>
+
 <div class="grid-items">
 <?php foreach ($rows as $columns): ?>
   <?php foreach ($columns as $counter => $item): ?>
-    <?php if(count($rows) > 1): ?>
+    <?php if($count > 1): ?>
       <div class="grid-item grid-item-<?php if($counter % 2 == 0) { echo "left"; } else { echo "right"; } ?>">
     <?php else: ?>
       <div class="grid-item">

@@ -759,6 +759,12 @@ body.nodetype-video #main-content,
     background-repeat: no-repeat;
 }
 
+.nodetype-person {
+    background-image: url('/sites/all/themes/aitopics/icons/person-large.png');
+    background-position: top right;
+    background-repeat: no-repeat;
+}
+
 .nodetype-faq {
     background-image: url('/sites/all/themes/aitopics/icons/faq-large.png');
     background-position: top right;

@@ -12,6 +12,8 @@ if(is_object($item_term)) { $item_type = $item_term->name; }
 if(isset($node) && $node->type == 'page') { $item_type = 'Page'; }
 if(isset($node) && $node->type == 'faq') { $item_type = 'FAQ'; }
 if(isset($node) && $node->type == 'misc_page') { $item_type = 'Misc Page'; }
+
+if(arg(0) == 'tributes' || arg(0) == 'interviews' || arg(0) == 'persons') { $item_type = 'Person'; }
 ?>
 <div class="texture-overlay">
   <div id="page" class="container">
