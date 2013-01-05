@@ -474,7 +474,7 @@ h1 {
 }
 
 h1#page-title {
-    padding-bottom: 0.75em;
+    padding-bottom: 0.5em;
 }
 
 h2 {
@@ -1108,6 +1108,10 @@ div.view-faqs {
 }
 
 /* Tributes/Interviews/etc. pages */
+
+div.view-persons-of-interest div.view-content {
+    margin-top: 2em;
+}
 
 ul.persons-of-interest  {
     width: 30%;
