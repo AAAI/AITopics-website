@@ -305,9 +305,18 @@ div.field-name-body img.mceIcon {
     padding: 10px 0 0 25px;
 }
 
+/* Disable service links on bottom of front page */
+div#node-71588 div.service-links {
+    display: none;
+}
+
 li.service-links-google-plus-one {
     padding-top: 3px !important;
     margin-left: 10px !important;
+}
+
+li.service-links-facebook-like {
+    margin-right: -40px !important;
 }
 
 #menu-bar {
@@ -327,9 +336,12 @@ a:hover, a:focus {
     color: #5656c0;
 }
 
-.nav li a:link,
-.nav li a:visited {
+.nav li a:link {
     color: navy;
+}
+
+.nav li a:visited {
+    color: #181860;
 }
 
 .nav li a:hover,
@@ -337,6 +349,14 @@ a:hover, a:focus {
 .nav li a:visited:hover {
     color: #5656c0;
     text-decoration: underline;
+}
+
+a {
+    color: navy;
+}
+
+a:visited {
+    color: #181860;
 }
 
 #columns {
@@ -552,6 +572,10 @@ blockquote em {
 li.search-result {
     border: 1px solid #e9e9e9;
     padding: 10px;
+}
+
+section#block-apachesolr-search-sort li {
+    list-style: none;
 }
 
 .ac_results li {
@@ -1044,6 +1068,21 @@ a.lexicon-term img {
 
 /* Sitemap */
 
+#site-map div.site-map-box {
+    padding-top: 10px;
+}
+
+#site-map div.site-map-menus div.site-map-box-menu-menu-aitopics-editors div.content > ul {
+    padding-left: 0;
+    margin-top: 0;
+}
+
+#site-map div.site-map-menus div.site-map-box-menu-menu-aitopics-editors div.content > ul > li {
+    float: left;
+    display: inline;
+    width: 20%;
+}
+
 #site-map div.site-map-taxonomys div.site-map-box-terms {
     clear: both;
 }
@@ -1143,4 +1182,18 @@ div.views-field-rendered-entity {
 .block .item-list a.facetapi-limit-link {
     margin-left: 15px;
 }
+
+table#front-good-starting-places {
+
+}
+
+table#front-good-starting-places td {
+    vertical-align: top;
+    padding: 0;
+}
+
+table#front-good-starting-places td ul {
+    margin-bottom: 0;
+}
+
 
