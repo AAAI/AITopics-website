@@ -1,0 +1,4 @@
+name = Family Resemblance
+description = Machine learning for classifying items into the AITopics ontology.
+core = 7.x
+package = AITopics
