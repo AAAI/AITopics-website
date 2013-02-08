@@ -468,7 +468,7 @@ function _site_map_taxonomy_tree($vid, $name = NULL, $description = NULL) {
     elseif ($term->count) {
       $t = taxonomy_term_load($term->tid);
       $uri = entity_uri('taxonomy_term', $t);
-      $term_item .= l($term->name, $uri['path']);
+      $term_item .= l($term->name, $uri['path'], $uri['options']);
     }
     else {
       $term_item .= check_plain($term->name);
