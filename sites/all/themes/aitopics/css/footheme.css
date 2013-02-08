@@ -35,6 +35,10 @@
         float: right;
     }
 
+    div.persons-tags-container.intopic {
+        margin-top: -25px;
+    }
+
     #block-search-form {
         width: 400px;
         text-align: right;
@@ -815,6 +819,8 @@ body.nodetype-publication #main-content,
 
 .metadata.intopic {
     color: #B76900;
+    float: left;
+    width: 50%;
 }
 
 .metadata.notintopic {

@@ -159,6 +159,13 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
       <a href="<?php print $node_url; ?>">Read more...</a>
     </div>
 
+    <div class="persons-tags-container intopic">
+    <?php if(isset($node)) { render_persons_of_interest($node); } ?>
+    <?php if(isset($node)) { render_tags($node); } ?>
+    </div>
+
+    <div style="clear: both"></div>
+
   </div>
 
 </div>
