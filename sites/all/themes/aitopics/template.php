@@ -50,7 +50,7 @@ function display_related_topics($tids) {
   foreach($tids as $tid) {
     $term = taxonomy_term_load($tid);
     $uri = entity_uri('taxonomy_term', $term);
-    array_push($related, l($term->name, $uri['path']));
+    array_push($related, l($term->name, $uri['path'], $uri['options']));
   }
   print implode(", ", $related);
 }
@@ -65,15 +65,15 @@ function render_topics_subtopics_tids($tids, $topic_overview, $page_name, $relat
       
       $parents = taxonomy_get_parents($tid);
       if(empty($parents) && (!$topic_overview || $term->name != $page_name)) {
-        $topics[$term->name] = l($term->name, $child_uri['path']);
+        $topics[$term->name] = l($term->name, $child_uri['path'], $child_uri['options']);
       } else {
         foreach($parents as $parent) {
           $topics_with_children []= $parent->name;
           $uri = entity_uri('taxonomy_term', $parent);
-          $link = l($parent->name, $uri['path']);
+          $link = l($parent->name, $uri['path'], $uri['options']);
           if(!$topic_overview || $term->name != $page_name) {
             $link .= " > ";
-            $link .= l($term->name, $child_uri['path']);
+            $link .= l($term->name, $child_uri['path'], $child_uri['options']);
           }
           $topics[$term->name." > ".$parent->name] = $link;
         }
@@ -135,7 +135,7 @@ function render_panel($node) {
   if(isset($node) && property_exists($node, 'field_link_category') && array_key_exists('und', $node->field_link_category) && !empty($node->field_link_category['und'])) {
     $term = $node->field_link_category['und'][0]['taxonomy_term'];
     $uri = entity_uri('taxonomy_term', $term);
-    return "Found in ".l($term->name, $uri['path'])."";
+    return "Found in ".l($term->name, $uri['path'], $uri['options'])."";
   } else {
     return "";
   }
@@ -145,7 +145,7 @@ function render_collection($node) {
   if(isset($node) && property_exists($node, 'field_collections') && array_key_exists('und', $node->field_collections) && !empty($node->field_collections['und'])) {
     $term = $node->field_collections['und'][0]['taxonomy_term'];
     $uri = entity_uri('taxonomy_term', $term);
-    return "Part of the ".l($term->name, $uri['path'])." collection";
+    return "Part of the ".l($term->name, $uri['path'], $uri['options'])." collection";
   } else {
     return "";
   }
@@ -160,7 +160,7 @@ function render_persons_of_interest($node) {
         $term = taxonomy_term_load($tid);
         $uri = entity_uri('taxonomy_term', $term);
 
-        $persons[$term->name] = l($term->name, $uri['path']);
+        $persons[$term->name] = l($term->name, $uri['path'], $uri['options']);
       }
       catch(Exception $e) { }
     }
@@ -200,7 +200,7 @@ function render_tags($node) {
         $term = taxonomy_term_load($tid);
         $uri = entity_uri('taxonomy_term', $term);
 
-        $tags[$term->name] = l($term->name, $uri['path']);
+        $tags[$term->name] = l($term->name, $uri['path'], $uri['options']);
       }
       catch(Exception $e) { }
     }
