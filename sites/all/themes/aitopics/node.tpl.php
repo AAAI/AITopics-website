@@ -291,6 +291,16 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
           echo "</p>";
     } ?>
 
+    <?php if(!empty($field_link)) {
+            echo "<p>Extra links:<ul>";
+            foreach($field_link as $link) {
+              print "<li>";
+              display_link($link, $link['title']);
+              print "</li>";
+            }
+            echo "</ul></p>";
+    } ?>
+
     <div class="metadata fullview">
       <?php
         $metadata = array();

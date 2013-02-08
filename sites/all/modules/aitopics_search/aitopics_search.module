@@ -22,6 +22,13 @@ function aitopics_search_apachesolr_index_document_build_node(ApacheSolrDocument
     $document->addField('ss_field_representative_image', "");
   }
 
+  if($entity->type == 'item' && array_key_exists('und', $entity->field_original_link)) {
+    $document->addField('ss_field_original_link',
+      json_encode($entity->field_original_link['und'][0]));
+  } else {
+    $document->addField('ss_field_original_link', "");
+  }
+
   if($entity->type == 'item' && array_key_exists('und', $entity->field_source)) {
     $document->addField('tos_field_source', $entity->field_source['und'][0]['value']);
   } else {
@@ -51,6 +58,7 @@ function aitopics_search_apachesolr_index_document_build_node(ApacheSolrDocument
  */
 function aitopics_search_apachesolr_query_prepare($query) {
   $query->addParams(array('fl' => 'ss_field_representative_image'));
+  $query->addParams(array('fl' => 'ss_field_original_link'));
   $query->addParams(array('fl' => 'im_field_topics'));
   $query->addParams(array('fl' => 'im_field_tags'));
   $query->addParams(array('fl' => 'tos_field_authors'));
@@ -122,7 +130,7 @@ function _aitopics_search_match_redirects($search_query_words) {
     array_push($redirects, l("Editor login", "user/login"));
   }
   if(FALSE !== strpos($search_str, "faq")) {
-    array_push($redirects, l("FAQs", "misc/faqs"));
+    array_push($redirects, l("FAQs", "faqs"));
   }
   if(FALSE !== strpos($search_str, "aitopics") || FALSE !== strpos($search_str, "about")) {
     array_push($redirects, l("About Us", "misc/about-us"));

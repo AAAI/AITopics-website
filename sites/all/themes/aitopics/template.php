@@ -132,7 +132,7 @@ function render_topics_subtopics($node) {
 }
 
 function render_panel($node) {
-  if(isset($node) && property_exists($node, 'field_link_category') && array_key_exists('und', $node->field_link_category)) {
+  if(isset($node) && property_exists($node, 'field_link_category') && array_key_exists('und', $node->field_link_category) && !empty($node->field_link_category['und'])) {
     $term = $node->field_link_category['und'][0]['taxonomy_term'];
     $uri = entity_uri('taxonomy_term', $term);
     return "Found in ".l($term->name, $uri['path'])."";
@@ -304,3 +304,21 @@ function aitopics_vertical_tabs($variables) {
   return $output;
 }
 
+function aitopics_preprocess_views_view_summary(&$vars) {
+  if($vars['view']->name == 'persons_of_interest') {
+    $items = array();
+    foreach($vars['rows'] as $result){
+      // remove links that aren't from the right vocabulary;
+      // we detect this by checking for a number in the link rather than a term name
+      if(!preg_match("!/\d+$!", $result->url)) {
+        $items[] = $result;
+      }
+    }
+
+    $vars['rows'] = $items;
+  }
+}
+
+function dsm($arr) {
+  drupal_set_message('<pre>'.print_r($arr, 1).'</pre>');
+}
