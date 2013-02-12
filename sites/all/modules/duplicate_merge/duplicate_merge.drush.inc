@@ -32,22 +32,28 @@ function drush_duplicate_merge_dup_merge() {
     $key = "$title-----$link";
 
     if(array_key_exists($key, $unique_items)) {
-      array_push($unique_items[$key], $node);
+      array_push($unique_items[$key], $node->nid);
     } else {
-      $unique_items[$key] = array($node);
+      $unique_items[$key] = array($node->nid);
     }
     $item_no++;
   }
 
   foreach($unique_items as $key => $matched_items) {
     if(count($matched_items) > 1) {
-      print (count($matched_items)-1)." duplicates: ".$matched_items[0]->title."\n";
-      $cononical = $matched_items[0];
+      $nodes = array();
+      foreach($matched_items as $nid) {
+        $node = node_load($nid);
+        array_push($nodes, $node);
+      }
+
+      print (count($nodes)-1)." duplicates: ".$nodes[0]->title."\n";
+      $cononical = $nodes[0];
       $cononical_path = drupal_lookup_path('alias',"node/".$cononical->nid);
-      foreach($matched_items as $item) {
-        $path = drupal_lookup_path('alias',"node/".$item->nid);
-        if(0 === strpos($cononical_path, $path) || $item->sticky) {
-          $cononical = $item;
+      foreach($nodes as $node) {
+        $path = drupal_lookup_path('alias',"node/".$node->nid);
+        if(0 === strpos($cononical_path, $path) || $node->sticky) {
+          $cononical = $node;
           $cononical_path = $path;
         }
       }
@@ -60,10 +66,10 @@ function drush_duplicate_merge_dup_merge() {
         $cononical_topics = $topics;
       }
 
-      foreach($matched_items as $item) {
-        if($item->nid == $cononical->nid) { continue; }
-        if(array_key_exists('und', $item->field_topics)) {
-          array_merge($topics, $item->field_topics['und']);
+      foreach($nodes as $node) {
+        if($node->nid == $cononical->nid) { continue; }
+        if(array_key_exists('und', $node->field_topics)) {
+          array_merge($topics, $node->field_topics['und']);
         }
       }
       if($topics != $cononical_topics) {
@@ -72,9 +78,9 @@ function drush_duplicate_merge_dup_merge() {
       } else {
         // same topics, same primary link; delete all but the cononical
         $to_delete = array();
-        foreach($matched_items as $item) {
-          if($item->nid == $cononical->nid) { continue; }
-          array_push($to_delete, $item->nid);
+        foreach($nodes as $node) {
+          if($node->nid == $cononical->nid) { continue; }
+          array_push($to_delete, $node->nid);
         }
         print "\tDeleting: ".implode(" ", $to_delete)."\n";
         node_delete_multiple($to_delete);
