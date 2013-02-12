@@ -11,7 +11,7 @@ function duplicate_merge_drush_command() {
 }
 
 function drush_duplicate_merge_dup_merge() {
-  $result = db_query("SELECT n.nid FROM {node} n WHERE n.type = :type",
+  $result = db_query("SELECT n.nid FROM {node} n WHERE n.type = :type AND n.status = 1",
             array(':type' => 'item'));
 
   $unique_items = array();
@@ -37,6 +37,7 @@ function drush_duplicate_merge_dup_merge() {
       $unique_items[$key] = array($node->nid);
     }
     $item_no++;
+
   }
 
   foreach($unique_items as $key => $matched_items) {
@@ -87,4 +88,5 @@ function drush_duplicate_merge_dup_merge() {
       }
     }
   }
+  print "Used ".memory_get_peak_usage()." bytes\n";
 }
