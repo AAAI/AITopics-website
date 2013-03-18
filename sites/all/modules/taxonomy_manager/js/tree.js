@@ -330,9 +330,9 @@ Drupal.TaxonomyManagerTree.prototype.attachSelectAllChildren = function(parent, 
 Drupal.TaxonomyManagerTree.prototype.SelectAllChildrenToggle = function(span) {
   var tree = this;
   if ($(span).hasClass("select-all-children")) {
-    var li = $(this).parents("li:first");
+    var li = $(span).parents("li:first");
     if ($(li).hasClass("has-children")) {
-      this.loadChildForm(li, true, function(li, tree1) {
+      this.loadChildForm(li, true, function(li, tree) {
         tree.swapClasses(li, "expandable", "collapsable");
         tree.swapClasses(li, "lastExpandable", "lastCollapsable");
         var this_span = $(li).find('span.select-all-children:first');
@@ -341,8 +341,8 @@ Drupal.TaxonomyManagerTree.prototype.SelectAllChildrenToggle = function(span) {
       });
     }
     else {
-      $(span).removeClass("select-all-children").addClass("unselect-all-children");
-      $(span).attr("title", Drupal.t("Unselect all children"));
+      $(span).removeClass("select-all-children").addClass("deselect-all-children");
+      $(span).attr("title", Drupal.t("Deselect all children"));
       $(span).parents("li:first").find('ul:first').each(function() {
         var first_element = $(this).find('.term-line:first');
         $(first_element).parent().siblings("li").find('div.term-line:first :checkbox').attr('checked', true);
@@ -351,7 +351,7 @@ Drupal.TaxonomyManagerTree.prototype.SelectAllChildrenToggle = function(span) {
     }
   }
   else {
-    $(span).removeClass("unselect-all-children").addClass("select-all-children");
+    $(span).removeClass("deselect-all-children").addClass("select-all-children");
     $(span).parents(".term-line").siblings("ul").find(':checkbox').attr("checked", false);
     $(span).attr("title", Drupal.t("Select all children"));
   }
@@ -404,10 +404,6 @@ Drupal.attachMsgCloseLink = function(context) {
         $(this).remove();
       });
       return false;
-    });
-    // Remove the message after 10sec.
-    $(this).parent().delay(10000).fadeOut('slow', function() {
-      $(this).remove();
     });
   });
 }
@@ -470,7 +466,7 @@ Drupal.attachGlobalSelectAll = function() {
       // Only select those that are visible to the end user.
       $(form).parent().find(' :checkbox:visible').attr('checked', true);
     });
-    $(this).find('span.unselect-all-children').click(function() {
+    $(this).find('span.deselect-all-children').click(function() {
       $(form).parent().find(':checkbox').attr("checked", false);
     });
   });

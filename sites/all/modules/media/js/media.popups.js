@@ -310,7 +310,8 @@ Drupal.media.popups.getDialogOptions = function () {
     overlay: {
       backgroundColor: '#000000',
       opacity: 0.4
-    }
+    },
+    zIndex: 10000
   };
 };
 

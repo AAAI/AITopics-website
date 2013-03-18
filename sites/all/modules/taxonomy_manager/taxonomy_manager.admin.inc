@@ -16,14 +16,14 @@ include_once DRUPAL_ROOT . "/modules/taxonomy/taxonomy.admin.inc";
  * list of vocabularies, which link to Taxonomy Manager interface
  */
 function taxonomy_manager_voc_list() {
-  $output = l(t('Add new vocabulary'), 'admin/structure/taxonomy/add/vocabulary') .' | ';
-  $output .= l(t('Edit vocabulary settings'), 'admin/structure/taxonomy') .'<br /><br />';
+  $output = l(t('Add new vocabulary'), 'admin/structure/taxonomy/add/vocabulary') . ' | ';
+  $output .= l(t('Edit vocabulary settings'), 'admin/structure/taxonomy') . '<br /><br />';
 
   $vocabularies = taxonomy_get_vocabularies();
   $voc_list = array();
 
   foreach ($vocabularies as $vocabulary) {
-    $voc_list[] = l($vocabulary->name, 'admin/structure/taxonomy_manager/voc/'. $vocabulary->machine_name);
+    $voc_list[] = l($vocabulary->name, 'admin/structure/taxonomy_manager/voc/' . $vocabulary->machine_name);
   }
   if (!count($voc_list)) {
     $voc_list[] = t('No Vocabularies available');
@@ -49,18 +49,18 @@ function taxonomy_manager_form($form, &$form_state, $voc, $tid = 0, $filter = NU
   if (isset($form_state['values']['tid']) && !(isset($form_state['triggering_element']['#value']) && $form_state['triggering_element']['#value'] == "load term" && $form_state['values']['load-tid-refresh-tree'])) {
     $tid = $form_state['values']['tid'];
   }
-  else if (isset($form_state['triggering_element']['#value']) && $form_state['triggering_element']['#value'] == "load term" && $form_state['values']['load-tid-refresh-tree']) {
+  elseif (isset($form_state['triggering_element']['#value']) && $form_state['triggering_element']['#value'] == "load term" && $form_state['values']['load-tid-refresh-tree']) {
     $tid = $form_state['values']['load-tid'];
   }
 
-  $module_path = drupal_get_path('module', 'taxonomy_manager') .'/';
+  $module_path = drupal_get_path('module', 'taxonomy_manager') . '/';
 
-  $form['#attached']['css'][] = $module_path .'css/taxonomy_manager.css';
-  $form['#attached']['js'][] = $module_path .'js/hideForm.js';
-  $form['#attached']['js'][] = $module_path .'js/updateWeight.js';
-  $form['#attached']['js'][] = $module_path .'js/termData.js';
+  $form['#attached']['css'][] = $module_path . 'css/taxonomy_manager.css';
+  $form['#attached']['js'][] = $module_path . 'js/hideForm.js';
+  $form['#attached']['js'][] = $module_path . 'js/updateWeight.js';
+  $form['#attached']['js'][] = $module_path . 'js/termData.js';
 
-  $form['#attached']['js'][] = array('data' => array('termData' => array('url' => url("admin/structure/taxonomy_manager/termdata/edit/". $voc->vid))), 'type' => 'setting');
+  $form['#attached']['js'][] = array('data' => array('termData' => array('url' => url("admin/structure/taxonomy_manager/termdata/edit/" . $voc->vid))), 'type' => 'setting');
   $form['#attached']['js'][] = array('data' => array('updateWeight' => array('up' => 'edit-weight-up', 'down' => 'edit-weight-down', 'url' => url('admin/structure/taxonomy_manager/weight/'), 'disable_mouseover' => variable_get('taxonomy_manager_disable_mouseover', 0))), 'type' => 'setting');
   $form['#attached']['js'][] = array('data' => array('TMAjaxThrobber' => array('add' => TRUE)), 'type' => 'setting');
   $form['#attached']['js'][] = array('data' => array('taxonomy_manager' => array('modulePath' => (url($module_path) == $module_path) ? $module_path : (base_path() . $module_path))), 'type' => 'setting');
@@ -138,12 +138,12 @@ function taxonomy_manager_form($form, &$form_state, $voc, $tid = 0, $filter = NU
     }
   }
 
-  $form['taxonomy']['manager']['top']['size'] = array('#markup' => '<div class="taxonomy-manager-tree-size">'. theme("image", array('path' =>$module_path ."images/grippie.png", 'alt' => t("Resize tree"), 'title' => t("Resize tree"), 'attributes' => array('class' => "div-grippie"))) .'</div>');
+  $form['taxonomy']['manager']['top']['size'] = array('#markup' => '<div class="taxonomy-manager-tree-size">' . theme("image", array('path' => $module_path . "images/grippie.png", 'alt' => t("Resize tree"), 'title' => t("Resize tree"), 'attributes' => array('class' => "div-grippie"))) . '</div>');
 
   if (isset($form_state['values']['double_tree_values']['left_tree_expand_terms']) && count($form_state['values']['double_tree_values']['left_tree_expand_terms'])) {
     $tids_to_expand = $form_state['values']['double_tree_values']['left_tree_expand_terms'];
   }
-  else if (isset($form_state['values']['searched_terms']) && count($form_state['values']['searched_terms'])) {
+  elseif (isset($form_state['values']['searched_terms']) && count($form_state['values']['searched_terms'])) {
     $tids_to_expand = $form_state['values']['searched_terms'];
   }
   else {
@@ -163,7 +163,6 @@ function taxonomy_manager_form($form, &$form_state, $voc, $tid = 0, $filter = NU
   $form['toolbar'] = array(
     '#type' => 'fieldset',
     '#title' => t('Toolbar'),
-    '#attributes' => array('id' => 'taxonomy-manager-toolbar'),
   );
 
   $form['toolbar']['weight_up'] = array(
@@ -196,7 +195,7 @@ function taxonomy_manager_form($form, &$form_state, $voc, $tid = 0, $filter = NU
 
   taxonomy_manager_move_form($form, $voc);
 
-  taxonomy_manager_export_form($form, $voc);
+  taxonomy_manager_export_form($form, $form_state, $voc);
 
   taxonomy_manager_double_tree_settings_form($form, $voc);
 
@@ -224,12 +223,12 @@ function taxonomy_manager_double_tree_form($form, &$form_state, $voc1, $voc2, $t
   if (isset($form_state['confirm_delete'])) {
     return taxonomy_manager_term_confirm_delete($form, $form_state, $voc1->vid, $voc2->vid);
   }
-  $module_path = drupal_get_path('module', 'taxonomy_manager') .'/';
+  $module_path = drupal_get_path('module', 'taxonomy_manager') . '/';
 
   $form = taxonomy_manager_form($form, $form_state, $voc1, $tid, $filter);
 
   $form['disable'] = array(
-    '#markup' => l(t('Disable Double Tree'), 'admin/structure/taxonomy_manager/voc/'. $voc1->machine_name),
+    '#markup' => l(t('Disable Double Tree'), 'admin/structure/taxonomy_manager/voc/ ' . $voc1->machine_name),
     '#weight' => -100,
   );
 
@@ -270,7 +269,7 @@ function taxonomy_manager_double_tree_form($form, &$form_state, $voc1, $voc2, $t
     }
   }
 
-  $form['taxonomy2']['manager']['top']['size'] = array('#markup' => '<div class="taxonomy-manager-tree-size">'. theme("image", array('path' => $module_path ."images/grippie.png", 'alt' => t("Resize tree"), 'title' => t("Resize tree"), 'attributes' => array('class' => "div-grippie"))) .'</div>');
+  $form['taxonomy2']['manager']['top']['size'] = array('#markup' => '<div class="taxonomy-manager-tree-size">' . theme("image", array('path' => $module_path . "images/grippie.png", 'alt' => t("Resize tree"), 'title' => t("Resize tree"), 'attributes' => array('class' => "div-grippie"))) . '</div>');
 
   if (isset($form_state['values']['double_tree_values']['right_tree_expand_terms']) && count($form_state['values']['double_tree_values']['right_tree_expand_terms'])) {
     $tids_to_expand = $form_state['values']['double_tree_values']['right_tree_expand_terms'];
@@ -296,7 +295,7 @@ function taxonomy_manager_double_tree_form($form, &$form_state, $voc1, $voc2, $t
   $form['double-tree']['operations']['move_right'] = array(
     '#type' => 'image_button',
     '#attributes' => array('title' => t('Move right')),
-    '#src' => $module_path ."images/go-next.png",
+    '#src' => $module_path . "images/go-next.png",
     '#submit' => array('taxonomy_manager_double_tree_move_submit'),
     '#validate' => array('taxonomy_manager_double_tree_move_validate'),
     '#ajax' => array(
@@ -313,7 +312,7 @@ function taxonomy_manager_double_tree_form($form, &$form_state, $voc1, $voc2, $t
   $form['double-tree']['operations']['move_left'] = array(
     '#type' => 'image_button',
     '#attributes' => array('title' => t('Move left')),
-    '#src' => $module_path ."images/go-previous.png",
+    '#src' => $module_path . "images/go-previous.png",
     '#submit' => array('taxonomy_manager_double_tree_move_submit'),
     '#validate' => array('taxonomy_manager_double_tree_move_validate'),
     '#ajax' => array(
@@ -355,7 +354,7 @@ function taxonomy_manager_double_tree_form($form, &$form_state, $voc1, $voc2, $t
     $form['double-tree']['operations']['copy_left']['#weight'] = 23;
 
   }
-  else if (module_exists('i18n_taxonomy') && i18n_taxonomy_vocabulary_mode($voc2->vid, I18N_MODE_TRANSLATE)) {
+  elseif (module_exists('i18n_taxonomy') && i18n_taxonomy_vocabulary_mode($voc2->vid, I18N_MODE_TRANSLATE)) {
     $form['double-tree']['operations']['add_translation'] = $form['double-tree']['operations']['move_right'];
     $form['double-tree']['operations']['add_translation']['#attributes']['title'] = t('Add Translation.');
     $form['double-tree']['operations']['add_translation']['#src'] = $module_path . "images/connect.png";
@@ -390,11 +389,11 @@ function taxonomy_manager_form_voc_jumper(&$form, $form_state) {
  * form for searching terms
  */
 function taxonomy_manager_search_form(&$form, $voc) {
-	$form['#attached']['js'][] = array(
+  $form['#attached']['js'][] = array(
     'data' => array('hideForm' => array(array(
       'show_button' => 'edit-search-show',
-	    'hide_button' => 'edit-search-cancel',
-	    'div' => 'edit-search'))),
+      'hide_button' => 'edit-search-cancel',
+      'div' => 'edit-search'))),
     'type' => 'setting');
 
   $form['toolbar']['search_show'] = array(
@@ -419,7 +418,7 @@ function taxonomy_manager_search_form(&$form, $voc) {
   $form['search']['field'] = array(
     '#type' => 'textfield',
     '#title' => t('Search String'),
-    '#autocomplete_path' => 'taxonomy_manager/autocomplete/'. $voc->vid,
+    '#autocomplete_path' => 'taxonomy_manager/autocomplete/' . $voc->vid,
     //'#prefix' => '<div id="edit-find-field">',
     //'#suffix' => '</div>',
   );
@@ -479,10 +478,10 @@ function taxonomy_manager_confirm_delete(&$form, $voc) {
     '#title' => t('Confirmation'),
   );
 
-  $question = t('Are you sure you want to delete all selected terms? ');
+  $question = t('Are you sure you want to delete all selected terms?');
   $info = t('Remember all term specific data will be lost. This action cannot be undone.');
 
-  $form['delete']['text'] = array('#value' => "<b>". $question ."</b><br/>". $info);
+  $form['delete']['text'] = array('#value' => "<b>" . $question . "</b><br/>" . $info);
 
   $options = array(
     'delete_orphans' => t('Delete children of selected terms, if there are any'),
@@ -516,11 +515,11 @@ function taxonomy_manager_confirm_delete(&$form, $voc) {
 function taxonomy_manager_add_form(&$form, $voc, $hide_form = TRUE) {
   $attributes = array();
   if ($hide_form) {
-	  $form['#attached']['js'][] = array(
+    $form['#attached']['js'][] = array(
       'data' => array('hideForm' => array(array(
         'show_button' => 'edit-add-show',
-	      'hide_button' => 'edit-add-cancel',
-	      'div' => 'edit-add'))),
+        'hide_button' => 'edit-add-cancel',
+        'div' => 'edit-add'))),
       'type' => 'setting');
     $attributes = array('style' => 'display:none;', 'id' => 'edit-add');
     $form['toolbar']['add_show'] = array(
@@ -579,11 +578,11 @@ function taxonomy_manager_term_merge_form(&$form, $voc) {
   if (!module_exists('term_merge') || !user_access('merge terms')) {
     return;
   }
-	$form['#attached']['js'][] = array(
+  $form['#attached']['js'][] = array(
     'data' => array('hideForm' => array(array(
       'show_button' => 'edit-term-merge-show',
-	    'hide_button' => 'edit-term-merge-cancel',
-	    'div' => 'edit-term-merge'))),
+      'hide_button' => 'edit-term-merge-cancel',
+      'div' => 'edit-term-merge'))),
     'type' => 'setting');
 
   $description = t("This operation is based on the Term merge module. Selected terms get merged into the given one. Optionally the selected terms can be retained, otherwise they will be deleted.");
@@ -608,7 +607,7 @@ function taxonomy_manager_term_merge_form(&$form, $voc) {
     '#title' => t('Destination term'),
     '#description' => t("Enter a unique term name or a term id with 'term-id:[tid]'"),
     '#required' => FALSE,
-    '#autocomplete_path' => 'taxonomy_manager/autocomplete/'. $voc->vid,
+    '#autocomplete_path' => 'taxonomy_manager/autocomplete/' . $voc->vid,
   );
 
   $form['term_merge']['options'] = array(
@@ -642,8 +641,8 @@ function taxonomy_manager_move_form(&$form, $voc) {
   $form['#attached']['js'][] = array(
     'data' => array('hideForm' => array(array(
       'show_button' => 'edit-move-show',
-	    'hide_button' => 'edit-move-cancel',
-	    'div' => 'edit-move'))),
+      'hide_button' => 'edit-move-cancel',
+      'div' => 'edit-move'))),
     'type' => 'setting');
 
   $description = t("You can change the parent of one or more selected terms.
@@ -654,7 +653,7 @@ function taxonomy_manager_move_form(&$form, $voc) {
     '#value' => t('Move'),
     '#attributes' => array('class' => array('taxonomy-manager-buttons move')),
      '#theme' => 'no_submit_button',
-   );
+  );
   $form['move'] = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,
@@ -668,7 +667,7 @@ function taxonomy_manager_move_form(&$form, $voc) {
     '#title' => t('Parent term(s)'),
     '#description' => t("Enter a unique term name or a term id with 'term-id:[tid]'. Separate multiple parent terms with commas."),
     '#required' => FALSE,
-    '#autocomplete_path' => 'taxonomy_manager/autocomplete/'. $voc->vid,
+    '#autocomplete_path' => 'taxonomy_manager/autocomplete/' . $voc->vid,
   );
 
   $options = array();
@@ -698,69 +697,101 @@ function taxonomy_manager_move_form(&$form, $voc) {
 /**
  * form for exporting terms
  */
-function taxonomy_manager_export_form(&$form, $voc) {
+function taxonomy_manager_export_form(&$form, &$form_state, $voc) {
   $form['#attached']['js'][] = array(
     'data' => array('hideForm' => array(array(
       'show_button' => 'edit-export-show',
-	    'hide_button' => 'edit-export-cancel',
-	    'div' => 'edit-export'))),
-    'type' => 'setting');
-  $form['#attached']['js'][] = drupal_get_path('module', 'taxonomy_manager') . '/js/csv_export.js';
-  $form['#attached']['js'][] = array(
-    'data' => array('exportCSV' => array('url' => url("admin/structure/taxonomy_manager/export"))),
-    'type' => 'setting');
+      'hide_button' => 'edit-export-cancel',
+      'div' => 'edit-export'))),
+    'type' => 'setting',
+  );
 
   $form['toolbar']['export_show'] = array(
     //'#type' => 'button',
     '#attributes' => array('class' => array('taxonomy-manager-buttons export')),
-    '#value' => t('CSV Export'),
+    '#value' => t('Export'),
     '#theme' => 'no_submit_button',
   );
   $form['export'] = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,
     '#attributes' => array('style' => 'display:none;', 'id' => 'edit-export'),
-    '#title' => t('CSV Export'),
+    '#title' => t('Export'),
   );
 
-  $form['export']['delimiter'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Delimiter for CSV File'),
-    '#required' => FALSE,
-    '#default_value' => ";",
+  $scope_options = array(
+    'whole_voc' => t('Whole Vocabulary'),
+    'children' => t('Child terms of a selected term'),
+    'root_terms' => t('Root level terms only'),
   );
-
-  $options['whole_voc'] = t('Whole Vocabulary');
-  $options['children'] = t('Child terms of a selected term');
-  $options['root_terms'] = t('Root level terms only');
-
-  $form['export']['options'] = array(
+  $form['export']['scope'] = array(
     '#type' => 'radios',
     '#title' => t('Terms to export'),
-    '#options' => $options,
+    '#options' => $scope_options,
     '#default_value' => 'whole_voc',
     '#prefix' => '<div id="taxonomy_manager_export_options">',
     '#suffix' => '</div>',
   );
-
   $form['export']['depth'] = array(
     '#type' => 'textfield',
     '#title' => t('Depth of tree'),
     '#description' => t('The number of levels of the tree to export. Leave empty to return all levels.'),
+    '#size' => 10,
   );
 
-  $form['export']['csv'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Exported CSV'),
-    '#description' => t('The generated code will appear here (per AJAX). You can copy and paste the code into a .csv file. The csv has following columns: voc id | term id | term name | description | parent id 1 | ... | parent id n'),
-    '#rows' => 8,
+  $format_options = array(
+    'term_tree' => t('Term names with hierarchy'),
+    'csv' => t('CSV'),
   );
+  $help_items[] = t('Term names with hierarchy: Only term names are exported. Child terms are prefixed with dashes. Uses the same format as for mass-import (Add button).');
+  $help_items[] = t('CSV: The comma-separated-values export has following columns: voc id | term id | term name | description | parent id 1 | ... | parent id n');
+  $form['export']['format'] = array(
+    '#type' => 'radios',
+    '#title' => t('Format'),
+    '#options' => $format_options,
+    '#default_value' => 'term_tree',
+    '#description' => theme('item_list', array('items' => $help_items, 'title' => t('Description of formats'))),
+  );
+
+  // CSV options
+  $form['export']['csv']['delimiter'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Delimiter for CSV'),
+    '#required' => FALSE,
+    '#default_value' => ";",
+    '#size' => 10,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="export[format]"]' => array('value' => 'csv'),
+      ),
+    ),
+  );
+
+  $wrapper_id = 'taxonomy-manager-export-textarea';
+  if (isset($form_state['values']['export']['data'])) {
+    $form['export']['data'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Exported data'),
+      '#value' =>  $form_state['values']['export']['data'],
+      '#rows' => 8,
+      '#prefix' => '<div id="' . $wrapper_id .'">',
+      '#suffix' => '</div>',
+    );
+  }
 
   $form['export']['submit'] = array(
+    '#prefix' => '<div id="' . $wrapper_id .'"></div>',
     '#type' => 'submit',
     '#attributes' => array('class' => array('taxonomy-manager-buttons', 'export')),
     '#value' => t('Export now'),
-    '#theme' => 'no_submit_button',
+    '#submit' => array('taxonomy_manager_export_form_submit'),
+    '#ajax' => array(
+      'callback' => 'taxonomy_manager_export_ajax_callback',
+      'method' => 'replaceWith',
+      'event' => 'click',
+      'wrapper' => $wrapper_id,
+      'progress' => array('type' => ''),
+    ),
   );
 
   $form['export']['cancel'] = array(
@@ -772,11 +803,11 @@ function taxonomy_manager_export_form(&$form, $voc) {
 }
 
 function taxonomy_manager_double_tree_settings_form(&$form, $voc) {
-	$form['#attached']['js'][] = array(
+  $form['#attached']['js'][] = array(
     'data' => array('hideForm' => array(array(
       'show_button' => 'edit-double-tree-show',
-	    'hide_button' => 'edit-double-tree-settings-cancel',
-	    'div' => 'edit-double-tree-settings'))),
+      'hide_button' => 'edit-double-tree-settings-cancel',
+      'div' => 'edit-double-tree-settings'))),
     'type' => 'setting');
 
   $form['toolbar']['double_tree_show'] = array(
@@ -828,18 +859,18 @@ function taxonomy_manager_double_tree_settings_form(&$form, $voc) {
 }
 
 function taxonomy_manager_term_data_form(&$form, &$form_state, $tid = 0, $vid1, $vid2 = 0) {
-  $module_path = drupal_get_path('module', 'taxonomy_manager') .'/';
+  $module_path = drupal_get_path('module', 'taxonomy_manager') . '/';
   if ($tid) {
     $term = taxonomy_term_load($tid);
 
     //prevent that title of the fieldset is too long
     $title = check_plain($term->name);
     if (drupal_strlen($title) >= 33) {
-      $title = drupal_substr($title, 0, 33) ."...";
+      $title = drupal_substr($title, 0, 33) . "...";
     }
     $form['term_data'] = array(
       '#type' => 'fieldset',
-      '#title' => $title ." (". $term->tid .")",
+      '#title' => $title . " (" . $term->tid . ")",
     );
     unset($form_state['term']);
     $form['term_data'] = taxonomy_form_term($form['term_data'], $form_state, $term);
@@ -855,12 +886,12 @@ function taxonomy_manager_term_data_form(&$form, &$form_state, $tid = 0, $vid1, 
     $form['term_data']['parents']['#weight'] = '52';
 
     $form['term_data']['close'] = array(
-      '#markup' => '<div id="term-data-close"><span title="'. t('Close') .'">&nbsp;&nbsp;&nbsp;&nbsp;</span></div>',
+      '#markup' => '<div id="term-data-close"><span title="' . t('Close') . '">&nbsp;&nbsp;&nbsp;&nbsp;</span></div>',
       '#weight' => -100,
     );
-    $link_img = theme("image", array('path' => $module_path ."images/link-small.png", 'alt' => t("link to term page")));
+    $link_img = theme("image", array('path' => $module_path . "images/link-small.png", 'alt' => t("link to term page")));
     $form['term_data']['link'] = array(
-      '#markup' => '<br />'. l($link_img .'&nbsp;'. t('Go to the term page'), 'taxonomy/term/'. $term->tid, array('attributes' => array('rel' => 'tag', 'title' => strip_tags($term->description), 'target' => '_blank'), 'html' => TRUE)),
+      '#markup' => '<br />' . l($link_img . '&nbsp;' . t('Go to the term page'), 'taxonomy/term/' . $term->tid, array('attributes' => array('rel' => 'tag', 'title' => strip_tags($term->description), 'target' => '_blank'), 'html' => TRUE)),
       '#weight' => 56);
 
     $form['term_data']['vid'] = array('#type' => 'hidden', '#value' => $term->vid);
@@ -927,7 +958,7 @@ function _taxonomy_manager_term_data_form_filter_file_fields(&$form) {
         $element = &$field[$field['#language']][$delta];
         if (isset($element['#type']) && $element['#type'] == "managed_file") {
           $form['term_data']['file_field_info'] = array(
-            '#markup' => '<div class="term-data-form-file-field-info">' . t('Edit file fields <a href="!url" target="_blank">here</a>.', array('!url' => url('taxonomy/term/' . $form['term_data']['#term']['tid'] . '/edit'))) .'</div>',
+            '#markup' => '<div class="term-data-form-file-field-info">' . t('Edit file fields <a href="!url" target="_blank">here</a>.', array('!url' => url('taxonomy/term/' . $form['term_data']['#term']['tid'] . '/edit'))) . '</div>',
           );
           unset($form['term_data'][$key]);
           break;
@@ -944,7 +975,7 @@ function _taxonomy_manager_term_data_form_filter_file_fields(&$form) {
  * @return an form array
  */
 function _taxonomy_manager_form_term_data_parents($term) {
-  $module_path = drupal_get_path('module', 'taxonomy_manager') .'/';
+  $module_path = drupal_get_path('module', 'taxonomy_manager') . '/';
 
   $form['#tree'] = TRUE;
   $form['#theme'] = 'taxonomy_manager_term_data_extra';
@@ -955,9 +986,9 @@ function _taxonomy_manager_form_term_data_parents($term) {
   foreach (taxonomy_get_parents($term->tid) as $tid => $parent) {
     $extra_info = taxonomy_manager_tree_term_extra_info($parent);
     $form['data'][$tid][] = array(
-      '#markup' => l($parent->name, 'admin/structure/taxonomy_manager/termdata/'. $parent->tid, array('attributes' => array('title' => $extra_info, 'class' => 'taxonomy-term-data-name-link'))),
+      '#markup' => l($parent->name, 'admin/structure/taxonomy_manager/termdata/' . $parent->tid, array('attributes' => array('title' => $extra_info, 'class' => 'taxonomy-term-data-name-link'))),
       '#row-class' => 'taxonomy-term-data-name',
-      '#row-id' => 'term-'. $tid,
+      '#row-id' => 'term-' . $tid,
       '#tree' => TRUE,
     );
     $form['data'][$tid][0]['tid'] = array(
@@ -969,7 +1000,7 @@ function _taxonomy_manager_form_term_data_parents($term) {
       '#attributes' => array('title' => t('Remove')),
       '#submit' => array('taxonomy_manager_term_data_form_submit_parents_remove'),
       '#validate' => array('taxonomy_manager_term_data_form_validate_parents_remove'),
-      '#src' => $module_path ."images/list-remove.png",
+      '#src' => $module_path . "images/list-remove.png",
       '#row-class' => 'taxonomy-term-data-operations',
     );
     $form['data'][$tid]['remove']['#ajax'] = array(
@@ -985,7 +1016,7 @@ function _taxonomy_manager_form_term_data_parents($term) {
   $form['op']['add'] = array(
     '#type' => 'textfield',
     '#prefix' => '<div class="term-data-autocomplete">',
-    '#autocomplete_path' => 'taxonomy_manager/autocomplete/'. $term->vid,
+    '#autocomplete_path' => 'taxonomy_manager/autocomplete/' . $term->vid,
     '#suffix' => '</div>',
     '#size' => 35,
   );
@@ -994,7 +1025,7 @@ function _taxonomy_manager_form_term_data_parents($term) {
     '#attributes' => array('title' => t('Add')),
     '#submit' => array('taxonomy_manager_term_data_form_submit_parents_add'),
     '#validate' => array('taxonomy_manager_term_data_form_validate_parents_add'),
-    '#src' => $module_path ."images/list-add.png",
+    '#src' => $module_path . "images/list-add.png",
     '#row-class' => 'term-data-autocomplete-add',
     '#ajax' => array(
       'callback' => 'taxonomy_manager_term_data_form_ajax_callback',
@@ -1029,7 +1060,7 @@ function _taxonomy_manager_form_term_data_translations($term) {
       foreach ($translations as $langcode => $translation) {
         if ($translation->tid !== $term->tid) {
           $form['data'][$translation->tid][] = array(
-            '#markup' => l($translation->name, 'admin/structure/taxonomy_manager/termdata/'. $translation->tid, array('attributes' => array('class' => 'taxonomy-term-data-name-link'))),
+            '#markup' => l($translation->name, 'admin/structure/taxonomy_manager/termdata/' . $translation->tid, array('attributes' => array('class' => 'taxonomy-term-data-name-link'))),
             '#row-class' => 'taxonomy-term-data-name',
             '#row-id' => 'term-' . $translation->tid,
             '#tree' => TRUE,
@@ -1068,7 +1099,7 @@ function _taxonomy_manager_form_term_data_translations($term) {
   $form['op']['add'] = array(
     '#type' => 'textfield',
     '#prefix' => '<div class="term-data-autocomplete">',
-    '#autocomplete_path' => 'taxonomy_manager/autocomplete/'. $term->vid,
+    '#autocomplete_path' => 'taxonomy_manager/autocomplete/' . $term->vid,
     '#suffix' => '</div>',
     '#size' => 35,
   );
@@ -1083,7 +1114,7 @@ function _taxonomy_manager_form_term_data_translations($term) {
     '#attributes' => array('title' => t('Add')),
     '#submit' => array('taxonomy_manager_term_data_form_submit_translation_add'),
     '#validate' => array('taxonomy_manager_term_data_form_validate_translation_add'),
-    '#src' => $module_path ."images/list-add.png",
+    '#src' => $module_path . "images/list-add.png",
     '#row-class' => 'term-data-autocomplete-add',
     '#ajax' => array(
       'callback' => 'taxonomy_manager_term_data_form_ajax_callback',
@@ -1103,7 +1134,7 @@ function _taxonomy_manager_form_term_data_translations($term) {
 function _taxonomy_manager_select_all_helpers_markup() {
   return '<span class="taxonomy-manager-select-helpers">' .
             '<span class="select-all-children" title="' . t("Select all") . '">&nbsp;&nbsp;&nbsp;&nbsp;</span>' .
-           '<span class="unselect-all-children" title="' . t("Remove selection") . '">&nbsp;&nbsp;&nbsp;&nbsp;</span>' .
+           '<span class="deselect-all-children" title="' . t("Remove selection") . '">&nbsp;&nbsp;&nbsp;&nbsp;</span>' .
          '</span>';
 }
 
@@ -1139,10 +1170,10 @@ function taxonomy_manager_form_submit($form, &$form_state) {
   $voc = $form_state['values']['voc'];
   if (isset($form_state['values']['voc2'])) {
     $voc2 = $form_state['values']['voc2'];
-    $url_prefix = 'admin/structure/taxonomy_manager/double-tree/'. $voc->machine_name .'/'. $voc2->machine_name;
+    $url_prefix = 'admin/structure/taxonomy_manager/double-tree/' . $voc->machine_name . '/' . $voc2->machine_name;
   }
   else {
-    $url_prefix = 'admin/structure/taxonomy_manager/voc/'. $voc->machine_name;
+    $url_prefix = 'admin/structure/taxonomy_manager/voc/' . $voc->machine_name;
   }
 
   $search_string = $form_state['values']['search']['field'];
@@ -1167,9 +1198,9 @@ function taxonomy_manager_form_submit($form, &$form_state) {
   if (count($terms) == 1) {
     $tid = $terms[0];
     drupal_set_message(t("Your search string matches exactly one term"));
-    drupal_goto($url_prefix .'/'. $tid);
+    drupal_goto($url_prefix . '/' . $tid);
   }
-  else if (count($terms) > 1) {
+  elseif (count($terms) > 1) {
     $matched_text_list = array();
     foreach ($terms as $matched_tid) {
       $matched_term = taxonomy_term_load($matched_tid);
@@ -1177,17 +1208,17 @@ function taxonomy_manager_form_submit($form, &$form_state) {
       foreach (taxonomy_get_parents($matched_tid) as $parent) {
         $parents[] = check_plain($parent->name);
       }
-      $parent_text = count($parents) ? implode(' | ', $parents) ." › " : "";
-      $matched_text_list[] = $parent_text ."". l($matched_term->name, $url_prefix .'/'. $matched_term->tid, array('attributes' => array('title' => taxonomy_manager_tree_term_extra_info($matched_term)))) ." (". $matched_term->tid . (!empty($matched_term->language) ? '-'. check_plain($matched_term->language) : '') . ")";
+      $parent_text = count($parents) ? implode(' | ', $parents) . " › " : "";
+      $matched_text_list[] = $parent_text . l($matched_term->name, $url_prefix . '/' . $matched_term->tid, array('attributes' => array('title' => taxonomy_manager_tree_term_extra_info($matched_term)))) . " (" . $matched_term->tid . (!empty($matched_term->language) ? '-' . check_plain($matched_term->language) : '') . ")";
     }
     form_set_value($form, array('searched_terms' => $terms), $form_state);
-    drupal_set_message(t("Your search string matches !count terms:", array('!count' => count($terms))) ."". theme('item_list', array('items' => $matched_text_list)));
+    drupal_set_message(t("Your search string matches !count terms:", array('!count' => count($terms))) . theme('item_list', array('items' => $matched_text_list)));
     $form_state['rebuild'] = TRUE;
   }
   else {
     drupal_set_message(t("No match found. Filtering root level terms starting with @search_string.", array('@search_string' => $search_string)));
     drupal_set_message(l(t("Show unfiltered tree"), $url_prefix));
-    drupal_goto($url_prefix .'/0/'. $search_string);
+    drupal_goto($url_prefix . '/0/' . $search_string);
   }
 }
 
@@ -1259,7 +1290,7 @@ function taxonomy_manager_mass_add_terms($input, $vid, $parents, $lang = "") {
     }
     // Parent term containing dashes at the beginning and is therefore wrapped
     // in double quotes
-    else if (preg_match('/^\"(-){1,}.*\"/', $name, $matches)) {
+    elseif (preg_match('/^\"(-){1,}.*\"/', $name, $matches)) {
       $name = substr($name, 1, -1);
       $depth = 0;
       $current_parents = $parents;
@@ -1321,26 +1352,26 @@ function taxonomy_manager_term_confirm_delete($form, &$form_state, $vid, $vid2 =
   if (isset($vid2)) {
     $voc2 = taxonomy_vocabulary_load($vid2);
     $form['voc2'] = array('#type' => 'value', '#value' => $voc2);
-    $url = 'admin/structure/taxonomy_manager/double-tree/'. $voc->machine_name .'/'. $voc2->machine_name;
+    $url = 'admin/structure/taxonomy_manager/double-tree/' . $voc->machine_name . '/' . $voc2->machine_name;
   }
   else {
-    $url = 'admin/structure/taxonomy_manager/voc/'. $voc->machine_name;
+    $url = 'admin/structure/taxonomy_manager/voc/' . $voc->machine_name;
   }
 
   $selected = $form_state['values']['taxonomy']['manager']['tree']['selected_terms'];
   $form['selected_terms'] = array('#prefix' => '<ul>', '#suffix' => '</ul>', '#tree' => TRUE);
   foreach ($selected as $tid) {
     $term = taxonomy_term_load($tid);
-    $form['selected_terms'][$tid] = array('#type' => 'hidden', '#value' => $tid, '#prefix' => '<li>', '#suffix' => check_plain($term->name) ."</li>\n");
+    $form['selected_terms'][$tid] = array('#type' => 'hidden', '#value' => $tid, '#prefix' => '<li>', '#suffix' => check_plain($term->name) . "</li>\n");
   }
 
   $form['delete'] = array('#type' => 'value', '#value' => TRUE);
   $form['voc'] = array('#type' => 'value', '#value' => $voc);
   $form['options'] = array('#type' => 'value', '#value' => $form_state['values']['delete']['options']);
-  $msg = !empty($form_state['values']['delete']['options']['delete_orphans']) ? t('Deleting a term will delete all its children if there are any. ') : '';
+  $msg = !empty($form_state['values']['delete']['options']['delete_orphans']) ? t('Deleting a term will delete all its children if there are any.') : '';
   $msg .= t('This action cannot be undone.');
   return confirm_form($form,
-      t('Are you sure you want to delete the following terms: '),
+      t('Are you sure you want to delete the following terms:'),
       $url,
       $msg,
       t('Delete'),
@@ -1364,10 +1395,10 @@ function taxonomy_manager_term_confirm_delete_submit($form, &$form_state) {
   }
 
   if (isset($form_state['values']['voc2'])) {
-    $form_state['redirect'] = 'admin/structure/taxonomy_manager/double-tree/'. $form_state['values']['voc']->machine_name .'/'. $form_state['values']['voc2']->machine_name;
+    $form_state['redirect'] = 'admin/structure/taxonomy_manager/double-tree/' . $form_state['values']['voc']->machine_name . '/' . $form_state['values']['voc2']->machine_name;
   }
   else {
-    $form_state['redirect'] = 'admin/structure/taxonomy_manager/voc/'. $form_state['values']['voc']->machine_name;
+    $form_state['redirect'] = 'admin/structure/taxonomy_manager/voc/' . $form_state['values']['voc']->machine_name;
   }
   drupal_set_message(t("Deleted terms: %deleted_term_names", array('%deleted_term_names' => check_plain(implode(', ', $deleted_term_names)))));
   if (count($remaining_child_term_names)) {
@@ -1389,8 +1420,8 @@ function taxonomy_manager_form_move_validate($form, &$form_state) {
     form_set_error('move', t("Please selected terms you want to move in the hierarchy"));
     $form_state['rebuild'] = TRUE;
   }
-  else if (_taxonomy_manager_check_duplicates($form_state['values']['voc']->vid, $form_state['values']['move']['parents'], $error_msg)) {
-    form_set_error('move', t("Warning: Your input matches with multiple terms, because of duplicated term names. Please enter a unique term name or the term id with 'term-id:[tid]'") ." (". $error_msg .").");
+  elseif (_taxonomy_manager_check_duplicates($form_state['values']['voc']->vid, $form_state['values']['move']['parents'], $error_msg)) {
+    form_set_error('move', t("Warning: Your input matches with multiple terms, because of duplicated term names. Please enter a unique term name or the term id with 'term-id:[tid]'") . " (" . $error_msg . ").");
     $form_state['rebuild'] = TRUE;
   }
 
@@ -1405,7 +1436,7 @@ function taxonomy_manager_form_move_validate($form, &$form_state) {
     form_set_error('move', t('Invalid selection. The resulting hierarchy would contain circles, which is not allowed. A term cannot be a parent of itself.'));
     $form_state['rebuild'] = TRUE;
   }
-  else if (!taxonomy_manager_check_language($form_state['values']['voc']->vid, $selected_tids, $typed_parents)) {
+  elseif (!taxonomy_manager_check_language($form_state['values']['voc']->vid, $selected_tids, $typed_parents)) {
     form_set_error('move', t('Terms must be of the same language'));
     $form_state['rebuild'] = TRUE;
   }
@@ -1529,7 +1560,7 @@ function taxonomy_manager_form_term_merge_validate($form, &$form_state) {
     form_set_error('term_merge][dest_term', t('Please enter a name into "Destination term"'));
     $form_state['rebuild'] = TRUE;
   }
-  else if (count($dest_terms) > 1) {
+  elseif (count($dest_terms) > 1) {
     form_set_error('term_merge][dest_term', t('Please only enter single names into "Destination term"'));
     $form_state['rebuild'] = TRUE;
   }
@@ -1538,8 +1569,8 @@ function taxonomy_manager_form_term_merge_validate($form, &$form_state) {
     form_set_error('term_merge', t("Please selecte terms you want to merge"));
     $form_state['rebuild'] = TRUE;
   }
-  else if (_taxonomy_manager_check_duplicates($form_state['values']['voc']->vid, $form_state['values']['term_merge']['dest_term'], $error_msg)) {
-    form_set_error('term_merge', t("Warning: Your input matches with multiple terms, because of duplicated term names. Please enter a unique term name or the term id with 'term-id:[tid]'") ." (". $error_msg .").");
+  elseif (_taxonomy_manager_check_duplicates($form_state['values']['voc']->vid, $form_state['values']['term_merge']['dest_term'], $error_msg)) {
+    form_set_error('term_merge', t("Warning: Your input matches with multiple terms, because of duplicated term names. Please enter a unique term name or the term id with 'term-id:[tid]'") . " (" . $error_msg . ").");
     $form_state['rebuild'] = TRUE;
   }
 }
@@ -1576,27 +1607,27 @@ function _taxonomy_manager_check_duplicates($vid, $autocomplete_value, &$msg) {
   $regexp = '%(?:^|,\ *)("(?>[^"]*)(?>""[^"]* )*"|(?: [^",]*))%x';
   preg_match_all($regexp, $autocomplete_value, $matches);
   foreach ($matches[1] as $match) {
-   $terms = array();
-   $terms = taxonomy_manager_autocomplete_tags_get_tids($match, $vid, FALSE);
-   if (count($terms) > 1) {
-     $tids = array();
-     foreach ($terms as $t) {
-       $term = taxonomy_term_load($t['tid']);
-       $tids[] = $term->tid . (!empty($term->language) ? '-'. check_plain($term->language) : '');
-     }
-     $msg .= check_plain($match) .": ". implode(", ", $tids);
-     return TRUE;
-   }
+    $terms = array();
+    $terms = taxonomy_manager_autocomplete_tags_get_tids($match, $vid, FALSE);
+    if (count($terms) > 1) {
+      $tids = array();
+      foreach ($terms as $t) {
+        $term = taxonomy_term_load($t['tid']);
+        $tids[] = $term->tid . (!empty($term->language) ? '-' . check_plain($term->language) : '');
+      }
+      $msg .= check_plain($match) . ": " . implode(", ", $tids);
+      return TRUE;
+    }
   }
   return FALSE;
 }
 
 function taxonomy_manager_form_double_tree_submit($form, &$form_state) {
-  drupal_goto('admin/structure/taxonomy_manager/double-tree/'. $form_state['values']['voc']->machine_name .'/'. $form_state['values']['double-tree-settings']['voc2_machine_name']);
+  drupal_goto('admin/structure/taxonomy_manager/double-tree/' . $form_state['values']['voc']->machine_name . '/' . $form_state['values']['double-tree-settings']['voc2_machine_name']);
 }
 
 function taxonomy_manager_form_double_tree_disable_submit($form, &$form_state) {
-  drupal_goto('admin/structure/taxonomy_manager/voc/'. $form_state['values']['voc']->machine_name);
+  drupal_goto('admin/structure/taxonomy_manager/voc/' . $form_state['values']['voc']->machine_name);
 }
 
 /**
@@ -1633,9 +1664,9 @@ function taxonomy_manager_term_data_form_ajax_callback($form, $form_state) {
         $commands[] = ajax_command_insert('#taxonomy-manager .form-item-taxonomy2-manager-tree', drupal_render($form['taxonomy2']['manager']['tree']));
       }
     }
-    else if (isset($form_state['values']['tree-update']['update-name'])) {
-       $selector = 'a.term-data-link-id-'. $form_state['values']['tree-update']['update-name']['tid'];
-       $commands[] = ajax_command_html($selector, '<span>' . $form_state['values']['tree-update']['update-name']['name'] . '</span>');
+    elseif (isset($form_state['values']['tree-update']['update-name'])) {
+      $selector = 'a.term-data-link-id-' . $form_state['values']['tree-update']['update-name']['tid'];
+      $commands[] = ajax_command_html($selector, '<span>' . check_plain($form_state['values']['tree-update']['update-name']['name']) . '</span>');
     }
   }
 
@@ -1649,15 +1680,15 @@ function taxonomy_manager_term_data_form_submit($form, &$form_state) {
   if ($term->weight != $old_term->weight) {
     form_set_value(array('#parents' => array('tree-update')), array('update' => TRUE), $form_state);
   }
-  else if ($term->name != $old_term->name) {
+  elseif ($term->name != $old_term->name) {
     form_set_value(array('#parents' => array('tree-update')), array('update-name' => array('name' => $term->name, 'tid' => $term->tid)), $form_state);
   }
-  else if (isset($term->language) && $term->language != $old_term->language) {
+  elseif (isset($term->language) && $term->language != $old_term->language) {
     form_set_value(array('#parents' => array('tree-update')), array('update' => TRUE), $form_state);
   }
 
   taxonomy_term_save($term);
-  drupal_set_message("Updated term data");
+  drupal_set_message(t('Updated term data'));
   $form_state['rebuild'] = TRUE;
 }
 
@@ -1675,10 +1706,10 @@ function taxonomy_manager_term_data_form_validate_parents_add($form, &$form_stat
   if ($parent_names == "") {
     form_set_error('parents][op][add', t("Parent field is required."));
   }
-  else if (_taxonomy_manager_check_duplicates($term->vid, $parent_names, $error_msg)) {
-    form_set_error('parents][op][add', t("Warning: Your input matches with multiple terms, because of duplicated term names. Please enter a unique term name or the term id with 'term-id:[tid]'" ." (!error_msg).", array('!error_msg' => $error_msg)));
+  elseif (_taxonomy_manager_check_duplicates($term->vid, $parent_names, $error_msg)) {
+    form_set_error('parents][op][add', t("Warning: Your input matches with multiple terms, because of duplicated term names. Please enter a unique term name or the term id with 'term-id:[tid]' (!error_msg)", array('!error_msg' => $error_msg)));
   }
-  else if(!taxonomy_manager_check_language($term->vid, array($term->tid), $typed_terms)) {
+  elseif (!taxonomy_manager_check_language($term->vid, array($term->tid), $typed_terms)) {
     form_set_error('parents][op][add', t("Terms must be of the same language."));
   }
   else {
@@ -1771,15 +1802,15 @@ function taxonomy_manager_term_data_form_validate_translation_add($form, &$form_
   if (empty($input) || count($typed_terms) > 1) {
     form_set_error('translations][op][add', t("Please input one term with an appropriate language."));
   }
-  else if ($term1->language == $language) {
+  elseif ($term1->language == $language) {
     form_set_error('translations][op', t("Added term is of the same language."));
     return;
   }
-  else if (!is_null(i18n_taxonomy_term_get_translation($term1, $language))) {
+  elseif (!is_null(i18n_taxonomy_term_get_translation($term1, $language))) {
     form_set_error('translations][op][language', t('A translation for this language already exists.'));
     return;
   }
-  else if (count($typed_terms) == 1) {
+  elseif (count($typed_terms) == 1) {
     $entry = array_shift($typed_terms);
     $term2 = taxonomy_term_load($entry['tid']);
     if (!is_null(i18n_taxonomy_term_get_translation($term2, $term1->language))) {
@@ -1877,7 +1908,7 @@ function taxonomy_manager_double_tree_move_validate($form, &$form_state) {
   if (!count($values['selected_terms'])) {
     form_set_error('', t("No terms selected."));
   }
-  else if (is_array($values['selected_parents']) && count($values['selected_parents'])) {
+  elseif (is_array($values['selected_parents']) && count($values['selected_parents'])) {
     $p_array = array();
     foreach ($values['selected_parents'] as $parent) {
       $p_array[$parent]['tid'] = $parent;
@@ -1885,7 +1916,7 @@ function taxonomy_manager_double_tree_move_validate($form, &$form_state) {
     if (!taxonomy_manager_check_language($form_state['values']['voc']->vid, $values['selected_terms'], $p_array)) {
       form_set_error('', t("Terms must be of the same language."));
     }
-    else if (!taxonomy_manager_check_circular_hierarchy($values['selected_terms'], $values['selected_parents'])) {
+    elseif (!taxonomy_manager_check_circular_hierarchy($values['selected_terms'], $values['selected_parents'])) {
       form_set_error('', t('Invalid parent. The resulting hierarchy would contain circles, which is not allowed. A term cannot be a parent of itself.'));
     }
   }
@@ -2080,11 +2111,11 @@ function taxonomy_manager_double_tree_add_translation_validate($form, &$form_sta
     form_set_error('', t('This is not a multilingual vocabulary.'));
     return;
   }
-  else if ($term1->language == $term2->language) {
+  elseif ($term1->language == $term2->language) {
     form_set_error('', t("Selected terms are of the same language."));
     return;
   }
-  else if (!is_null(i18n_taxonomy_term_get_translation($term1, $term2->language)) ||
+  elseif (!is_null(i18n_taxonomy_term_get_translation($term1, $term2->language)) ||
     !is_null(i18n_taxonomy_term_get_translation($term2, $term1->language))) {
     form_set_error('', t('A translation for this term or language already exists.'));
     return;
@@ -2460,14 +2491,15 @@ function taxonomy_manager_autocomplete_search_terms($typed_input, $vid, $include
  *
  */
 function taxonomy_manager_update_weights() {
-  $weights = $_POST;
-  if (is_array($weights)) {
-    foreach ($weights as $tid => $weight) {
-      if (is_numeric($tid) && is_numeric($weight)) {
-        $term = taxonomy_term_load($tid);
-        $term->weight = $weight;
-        taxonomy_term_save($term);
-        //db_query("UPDATE {term_data} SET weight = %d WHERE tid = %d", $weight, $tid);
+  $submitted_data = $_POST;
+  if (isset($submitted_data['form_token']) && isset($submitted_data['form_id']) && !empty($submitted_data['weights']) && is_array($submitted_data['weights'])) {
+    if (drupal_valid_token($submitted_data['form_token'], $submitted_data['form_id'])) {
+      foreach ($submitted_data['weights'] as $tid => $weight) {
+        if (is_numeric($tid) && is_numeric($weight)) {
+          $term = taxonomy_term_load($tid);
+          $term->weight = $weight;
+          taxonomy_term_save($term);
+        }
       }
     }
   }
@@ -2475,49 +2507,89 @@ function taxonomy_manager_update_weights() {
 }
 
 /**
- * AJAX Callback that returns the CSV Output
+ * Submit handler for the export form.
  */
-function taxonomy_manager_export() {
-  $edit = $_POST;
-  $depth = empty($edit['depth']) ? NULL : $edit['depth'];
-  $output = taxonomy_manager_export_csv($edit['delimiter'], $edit['vid'], $edit['tid'], $depth, array($edit['option'] => TRUE));
-  print $output;
-  exit();
+function taxonomy_manager_export_form_submit($form, &$form_state) {
+  $voc = $form_state['values']['voc'];
+
+  $selected_tids = $selected_tids = $form_state['values']['taxonomy']['manager']['tree']['selected_terms'];
+  $selected_tid = count($selected_tids) ? array_pop($selected_tids) : 0;
+
+  $options = $form_state['values']['export'];
+  $options['depth'] = !empty($options['depth']) ? $options['depth'] : NULL;
+
+  $tree = taxonomy_manager_export_get_tree($voc->vid, $selected_tid, $options['depth'], $options['scope']);
+  $data = '';
+  if ($options['format'] == 'csv') {
+    $data = taxonomy_manager_export_csv($tree, $options['csv']['delimiter']);
+  }
+  elseif ($options['format'] == 'term_tree') {
+    $data = taxonomy_manager_export_term_tree($tree);
+  }
+
+  $form_state['values']['export']['data'] = $data;
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * Ajax handler for the export form.
+ */
+function taxonomy_manager_export_ajax_callback($form, $form_state) {
+  return $form['export']['data'];
 }
 
 /**
  * Generates the CVS Ouput
  */
-function taxonomy_manager_export_csv($delimiter = ";", $vid, $selected_tid = 0, $depth = -1, $options = array()) {
+function taxonomy_manager_export_csv($tree, $delimiter = ";") {
   $output = "";
-  $tree = taxonomy_manager_export_get_tree($vid, $selected_tid, $depth, $options);
   foreach ($tree as $term) {
     $array = array();
-    $array[] = '"'. $term->vid .'"';
-    $array[] = '"'. $term->tid .'"';
-    $array[] = '"'. $term->name .'"';
-    $array[] = '"'. $term->description .'"';
+    $array[] = '"' . $term->vid . '"';
+    $array[] = '"' . $term->tid . '"';
+    $array[] = '"' . $term->name . '"';
+    $array[] = '"' . $term->description . '"';
     foreach ($term->parents as $parent) {
-      $array[] = '"'. $parent .'"';
+      $array[] = '"' . $parent . '"';
     }
-    $output .= implode($delimiter, $array) ."\n";
+    $output .= implode($delimiter, $array) . "\n";
   }
-  drupal_json_output(array('csv' => $output));
+  return $output;
 }
 
 /**
- * Helper for cvs export to get taxonomy tree
+ * Generates term tree export that prefixes child term with dashes.
+ *
+ * The same format can be used for importing terms (see Add button).
  */
-function taxonomy_manager_export_get_tree($vid, $selected_tid, $depth, $options) {
+function taxonomy_manager_export_term_tree($tree) {
+  $output = "";
+  foreach ($tree as $term) {
+    // If a term already starts with dashes, we have to escape the name.
+    if (substr($term->name, 0, 1) == '-') {
+      $name = '"' . $term->name . '"';
+    }
+    else {
+      $name = $term->name;
+    }
+    $output .= str_repeat('-', $term->depth) . $name . "\n";
+  }
+  return $output;
+}
+
+/**
+ * Helper for loading the tree to export.
+ */
+function taxonomy_manager_export_get_tree($vid, $selected_tid, $depth, $scope) {
   $tree = array();
 
-  if (isset($options['whole_voc'])) {
+  if ($scope == 'whole_voc') {
     $tree = taxonomy_get_tree($vid, 0, $depth);
   }
-  else if (isset($options['children']) && $selected_tid) {
+  elseif ($scope == 'children' && $selected_tid) {
     $tree = taxonomy_get_tree($vid, $selected_tid, $depth);
   }
-  else if (isset($options['root_terms'])) {
+  elseif ($scope == 'root_terms') {
     $tree = taxonomy_get_tree($vid, 0, 1);
   }
   return $tree;
@@ -2531,7 +2603,7 @@ function taxonomy_manager_update_voc($vid, $parents = array()) {
   if ($voc->vid == $vid) {
     $current_hierarchy = count($parents);
     if ($current_hierarchy > 2) {
-       $current_hierarchy = 2;
+      $current_hierarchy = 2;
     }
     if ($current_hierarchy > $voc->hierarchy) {
       $voc->hierarchy = $current_hierarchy;
@@ -2607,8 +2679,8 @@ function theme_taxonomy_manager_form($variables) {
   $output .= $tree;
   $output .= '</div>';
   $output .= '<div id="taxonomy-term-data" class="right clear-block">';
-	$output .= $term_data;
-	$output .= '</div>';
+  $output .= $term_data;
+  $output .= '</div>';
   $output .= '</div>';
   return $output;
 }
@@ -2639,8 +2711,8 @@ function theme_taxonomy_manager_double_tree_form($variables) {
   $output .= $tree2;
   $output .= '</div>';
   $output .= '<div id="taxonomy-term-data" class="term-data-overlay">';
-	$output .= $term_data;
-	$output .= '</div>';
+  $output .= $term_data;
+  $output .= '</div>';
   $output .= '</div>';
 
   return $output;
@@ -2660,7 +2732,7 @@ function theme_no_submit_button($variables) {
   else {
     $element['#attributes']['class'][] = 'form-'. $element['#button_type'];
   }*/
-  return '<input type="button" '. (empty($element['#name']) ? '' : 'name="'. $element['#name'] .'" ')  .'id="'. $element['#id'] .'" value="'. check_plain($element['#value']) .'" '. drupal_attributes($element['#attributes']) ." />\n";
+  return '<input type="button" ' . (empty($element['#name']) ? '' : 'name="' . $element['#name'] . '" ') . 'id="' . $element['#id'] . '" value="' . check_plain($element['#value']) . '" ' . drupal_attributes($element['#attributes']) . " />\n";
 }
 
 /**
@@ -2672,10 +2744,10 @@ function theme_taxonomy_manager_image_button($element) {
 
   //Make sure not to overwrite classes
   if (isset($element['#attributes']['class'])) {
-    $element['#attributes']['class'] = 'form-'. $element['#button_type'] .' '. $element['#attributes']['class'];
+    $element['#attributes']['class'] = 'form-' . $element['#button_type'] . ' ' . $element['#attributes']['class'];
   }
   else {
-    $element['#attributes']['class'] = 'form-'. $element['#button_type'];
+    $element['#attributes']['class'] = 'form-' . $element['#button_type'];
   }
 
   // here the novelty begins: check if #button_type is normal submit button or image button
@@ -2686,10 +2758,10 @@ function theme_taxonomy_manager_image_button($element) {
   else {
     $return_string .= 'type="submit" ';
   }
-  $return_string .= (empty($element['#id']) ? '' : 'id="'. $element['#id'] .'" ');
-  $return_string .= (empty($element['#name']) ? '' : 'name="'. $element['#name'] .'" ');
-  $return_string .= 'value="'. check_plain($element['#value']) .'" ';
-  $return_string .= drupal_attributes($element['#attributes']) ." />\n";
+  $return_string .= (empty($element['#id']) ? '' : 'id="' . $element['#id'] . '" ');
+  $return_string .= (empty($element['#name']) ? '' : 'name="' . $element['#name'] . '" ');
+  $return_string .= 'value="' . check_plain($element['#value']) . '" ';
+  $return_string .= drupal_attributes($element['#attributes']) . " />\n";
 
   return $return_string;
 

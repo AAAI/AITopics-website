@@ -19,7 +19,6 @@ include_once('feeds_tamper.inc');
 function feeds_tamper_feeds_after_parse(FeedsSource $source, FeedsParserResult $result) {
   $importer_instances = feeds_tamper_load_by_importer($source->importer->id, FALSE);
 
-  // Don't go through all of the nonsense if we don't have anything to do.
   if (empty($importer_instances)) {
     return;
   }
@@ -58,14 +57,14 @@ function feeds_tamper_feeds_after_parse(FeedsSource $source, FeedsParserResult $
 
           if ($is_array && $plugin['multi'] == 'loop') {
             foreach ($item[$element_key] as &$i) {
-              $plugin['callback']($result, $item_key, $element_key, $i, $instance->settings, $source);
+              $plugin['callback']($result, $item_key, $element_key, $i, $instance->settings);
             }
           }
           elseif ($is_array && $plugin['multi'] == 'direct') {
-            $plugin['callback']($result, $item_key, $element_key, $item[$element_key], $instance->settings, $source);
+            $plugin['callback']($result, $item_key, $element_key, $item[$element_key], $instance->settings);
           }
           elseif (!$is_array && $plugin['single'] != 'skip') {
-            $plugin['callback']($result, $item_key, $element_key, $item[$element_key], $instance->settings, $source);
+            $plugin['callback']($result, $item_key, $element_key, $item[$element_key], $instance->settings);
           }
         }
       }
@@ -128,7 +127,6 @@ function feeds_tamper_ctools_plugin_type() {
         'category' => 'Other',
         'single' => FALSE,
         'default description' => '',
-        'defaults' => array(),
       ),
     ),
   );

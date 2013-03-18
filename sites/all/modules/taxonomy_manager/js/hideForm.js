@@ -7,7 +7,7 @@
 
 Drupal.behaviors.TaxonomyManagerHideForm = {
   attach: function(context, settings) {
-    $('#taxonomy-manager-toolbar', context).once('hideForm', function() {
+    $('#edit-toolbar', context).once('hideForm', function() {
       for (var key in settings.hideForm) {
         Drupal.attachHideForm(settings.hideForm[key].div, settings.hideForm[key].show_button, settings.hideForm[key].hide_button);
       }

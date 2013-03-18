@@ -25,15 +25,15 @@ function drush_family_resemblance_fr_export() {
     $arffs[$tid] = array('filename' => $f, 'handle' => $fh);
 
     fwrite($fh, "@relation $tid\n");
-    fwrite($fh, "@attribute itemtype {3826,3827,3828,3829,3830}\n");
     fwrite($fh, "@attribute title string\n");
-    fwrite($fh, "@attribute class {1,0}\n");
+    fwrite($fh, "@attribute body string\n");
+    fwrite($fh, "@attribute class {yes,no}\n");
     fwrite($fh, "@data\n");
   }
 
   $nodes = array();
 
-  $result = db_query("SELECT n.nid FROM {node} n WHERE n.type = :type AND n.status = 1 LIMIT 10000",
+  $result = db_query("SELECT n.nid FROM {node} n WHERE n.type = :type AND n.status = 1",
             array(':type' => 'item'));
 
   $item_no = 0;
@@ -61,16 +61,16 @@ function drush_family_resemblance_fr_export() {
     /* $source = preg_replace('/\W/', ' ', $source); */
     /* $source = preg_replace('/\s+/', ' ', $source); */
 
-    $item_type = $node->field_item_type['und'][0]['tid'];
-
     $title = preg_replace('/\W/', ' ', $node->title);
     $title = preg_replace('/\s+/', ' ', $title);
+    $body = preg_replace('/\W/', ' ', strip_tags($node->body['und'][0][value]));
+    $body = preg_replace('/\s+/', ' ', $body);
     foreach(array_keys($topics) as $tid) {
-      $label = '0';
+      $label = 'no';
       if(in_array($tid, $node_topics)) {
-        $label = '1';
+        $label = 'yes';
       }
-      fwrite($arffs[$tid]['handle'], "$item_type,'$title',$label\n");
+      fwrite($arffs[$tid]['handle'], "'$title','$body',$label\n");
     }
   }
   foreach($arffs as $tid => $arff) {
@@ -82,8 +82,9 @@ function drush_family_resemblance_fr_export() {
   $f = drupal_realpath(drupal_tempnam('temporary://', 'topics_'));
   $fh = fopen($f, 'w');
   foreach($arffs as $tid => $arff) {
-      fwrite($fh, "$tid ".$topics[$tid]['name']."\n");
+      $t = taxonomy_term_load($tid);
+      $uri = entity_uri('taxonomy_term', $t);
+      fwrite($fh, "$tid,'".$topics[$tid]['name']."','".$uri['path']."'\n");
   }
   fclose($fh);
 }
-

@@ -21,7 +21,7 @@ function feeds_tamper_absolute_url_form($importer, $element_key, $settings) {
   return $form;
 }
 
-function feeds_tamper_absolute_url_callback($result, $item_key, $element_key, &$field, $settings, $source) {
+function feeds_tamper_absolute_url_callback($result, $item_key, $element_key, &$field, $settings) {
   static $dom;
 
   $b = parse_url($result->link);
@@ -70,7 +70,7 @@ function _feeds_tamper_absolute_url($r_url, &$urls, $b) {
     $r['pass'] = $b['pass'];
   }
 
-  // If relative URL has no path, use base path.
+  // If relative URL has no path, use base path
   if (empty($r['path'])) {
     if (!empty($b['path'])) {
       $r['path'] = $b['path'];
@@ -82,7 +82,7 @@ function _feeds_tamper_absolute_url($r_url, &$urls, $b) {
     return;
   }
 
-  // If relative URL path doesn't start with /, merge with base path.
+  // If relative URL path doesn't start with /, merge with base path
   if (strpos($r['path'], '/') !== 0) {
     if (empty($b['path'])) {
       $b['path'] = '';
@@ -106,14 +106,11 @@ function _feeds_tamper_join_url($parts) {
       }
       $url .= '@';
     }
-    // IPv6.
     if (preg_match('/!^[\da-f]*:[\da-f.:]+$!ui/', $parts['host'])) {
-      $url .= '[' . $parts['host'] . ']';
+      $url .= '[' . $parts['host'] . ']'; // IPv6
     }
-    else {
-      // IPv4 or name.
-      $url .= $parts['host'];
-    }
+    else
+      $url .= $parts['host'];             // IPv4 or name
     if (isset($parts['port'])) {
       $url .= ':' . $parts['port'];
     }

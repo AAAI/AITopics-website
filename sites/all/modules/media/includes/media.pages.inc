@@ -219,7 +219,7 @@ function media_add_upload_validate($form, &$form_state) {
  * Upload a file.
  */
 function media_add_upload_submit($form, &$form_state) {
-  $params = $form_state['build_info']['args'][0];
+  $params = isset($form_state['build_info']['args'][0]) ? $form_state['build_info']['args'][0] : array();
   $file = $form_state['values']['upload'];
 
   // The media browser widget does not use the 'display' field.
@@ -311,7 +311,7 @@ function media_add_upload_multiple_submit($form, &$form_state) {
 /**
  * Form builder: Builds the edit file form.
  */
-function media_edit($form, $form_state, $file) {
+function media_edit($form, &$form_state, $file) {
   $form_state['file'] = $file;
   field_attach_form('file', $file, $form, $form_state);
 

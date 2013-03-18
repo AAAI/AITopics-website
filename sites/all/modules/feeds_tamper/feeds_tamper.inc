@@ -172,7 +172,7 @@ function feeds_tamper_get_plugins() {
  * Get a single plugin.
  *
  * @param string $id
- *   The id of a plugin.
+ *  The id of a plugin.
  *
  * @return stdClass
  *   A plugin object.

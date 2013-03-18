@@ -155,7 +155,9 @@ function _metatags_quick_get_vocabulary_keywords($vocabulary_name, $node) {
       $node_terms = $node->{$field_name}[$language];
       foreach ($node_terms as $node_term) {
         $term = taxonomy_term_load($node_term['tid']);
-        $keywords[] = $term->name;
+        if(isset($term->name)){
+          $keywords[] = $term->name;
+        }
       }
     }
   }

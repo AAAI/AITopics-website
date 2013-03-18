@@ -177,6 +177,12 @@ function media_token_to_markup($match, $wysiwyg = FALSE) {
     }
     $tag_info['file'] = $file;
 
+    // The class attributes is a string, but drupal requires it to be
+    // an array, so we fix it here.
+    if (!empty($tag_info['attributes']['class'])) {
+      $tag_info['attributes']['class'] = explode(" ", $tag_info['attributes']['class']);
+    }
+
     // Track the fid of this file in the {media_filter_usage} table.
     media_filter_track_usage($file->fid);
 

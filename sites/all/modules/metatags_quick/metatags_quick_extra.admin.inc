@@ -16,7 +16,7 @@ function metatags_quick_admin_auto_settings($form,$form_state) {
   
   // construct the options array for all content types
   $type_names = node_type_get_names();
-
+  
   // facility to select content types for auto-tagging. Has AJAX behavior.
   $form['applicable_content_types'] = array(
     '#type' => 'checkboxes',

@@ -16,17 +16,27 @@ function _accordion_menu_block_view($delta) {
   $config = accordion_menu_config($delta);
   $config['menu_name'] = strtolower(str_replace(array('_', ' '), '-', $config['menu_name']));
 
-  $tree = menu_tree_page_data($config['menu_source']);
+  // Get menu tree.
+  if (module_exists('menu_block') && !empty($config['block_source'])) {
+    $menu_block_config = menu_block_get_config($config['block_source']);
+    $tree = menu_tree_build($menu_block_config);
+  }
+  else {
+    $tree = menu_tree_page_data($config['menu_source']);
+  }
 
   // Localize the tree.
-  if (module_exists('i18nmenu')) {
-    i18nmenu_localize_tree($tree);
+  if (module_exists('i18n_menu')) {
+    $tree = i18n_menu_localize_tree($tree);
   }
+
+  // Alter the tree and config before rendering.
+  drupal_alter('accordion_menu_tree', $tree, $config);
 
   $active_menu = '';
   $content = accordion_menu_output($tree, $config, $active_menu);
   // Set active menu to false and collapsible: true.
-  if ($active_menu === '') {
+  if ($active_menu === '' || !$config['menu_expanded']) {
     $active_menu = 'false';
   }
 
@@ -37,7 +47,7 @@ function _accordion_menu_block_view($delta) {
       // Example: change auto_height to $autoHeight.
       $key = $parts[0] . ucfirst($parts[1]);
     }
-    if ($value != 'true' && $value != 'false') {
+    if ($key != 'icons' && $value != 'true' && $value != 'false') {
       $value = "'$value'";
     }
     $options[] = "$key: $value";
@@ -50,7 +60,19 @@ function _accordion_menu_block_view($delta) {
   // - event: 'click'
   // - navigation: true
   $js = "jQuery(function() {\n";
-  $js .= "jQuery('.accordion-menu-" . $delta . "').accordion({ " . implode(', ', $options) . " });\n";
+
+  // Add accordion options.
+  $js .= "  jQuery('.accordion-menu-" . $delta . "').accordion({ " . implode(', ', $options) . " });\n";
+
+  // Unbind the accordion effect for "empty" headers.
+  $js .= "  jQuery('.accordion-menu-" . $delta . " .accordion-header.no-children').each(function(index, element) {
+    jQuery(this)
+      .unbind('.accordion')
+      .children('.ui-icon')
+      .removeClass('{$config['header_icon']}')
+      .addClass('{$config['empty_icon']}');
+  });\n";
+
   $js .= "});";
 
   drupal_add_library('system', 'ui.accordion');
@@ -97,14 +119,30 @@ function accordion_menu_js_settings($delta, $config) {
     'delta' => $delta,
     'menu_name' => 'Menu ' . $delta,
     'menu_source' => 'navigation',
+    'block_source' => '',
     'script_scope' => 'footer',
     'header_link' => FALSE,
+    'menu_expanded' => FALSE,
   );
 
   $config = array_diff_key($config, $config_nojs);
   foreach (array('auto_height', 'clear_style', 'collapsible', 'fill_space', 'navigation') as $key) {
     $config[$key] = accordion_menu_boolean_option($config[$key]);
   }
+
+  $key = 'icons';
+  if (!$config[$key]) {
+    $config[$key] = accordion_menu_boolean_option($config[$key]);
+  }
+  else {
+    $value1 = $config['header_icon'];
+    $value2 = $config['selected_icon'];
+    $config[$key] = "{ 'header': '$value1', 'headerSelected': '$value2' }";
+  }
+  unset($config['header_icon']);
+  unset($config['selected_icon']);
+  unset($config['empty_icon']);
+
   return $config;
 }
 
@@ -152,10 +190,11 @@ function accordion_menu_output($tree, $config, &$active_menu = '') {
   $zebra = 'even';
   foreach ($items as $i => $data) {
     $subtree = _accordion_menu_subtree($data['link']);
+    $subtree = menu_tree_output($subtree);
 
     // Add CSS classes.
     $class = array();
-    $class[] = 'accordion-header-' . ($i + 1);
+    $class[] = 'accordion-header accordion-header-' . ($i + 1);
     if ($i == 0) {
       $class[] = 'first';
     }
@@ -190,7 +229,7 @@ function accordion_menu_output($tree, $config, &$active_menu = '') {
     $element['#title'] = $data['link']['title'];
     $element['#href'] = $data['link']['href'];
     $element['#localized_options'] = !empty($data['link']['localized_options']) ? $data['link']['localized_options'] : array();
-    $element['#below'] = $subtree ? menu_tree_output($subtree) : $subtree;
+    $element['#below'] = $subtree;
     $element['#original_link'] = $data['link'];
     $element['#bid'] = array('module' => 'accordion_menu', 'delta' => $config['delta']);
     $element['#config'] = $config;
@@ -296,7 +335,7 @@ function theme_accordion_menu_header(array $variables) {
     $sub_menu = drupal_render($element['#below']);
   }
 
-  if (!$header_link) {
+  if (!$header_link && !empty($element['#below'])) {
     // @todo Allow the title to be output without cleansing based on user input.
     // Merge in defaults.
     $options = $element['#localized_options'];

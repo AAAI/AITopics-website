@@ -14,7 +14,7 @@
   margin-bottom: 2px;
 }
 
-#taxonomy-manager-toolbar,
+#edit-toolbar,
 #edit-add {
   clear: both;
 }
@@ -154,18 +154,18 @@
   background-repeat: no-repeat;
   background-image: url(../images/select-all-children.png);
 }
-.term-operations span.unselect-all-children {
+.term-operations span.deselect-all-children {
   text-decoration: none;
   width: 16px;
   height: 16px;
   background-repeat: no-repeat;
-  background-image: url(../images/unselect-all-children.png);
+  background-image: url(../images/deselect-all-children.png);
 }
 
 .term-operations img.term-up,
 .term-operations img.term-down,
 .term-operations span.select-all-children,
-.term-operations span.unselect-all-children,
+.term-operations span.deselect-all-children,
 .term-operations a img {
   cursor: pointer;
   vertical-align: bottom;
@@ -202,15 +202,15 @@ span.taxonomy-manager-select-helpers span.select-all-children {
 span.taxonomy-manager-select-helpers span.select-all-children:hover {
   background-image: url(../images/select-all-children.png);
 }
-span.taxonomy-manager-select-helpers span.unselect-all-children {
+span.taxonomy-manager-select-helpers span.deselect-all-children {
   text-decoration: none;
   width: 16px;
   height: 16px;
   background-repeat: no-repeat;
-  background-image: url(../images/unselect-all-children-bw.png);
+  background-image: url(../images/deselect-all-children-bw.png);
 }
-span.taxonomy-manager-select-helpers span.unselect-all-children:hover {
-  background-image: url(../images/unselect-all-children.png);
+span.taxonomy-manager-select-helpers span.deselect-all-children:hover {
+  background-image: url(../images/deselect-all-children.png);
 }
 
 div.form-item-taxonomy-manager-top-language,

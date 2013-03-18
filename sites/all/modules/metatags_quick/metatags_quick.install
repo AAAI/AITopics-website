@@ -118,6 +118,10 @@ function metatags_quick_update_7004() {
    * first place, that's irrelevant. PostgreSQL seems to support the same
    * syntax, so it should work.
    */
-  db_query('ALTER TABLE {metatags_quick_path_based} DROP PRIMARY KEY, ADD PRIMARY KEY (`id`)');
-  db_add_unique_key('metatags_quick_path_based', 'lang_path', array('lang', 'path'));
+  if (db_driver() == 'mysql') {
+    db_query('ALTER TABLE {metatags_quick_path_based} DROP PRIMARY KEY, ADD PRIMARY KEY (`id`)');
+  }
+  if (!db_index_exists('metatags_quick_path_based', 'lang_path')) {
+    db_add_unique_key('metatags_quick_path_based', 'lang_path', array('lang', 'path'));
+  }
 }

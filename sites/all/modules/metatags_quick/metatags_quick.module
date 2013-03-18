@@ -72,6 +72,15 @@ function metatags_quick_permission() {
 }
 
 /**
+ * Implements hook_views_api().
+ */
+function metatags_quick_views_api() {
+  return array(
+    'api' => 3,
+  );
+}
+
+/**
  * Implements hook_entity_info().
  */
 function metatags_quick_entity_info() {
@@ -131,7 +140,9 @@ function metatags_quick_field_access($op, $field, $entity_type, $entity, $accoun
 function metatags_quick_field_load($entity_type, $entities, $field, $instances, $langcode, &$items, $age) {
   foreach ($items as $lang => $lang_item) {
     foreach ($lang_item as $i => $final_item) {
-      $items[$lang][$i]['meta_name'] = $field['settings']['meta_name'];
+      if (!isset($items[$lang][$i]['meta_name'])) {
+        $items[$lang][$i]['meta_name'] = $field['settings']['meta_name'];
+      }
     }
   }
 }
@@ -443,6 +454,10 @@ function metatags_quick_field_widget_form(&$form, &$form_state, $field, $instanc
       }
       if (isset($items[$delta]['metatags_quick']) && !is_array($items[$delta]['metatags_quick'])) {
         $items[$delta]['metatags_quick'] = explode(',', $items[$delta]['metatags_quick']);
+      }
+      if ($items[$delta]['metatags_quick'] === NULL) {
+        $default_checkboxes = explode(',', $instance['settings']['options']);
+        $items[$delta]['metatags_quick'] = array_fill_keys($default_checkboxes, '');
       }
       $addition = array(
         '#type' => 'checkboxes',

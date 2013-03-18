@@ -11,7 +11,7 @@ function metatags_quick_admin_settings() {
 
   include_once $module_path . '/known_tags.inc';
   $known_tags = _metatags_quick_known_fields();
-  
+
   $form['global'] = array(
     '#type' => 'fieldset',
     '#title' => t('Global settings'),
@@ -48,7 +48,12 @@ function metatags_quick_admin_settings() {
     '#description' => t('Default maximum length for the meta tag fields'),
     '#default_value' => variable_get('metatags_quick_default_field_length', 255),
   );
-  
+  $form['global']['show_admin_hint'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show entities/bundles hint in admin'),
+    '#default_value' => variable_get('metatags_quick_show_admin_hint', 1),
+  );
+
   $form['standard_tags'] = array(
     '#type' => 'fieldset',
     '#title' => t('Create and attach'),
@@ -59,9 +64,13 @@ function metatags_quick_admin_settings() {
       'css' => array($module_path . '/css/admin.css'),
     ),
   );
-  $form['standard_tags']['hint'] = array(
-    '#markup' => t('Hint: press on the bundle name to see individual entity types'),
-  );
+  if (variable_get('metatags_quick_show_admin_hint', 1)) {
+    $form['standard_tags']['hint'] = array(
+      '#prefix' => '<div class="messages status">',
+      '#markup' => t('<strong>Hint</strong>: press on entity type name to edit individual bundles settings (you can hide this hint in global settings).'),
+      '#suffix' => '</div>',
+    );
+  }
   
   $field_instances = field_info_instances();
 
@@ -125,7 +134,7 @@ function metatags_quick_admin_settings() {
           $meta_set[$field_info['settings']['meta_name']] = 1;
         }        
       }
-      
+
       $options[$entity_type . '_' . $key] = array(
         'class' => array('entity_type_children', "entity_child_$entity_type"),
         'style' => 'display: none',
@@ -195,6 +204,7 @@ function metatags_quick_admin_settings_submit($form, &$form_state) {
   variable_set('metatags_quick_use_path_based', $form_state['values']['use_path_based']);
   variable_set('metatags_quick_remove_tab', $form_state['values']['remove_tab']);
   variable_set('metatags_quick_default_field_length', $form_state['values']['default_field_length']);
+  variable_set('metatags_quick_show_admin_hint', $form_state['values']['show_admin_hint']);
   if ($form_state['clicked_button']['#value'] == t('Attach')) {
     _metatags_quick_admin_fields_create_attach($form_state['input']);
   }

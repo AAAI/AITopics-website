@@ -12,10 +12,17 @@
 function _accordion_menu_block_configure($delta) {
   // Gather information.
   $config = accordion_menu_config($delta);
-  $menus = menu_get_names();
-  $options = array();
-  foreach ($menus as $menu) {
-    $options[$menu] = $menu;
+  $options = array('' => '- None -') + menu_get_menus();
+  if (module_exists('menu_block')) {
+    // Add menu_block sub-menus.
+    $menus = menu_block_block_info();
+    $block_options = array('' => '- None -');
+    foreach ($menus as $delta => $menu) {
+      $block_options[$delta] = $menu['info'];
+    }
+  }
+  else {
+    drupal_set_message(t('If you enable the !module module, then you may display menu blocks with an accordion effect.', array('!module' => l('Menu Block', 'https://drupal.org/project/menu_block'))), 'warning');
   }
 
   // Build form.
@@ -37,10 +44,19 @@ function _accordion_menu_block_configure($delta) {
     '#default_value' => $config['menu_source'],
     '#options' => $options,
   );
+  if (module_exists('menu_block')) {
+    $form1['accordion_menu_block_source'] = array(
+      '#type' => 'select',
+      '#title' => t('Menu block source'),
+      '#description' => t('Select the menu block to display as an accordion. This will override the menu source above.'),
+      '#default_value' => $config['block_source'],
+      '#options' => $block_options,
+    );
+  }
   $form1['accordion_menu_script_scope'] = array(
     '#type' => 'textfield',
     '#title' => t('Script scope'),
-    '#description' => t('The location in which to place the script. The location must be implemented by the theme. Values include "header" and "footer" by default.'),
+    '#description' => t('The location in which to place the script. The location must be implemented by the theme. Values include "<strong>header</strong>" and "<strong>footer</strong>" by default.'),
     '#default_value' => $config['script_scope'],
     '#size' => 10,
   );
@@ -49,6 +65,12 @@ function _accordion_menu_block_configure($delta) {
     '#title' => t('Header link'),
     '#description' => t('If checked, header menu items will be output as links. Clicking on the menu item may trigger the accordion effect and a redirect to the header link. <strong>Undesirable</strong>'),
     '#default_value' => $config['header_link'],
+  );
+  $form1['accordion_menu_menu_expanded'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Expand menu'),
+    '#description' => t('If checked, menu items in the active trail will be expanded. Otherwise, menus will not be expanded on page load.'),
+    '#default_value' => $config['menu_expanded'],
   );
   $fs1['basic_options'] += $form1;
 
@@ -68,9 +90,27 @@ function _accordion_menu_block_configure($delta) {
   $form2['accordion_menu_animated'] = array(
     '#type' => 'textfield',
     '#title' => t('Animation'),
-    '#description' => t('Enter the name of an animation, or set to "false" to disable them. In addition to the default of "slide", "bounceslide" and all defined easing methods are supported ("bounceslide" requires UI Effects Core). With menu items, the alternative effects are mostly unnoticeable.'),
+    '#description' => t('Enter the name of an animation, or set to "false" to disable them. In addition to the default of "<strong>slide</strong>", "bounceslide" and all defined easing methods are supported ("bounceslide" requires UI Effects Core). With menu items, the alternative effects are mostly unnoticeable.'),
     '#default_value' => $config['animated'],
     '#size' => 10,
+  );
+  $form2['accordion_menu_header_icon'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Header icon'),
+    '#description' => t('Enter the name of the icon to use on a header. jQuery recommends using the icons native to the jQuery UI CSS Framework. Default value is "<strong>ui-icon-triangle-1-e</strong>."'),
+    '#default_value' => $config['header_icon'],
+  );
+  $form2['accordion_menu_selected_icon'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Selected header icon'),
+    '#description' => t('Enter the name of the icon to use on a selected header. jQuery recommends using the icons native to the jQuery UI CSS Framework. Default value is "<strong>ui-icon-triangle-1-s</strong>."'),
+    '#default_value' => $config['selected_icon'],
+  );
+  $form2['accordion_menu_empty_icon'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Empty header icon'),
+    '#description' => t('Enter the name of the icon to use on an empty header (i.e., no children). See !link for the icons native to the jQuery UI CSS Framework."', array('!link' => l('this page', 'http://jqueryui.com/themeroller/'))),
+    '#default_value' => $config['empty_icon'],
   );
   $form2['accordion_menu_event'] = array(
     '#type' => 'select',
@@ -84,6 +124,12 @@ function _accordion_menu_block_configure($delta) {
     '#title' => t('Collapsible'),
     '#description' => t('Whether all the sections can be closed at once. Allows collapsing the active section by the triggering event.'),
     '#default_value' => $config['collapsible'],
+  );
+  $form2['accordion_menu_icons'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Icons'),
+    '#description' => t('If checked, then the icons specified above will be used on header elements. Uncheck to omit the icons.'),
+    '#default_value' => $config['icons'],
   );
   $form2['accordion_menu_auto_height'] = array(
     '#type' => 'checkbox',
@@ -155,6 +201,20 @@ function _accordion_menu_block_validate($form, &$form_state) {
   preg_match('@^([a-z]+([1-9]|)).*@', strtolower($value), $matches);
   if (empty($matches) || $matches[0] != $matches[1]) {
     form_set_error('accordion_menu_' . $key, t('Enter a valid HTML tag. (' . $key . ')'));
+  }
+  // Do not allow both menu source options to be blank.
+  $key1 = 'menu_source';
+  $value1 = $form_state['values']['accordion_menu_' . $key1];
+  $key2 = 'block_source';
+  $value2 = $form_state['values']['accordion_menu_' . $key2];
+  if (isset($value2)) {
+    if (empty($value1) && empty($value2)) {
+      form_set_error('accordion_menu_' . $key1, t('Select either a menu source or a menu block source. (' . $key1 . ')'));
+      form_set_error('accordion_menu_' . $key2, t('Select either a menu source or a menu block source. (' . $key2 . ')'));
+    }
+  }
+  elseif (empty($value1)) {
+    form_set_error('accordion_menu_' . $key1, t('Select a menu source. (' . $key1 . ')'));
   }
 }
 

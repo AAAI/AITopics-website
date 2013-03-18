@@ -104,8 +104,10 @@ function accordion_menu_config($delta = NULL) {
     // Our settings.
     'menu_name' => 'Menu ' . $delta,
     'menu_source' => 'navigation',
+    'block_source' => '',
     'script_scope' => 'footer',
     'header_link' => FALSE,
+    'menu_expanded' => FALSE,
     // jQuery UI accordion settings.
     'animated' => 'slide',
     'auto_height' => FALSE,
@@ -115,6 +117,10 @@ function accordion_menu_config($delta = NULL) {
     'header' => 'h3',
     'collapsible' => TRUE,
     'navigation' => FALSE,
+    'icons' => TRUE,
+    'header_icon' => 'ui-icon-triangle-1-e',
+    'selected_icon' => 'ui-icon-triangle-1-s',
+    'empty_icon' => 'ui-icon-triangle-1-s',
   );
 
   if ($delta) {

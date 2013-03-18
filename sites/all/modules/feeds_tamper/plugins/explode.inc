@@ -10,7 +10,7 @@ $plugin = array(
   'callback' => 'feeds_tamper_explode_callback',
   'validate' => 'feeds_tamper_explode_validate',
   'name' => 'Explode',
-  'multi' => 'direct',
+  'multi' => 'skip',
   'category' => 'List',
 );
 
@@ -36,24 +36,24 @@ function feeds_tamper_explode_form($importer, $element_key, $settings) {
 function feeds_tamper_explode_validate(&$settings) {
   $settings['real_separator'] = str_replace(array('%s', '%t', '%n'), array(' ', "\t", "\n"), $settings['separator']);
   $settings['limit'] = trim($settings['limit']);
-
-  if (!empty($settings['limit']) && !is_numeric($settings['limit'])) {
+  if ($settings['limit'] === '0') {
+    $settings['limit'] = 1;
+  }
+  if (!empty($settings['limit']) && !ctype_digit($settings['limit'])) {
     form_set_error('settings][limit', t('Limit must be an integer or blank.'));
   }
 }
 
-function feeds_tamper_explode_callback($result, $item_key, $element_key, &$field, $settings, $source) {
+function feeds_tamper_explode_callback($result, $item_key, $element_key, &$field, $settings) {
   $out = array();
   if (!is_array($field)) {
     $field = array($field);
   }
   foreach ($field as $f) {
     if (strpos($f, $settings['real_separator']) === FALSE) {
-      if (!empty($f)) {
-        $out[] = $f;
-      }
+      $out[] = $f;
     }
-    elseif ($settings['limit'] == '') {
+    elseif (empty($settings['limit'])) {
       $out = array_merge($out, explode($settings['real_separator'], $f));
     }
     else {

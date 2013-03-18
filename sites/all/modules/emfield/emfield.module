@@ -102,7 +102,7 @@ function emfield_widget_value($element, $input = FALSE, $form_state) {
       $q = db_select('file_managed', 'f');
       $q->addField('f', 'uri');
       $q->addTag('file_access')
-        ->condition('f.fid', $fid)
+        ->condition('f.fid', $fid['fid'])
         ->range(0, 1);
       $result = $q->execute();
       // @todo If no result (file doesn't exist or no access).

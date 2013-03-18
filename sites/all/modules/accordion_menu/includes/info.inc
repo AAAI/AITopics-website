@@ -56,9 +56,10 @@ function _accordion_menu_theme(&$existing, $type, $theme, $path) {
  * Implements hook_block_info().
  */
 function _accordion_menu_block_info() {
-  for ($i = 1; $i <= variable_get('accordion_menu_count', '2'); $i++) {
-    $blocks[$i]['info'] = variable_get('accordion_menu_menu_name_' . $i, 'Menu ' . $i) . ' (Accordion menu)';
-    $blocks[$i]['cache'] = DRUPAL_NO_CACHE;
+  $key = 'menu_name';
+  for ($delta = 1; $delta <= variable_get('accordion_menu_count', '2'); $delta++) {
+    $blocks[$delta]['info'] = variable_get("accordion_menu_{$delta}_{$key}", 'Menu ' . $delta) . ' (accordion)';
+    $blocks[$delta]['cache'] = DRUPAL_NO_CACHE;
   }
   return $blocks;
 }
