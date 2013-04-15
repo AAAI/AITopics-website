@@ -988,6 +988,10 @@ div.field-name-field-editors div.field-items div.field-item {
 
 /* Calendars */
 
+.view-display-id-page_news_weekly .calendar-agenda-hour {
+    display: none;
+}
+
 .calendar-calendar th.days {
     background: #eee;
     color: #333;
