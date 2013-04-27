@@ -153,10 +153,16 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
         if(empty($field_publication_date) && !empty($field_publication_year_int)) {
           array_push($metadata, $field_publication_year_int['und'][0]['value']);
         }
+        if(!empty($field_collections)) {
+          $term = taxonomy_term_load($field_collections['und'][0]['tid']);
+          array_push($metadata, $term->name);
+        }
+
         print implode(", ", $metadata);
-        if(!empty($metadata)) { print " &mdash; "; }
       ?>
-      <a href="<?php print $node_url; ?>">Read more...</a>
+      <?php if(user_access('administer content')): ?>
+      &mdash; <a href="<?php print "/node/".$node->nid."/edit"; ?>">Edit...</a>
+      <?php endif; ?>
     </div>
 
     <div class="persons-tags-container intopic">
@@ -233,7 +239,9 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
         print implode("<br/>", $metadata);
         if(!empty($metadata)) { print "<br/>"; }
       ?>
-      <a href="<?php print $node_url; ?>">Read more...</a>
+      <?php if(user_access('administer content')): ?>
+      <a href="<?php print "/node/".$node->nid."/edit"; ?>">Edit...</a>
+      <?php endif; ?>
     </div>
     </td>
     <td>
@@ -356,7 +364,7 @@ if(!empty($field_next_clicks)) {
 ?>
     <div style="clear: both;"></div>
 
-<?php 
+<?php
 if(!empty($field_editors)) {
   print '<div class="editors">Topic editor';
   if(count($field_editors) > 1) { print 's'; }
