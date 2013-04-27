@@ -65,9 +65,9 @@ class ApacheSolrFacetapiTerm extends FacetapiQueryType implements FacetapiQueryT
       $local = "tag={$this->facet['field']}";
       $values = array_keys($active);
       if ($values) {
-        // Quote any values that have white space.
+        // Quote any values that have white space or colons.
         foreach ($values as &$v) {
-          if (preg_match('/\s/', $v)) {
+          if (preg_match('/[:\s]/', $v)) {
             $v = '"' . $v . '"';
           }
         }

@@ -5,10 +5,4 @@ sites/*/settings*.php
 sites/*/files
 sites/*/private
 
-# Ignore cache
-cache
-
-access.log
-error.log
-google*.html
-
+cache/

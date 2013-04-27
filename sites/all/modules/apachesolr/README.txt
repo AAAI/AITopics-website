@@ -128,7 +128,7 @@ behavior:
    when performing LUKE queries (for performance reasons).
 
  - apachesolr_tags_to_index: the list of HTML tags that the module will index
-   (see apachesolr_add_tags_to_document()).
+   (see apachesolr_index_add_tags_to_document()).
 
  - apachesolr_exclude_nodeapi_types: an array of node types each of which is
    an array of one or more module names, such as 'comment'.  Any type listed

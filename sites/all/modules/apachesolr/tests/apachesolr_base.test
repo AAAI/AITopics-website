@@ -391,7 +391,7 @@ class DrupalSolrNodeTestCase extends DrupalWebTestCase {
 
   public static function getInfo() {
     return array(
-      'name' => 'Solr Node add and deletion tests',
+      'name' => 'Solr Node add, deletion, and document building tests',
       'description' => 'Tests if we can succesfully add and delete nodes',
       'group' => 'ApacheSolr',
     );
@@ -469,6 +469,57 @@ class DrupalSolrNodeTestCase extends DrupalWebTestCase {
         ->execute()
         ->fetchField();
       $this->assertEqual($count, 0, t('No more nodes left in the node table.'));
+    }
+  }
+
+  function testNodeToDocument() {
+    // enable our bundles to be indexed, and clear caches
+    apachesolr_index_set_bundles('solr', 'node', array('article'));
+    entity_info_cache_clear();
+    apachesolr_environments_clear_cache();
+    $edit = array();
+    // Create a node of the type article.
+    $type = 'article';
+    $edit['uid'] = 1;
+    $edit['type'] = $type;
+    $edit['title'] = $this->randomName(16);
+    $edit['body'][LANGUAGE_NONE][0]['value'] = 'some other ORDINARY_TEXT ';
+    // Make sure the format allows all tags.
+    $edit['body'][LANGUAGE_NONE][0]['format'] = 'full_html';
+    $tags_to_index = _apachesolr_tags_to_index();
+    // Tags that are not boosted normally.
+    $other_tags = array('div' => 'tags_inline', 'span' => 'tags_inline');
+    $all_tags = $tags_to_index + $other_tags;
+    $tag_content = array();
+    foreach ($all_tags as $tag_name => $field_name) {
+      $tag_content[$tag_name] = strtoupper($tag_name) . '_TAG_CONTENT';
+      if ($tag_name == 'a') {
+        $edit['body'][LANGUAGE_NONE][0]['value'] .= "<{$tag_name} href=\"http://example.com\">{$tag_content[$tag_name]}</{$tag_name}> other filler ";
+      }
+      else {
+        $edit['body'][LANGUAGE_NONE][0]['value'] .= "<{$tag_name}>{$tag_content[$tag_name]}</{$tag_name}> dummy text ";
+      }
+    }
+    $node = $this->drupalCreateNode($edit);
+    $this->assertTrue(is_object($node) && isset($node->nid), t('Article type @type has been created.', array('@type' => $type)));
+
+    $item = new stdClass();
+    $item->entity_id = $node->nid;
+    $item->entity_type = 'node';
+    $item->bundle = $node->type;
+    $env_id = apachesolr_default_environment();
+    $docs = apachesolr_index_entity_to_documents($item, $env_id);
+    $this->assertEqual(count($docs), 1, 'Only one document from one node');
+    $document = end($docs);
+    $this->assertTrue(strpos($document->content,'ORDINARY_TEXT') !== FALSE, "Found in content field expected: ORDINARY_TEXT");
+    foreach ($tags_to_index as $tag_name => $field_name) {
+      $this->assertTrue(strpos($document->content, $tag_content[$tag_name]) !== FALSE, "Found in content field expected: {$tag_content[$tag_name]}");
+      $this->assertTrue(!empty($document->{$field_name}) && strpos($document->{$field_name}, $tag_content[$tag_name]) !== FALSE, "Found in {$field_name} field expected: {$tag_content[$tag_name]}");
+      $this->assertTrue(empty($document->{$field_name}) || strpos($document->{$field_name},'ORDINARY_TEXT') === FALSE, "NOT Found in {$field_name}: ORDINARY_TEXT");
+    }
+    foreach ($other_tags as $tag_name => $field_name) {
+      $this->assertTrue(strpos($document->content, $tag_content[$tag_name]) !== FALSE, "Found in content field expected: {$tag_content[$tag_name]}");
+      $this->assertTrue(empty($document->{$field_name}) || strpos($document->{$field_name}, $tag_content[$tag_name]) === FALSE, "NOT found in {$field_name}: {$tag_content[$tag_name]}");
     }
   }
 }
