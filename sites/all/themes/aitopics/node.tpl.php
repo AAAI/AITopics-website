@@ -160,7 +160,7 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
 
         print implode(", ", $metadata);
       ?>
-      <?php if(user_access('administer content')): ?>
+      <?php if(user_access('administer nodes')): ?>
       &mdash; <a href="<?php print $node_url; ?>">View</a> | <a href="<?php print "/node/".$node->nid."/edit"; ?>">Edit...</a>
       <?php endif; ?>
     </div>
@@ -239,7 +239,7 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
         print implode("<br/>", $metadata);
         if(!empty($metadata)) { print "<br/>"; }
       ?>
-      <?php if(user_access('administer content')): ?>
+      <?php if(user_access('administer nodes')): ?>
       <a href="<?php print $node_url; ?>">View</a> | <a href="<?php print "/node/".$node->nid."/edit"; ?>">Edit...</a>
       <?php endif; ?>
     </div>
