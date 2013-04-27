@@ -152,7 +152,7 @@ if(!empty($result['fields']['im_field_topics'])) {
         if(!empty($metadata)) { print "<br/>"; }
       ?>
       <?php if(user_access('administer nodes')): ?>
-      &mdash; <a href="<?php print $result['link']; ?>">View</a> | <a href="<?php print "/node/".$result['fields']['entity_id']."/edit"; ?>">Edit...</a>
+      &mdash; <a href="<?php print "/node/".$result['fields']['entity_id']; ?>">View</a> | <a href="<?php print "/node/".$result['fields']['entity_id']."/edit"; ?>">Edit...</a>
       <?php endif; ?>
     </div>
     </td>
