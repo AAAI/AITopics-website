@@ -64,6 +64,7 @@
 ?>
 
 <?php
+
 if(!empty($result['fields']['sm_vid_Item_Type'])) {
   $item_type_str = $result['fields']['sm_vid_Item_Type'][0];
   $item_type = strtolower($item_type_str);
@@ -103,9 +104,7 @@ if(!empty($result['fields']['im_field_topics'])) {
     <div class="summary search-snippet-info">
       <?php
         if(!empty($rep_image)) {
-            print "<a href=\"$url\">\n";
             print "<img typeof=\"foaf:Image\" src=\"http://aitopics.org/sites/default/files/styles/thumbnail/public/".substr($rep_image['uri'], 8)."\" align=\"left\">\n";
-            print "</a>";
         }
       ?>
       <?php if ($snippet): ?>
@@ -115,7 +114,7 @@ if(!empty($result['fields']['im_field_topics'])) {
 
     <?php if(!empty($primary_link)) {
             echo "<p>";
-            display_link($primary_link, 'Link to external resource');
+            display_link($primary_link, 'Source');
             echo "</p>";
     } ?>
 
@@ -152,7 +151,9 @@ if(!empty($result['fields']['im_field_topics'])) {
         print implode("<br/>", $metadata);
         if(!empty($metadata)) { print "<br/>"; }
       ?>
-      <a href="<?php print $url; ?>">Read more...</a>
+      <?php if(user_access('administer nodes')): ?>
+      &mdash; <a href="<?php print $url; ?>">View</a> | <a href="<?php print "/node/".$result['fields']['entity_id']."/edit"; ?>">Edit...</a>
+      <?php endif; ?>
     </div>
     </td>
     <td>
