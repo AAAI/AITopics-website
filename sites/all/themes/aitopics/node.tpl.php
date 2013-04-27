@@ -128,7 +128,7 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
             print render($value); ?>
       <?php if(!empty($field_original_link)) {
             echo "<p>";
-            display_link($field_original_link['und'][0], 'Visit source');
+            display_link($field_original_link['und'][0], 'Source');
             echo "</p>";
       } ?>
    </div>
@@ -207,7 +207,7 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
       ?>
       <?php if(!empty($field_original_link)) {
             echo "<p>";
-            display_link($field_original_link['und'][0], 'Visit source');
+            display_link($field_original_link['und'][0], 'Source');
             echo "</p>";
       } ?>
 
@@ -302,7 +302,7 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
 
     <?php if(!empty($field_original_link)) {
           echo "<p>";
-          display_link($field_original_link[0], 'Visit source');
+          display_link($field_original_link[0], 'Source');
           echo "</p>";
     } ?>
 
