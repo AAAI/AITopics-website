@@ -306,9 +306,16 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
           echo "</p>";
     } ?>
 
-    <?php if(!empty($field_link)) {
+    <?php
+    $extra_links = array();
+    foreach($field_link as $link) {
+        if($link['title'] != "") {
+            $extra_links[] = $link;
+        }
+    }
+    if(!empty($extra_links)) {
             echo "<p>Extra links:<ul>";
-            foreach($field_link as $link) {
+            foreach($extra_links as $link) {
               print "<li>";
               display_link($link, $link['title']);
               print "</li>";
