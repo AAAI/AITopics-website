@@ -55,9 +55,9 @@ Drupal.webform.datepicker = function(context) {
       maxDate: endDate,
       onSelect: function(dateText, inst) {
         var date = dateText.split('-');
-        $webformDatepicker.find('select.year, input.year').val(+date[0]);
-        $webformDatepicker.find('select.month').val(+date[1]);
-        $webformDatepicker.find('select.day').val(+date[2]);
+        $webformDatepicker.find('select.year, input.year').val(+date[0]).trigger('change');
+        $webformDatepicker.find('select.month').val(+date[1]).trigger('change');
+        $webformDatepicker.find('select.day').val(+date[2]).trigger('change');
       },
       beforeShow: function(input, inst) {
         // Get the select list values.
@@ -323,23 +323,23 @@ Drupal.webform.stringValue = function(element, existingValue) {
   var value = [];
 
   if (element) {
-    // Simple textfields.
-    $(element).find('input:not([type=checkbox],[type=radio]),textarea').each(function() {
+    // Checkboxes and radios.
+    $(element).find('input[type=checkbox]:checked,input[type=radio]:checked').each(function() {
       value.push(this.value);
     });
-
-    // Checkboxes and radios.
-    if (!value.length) {
-      $(element).find('input:checked').each(function() {
-        value.push(this.value);
-      });
-    }
     // Select lists.
     if (!value.length) {
       var selectValue = $(element).find('select').val();
       if (selectValue) {
         value.push(selectValue);
       }
+    }
+    // Simple text fields. This check is done last so that the select list in
+    // select-or-other fields comes before the "other" text field.
+    if (!value.length) {
+      $(element).find('input:not([type=checkbox],[type=radio]),textarea').each(function() {
+        value.push(this.value);
+      });
     }
   }
   else if (existingValue) {

@@ -302,6 +302,28 @@ function hook_webform_component_delete($component) {
 }
 
 /**
+ * Alter a Webform submission's header when exported.
+ */
+function hook_webform_csv_header_alter(&$header, $component) {
+  // Use the machine name for component headers, but only for the webform 
+  // with node 5 and components that are text fields.
+  if ($component['nid'] == 5 && $component['type'] == 'textfield') {
+    $header[2] = $component['form_key'];
+  }
+}
+
+/**
+ * Alter a Webform submission's data when exported.
+ */
+function hook_webform_csv_data_alter(&$data, $component, $submission) {
+  // If a value of a field was left blank, use the value from another
+  // field.
+  if ($component['cid'] == 1 && empty($data)) {
+    $data = $submission->data[2]['value'][0];
+  }
+}
+
+/**
  * Define components to Webform.
  *
  * @return
@@ -549,7 +571,7 @@ function _webform_defaults_component() {
   return array(
     'name' => '',
     'form_key' => NULL,
-    'mandatory' => 0,
+    'required' => 0,
     'pid' => 0,
     'weight' => 0,
     'extra' => array(
@@ -588,7 +610,7 @@ function _webform_edit_component($component) {
     '#type' => 'textarea',
     '#title' => t('Options'),
     '#default_value' => $component['extra']['options'],
-    '#description' => t('Key-value pairs may be entered separated by pipes. i.e. safe_key|Some readable option') . theme('webform_token_help'),
+    '#description' => t('Key-value pairs may be entered separated by pipes. i.e. safe_key|Some readable option') . ' ' . theme('webform_token_help'),
     '#cols' => 60,
     '#rows' => 5,
     '#weight' => -3,
@@ -618,7 +640,7 @@ function _webform_render_component($component, $value = NULL, $filter = TRUE) {
   $form_item = array(
     '#type' => 'textfield',
     '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
-    '#required' => $component['mandatory'],
+    '#required' => $component['required'],
     '#weight' => $component['weight'],
     '#description'   => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
     '#default_value' => $filter ? _webform_filter_values($component['value']) : $component['value'],
@@ -878,7 +900,7 @@ function _webform_table_component($component, $value) {
 function _webform_csv_headers_component($component, $export_options) {
   $header = array();
   $header[0] = array('');
-  $header[1] = array($component['name']);
+  $header[1] = array($export_options['header_keys'] ? $component['form_key'] : $component['name']);
   $items = _webform_component_options($component['extra']['questions']);
   $count = 0;
   foreach ($items as $key => $item) {

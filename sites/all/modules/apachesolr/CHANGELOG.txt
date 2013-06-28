@@ -1,6 +1,30 @@
 Apache Solr integration 7.x-1.x, xxxx-xx-xx
 -----------------------------
 
+Apache Solr integration 7.x-1.3, 2013-06-10
+-----------------------------
+#2013805 by janusman: Add watchdog logging for index deletes.
+#1757470 by j0rd: Fix for Boolean field type facet mapping.
+#2012944 by Nick_vh: fix for Call to undefined function apachesolr_environment_variable_set() in update.
+#1933080 by mr.baileys: fix for API docs for hook_apachesolr_delete_by_query().
+#1952444 by kevin.dutra: Bring back the book facet.
+#1984530 by blazindrop: Remove non-existent ctools export callbacks.
+#1978404 by PatchRanger: Fix for Illegal string offset warnings in test.
+#1565766 by grndlvl, David_Rothstein: Pass the full entity to Apache Solr status callbacks.
+#1935266 by David_Rothstein: Fix for apachesolr_search_apachesolr_entity_info_alter() resets the result callback.
+#2006602 by David_Rothstein: Fix for Documents are deleted from the Solr index in read-only environments.
+#1965204 by jantoine, pwolanin: fix for Facets on * as path breaks search, mutiple queries run.
+#1897556 by pwolanin: revert change so fields are again multiple by default.
+#1937598 by kevin.dutra: Fix for Update date boost not applied.
+#1946132 by mkalkbrenner: Fix for Invalid arguments passed to theme_apachesolr_search_snippets().
+#1814080 by pwolanin: stop cacheing the sort block for simplicity.
+#1992602 by drunken monkey: fix for Wrong field used for spellcheck index creation.
+#1988100 by pwolanin: Add back qt=standard support.
+#1988090 by pwolanin: Fix for highlighting should use STRONG not EM tags.
+#1985526 by pwolanin: Add back buildOnOptimize for the spellchecker.
+#799970  by pwolanin: pull in changes to common config in #1984442
+#1917376 by kevin.dutra, pwolanin: Fix for Index configuration form lacks order.
+
 Apache Solr integration 7.x-1.2, 2013-04-10
 -----------------------------
 #1314664 by pwolanin: Fix for Search pages custom pages don't use %value in title.

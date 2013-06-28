@@ -31,7 +31,6 @@
 
 #taxonomy2-manager-tree-outer-div,
 #taxonomy-manager-tree-outer-div {
-  height: 550px;
   overflow: auto;
   width: 46%;
 }

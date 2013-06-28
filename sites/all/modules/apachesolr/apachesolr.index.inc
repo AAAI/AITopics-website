@@ -578,6 +578,9 @@ function apachesolr_index_delete_index($env_id, $entity_type = NULL, $bundle = N
     $solr->deleteByQuery($query);
     $solr->commit();
 
+    // Log the query used for deletion.
+    watchdog('Apache Solr', 'Deleted documents from index with query @query', array('@query' => $query), WATCHDOG_INFO);
+
     if (!empty($entity_type)) {
       $rebuild_callback = apachesolr_entity_get_callback($entity_type, 'reindex callback');
       if (is_callable($rebuild_callback)) {
@@ -619,6 +622,9 @@ function apachesolr_index_delete_bundles($env_id, $entity_type, array $excluded_
       // content:  $query = 'hash:' . apachesolr_site_hash()
       drupal_alter('apachesolr_delete_by_query', $query);
       $solr->deleteByQuery($query);
+
+      // Log the query used for deletion.
+      watchdog('Apache Solr', 'Deleted documents from index with query @query', array('@query' => $query), WATCHDOG_INFO);      
     }
     if ($excluded_bundles) {
       $solr->commit();
@@ -648,11 +654,16 @@ function apachesolr_index_delete_entity_from_index($env_id, $entity_type, $entit
   if ($failed) {
     return FALSE;
   }
+  if (apachesolr_environment_variable_get($env_id, 'apachesolr_read_only', APACHESOLR_READ_WRITE) == APACHESOLR_READ_ONLY) {
+    return FALSE;
+  }
   try {
     $solr = apachesolr_get_solr($env_id);
     $document_id = apachesolr_document_id($entity_id, $entity_type);
     $query = "id:\"$document_id\" OR sm_parent_document_id:\"$document_id\"";
     $solr->deleteByQuery($query);
+    // Log the query used for deletion.
+    watchdog('Apache Solr', 'Deleted documents from index with query @query', array('@query' => $query), WATCHDOG_INFO);    
     apachesolr_set_last_index_updated($env_id, REQUEST_TIME);
     return TRUE;
   }
@@ -973,11 +984,15 @@ function apachesolr_index_node_solr_reindex($env_id, $bundle = NULL) {
  *
  * @param $entity_id
  * @param $entity_type
+ * @param $entity
+ *   In the case where the status is being checked while the entity is being
+ *   saved, this contains the full entity object. In other cases, it will be
+ *   NULL.
  *
  * @return int
  *   The status of the node
  */
-function apachesolr_index_node_status_callback($entity_id, $entity_type) {
+function apachesolr_index_node_status_callback($entity_id, $entity_type, $entity = NULL) {
   // Make sure we have a boolean value.
   // Anything different from 1 becomes zero
   $entity = entity_load($entity_type, array($entity_id));
@@ -1028,7 +1043,7 @@ function apachesolr_term_reference_indexing_callback($node, $field_name, $index_
         // hierarchy at all.
         // If the term is singular, then we cannot add another value to the
         // document as the field is single
-        if ($field_info['multiple'] == true) {
+        if ($field_info['multiple']) {
           $fields[] = array(
             'key' => $index_key,
             'value' => $ancestor->tid,

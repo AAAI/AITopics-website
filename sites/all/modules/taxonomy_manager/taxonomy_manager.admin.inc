@@ -774,13 +774,13 @@ function taxonomy_manager_export_form(&$form, &$form_state, $voc) {
       '#title' => t('Exported data'),
       '#value' =>  $form_state['values']['export']['data'],
       '#rows' => 8,
-      '#prefix' => '<div id="' . $wrapper_id .'">',
+      '#prefix' => '<div id="' . $wrapper_id . '">',
       '#suffix' => '</div>',
     );
   }
 
   $form['export']['submit'] = array(
-    '#prefix' => '<div id="' . $wrapper_id .'"></div>',
+    '#prefix' => '<div id="' . $wrapper_id . '"></div>',
     '#type' => 'submit',
     '#attributes' => array('class' => array('taxonomy-manager-buttons', 'export')),
     '#value' => t('Export now'),
@@ -1242,13 +1242,17 @@ function taxonomy_manager_double_tree_form_submit($form, &$form_state) {
 function taxonomy_manager_form_add_submit($form, &$form_state) {
   $parents = isset($form_state['values']['taxonomy']['manager']['tree']['selected_terms']) ? $form_state['values']['taxonomy']['manager']['tree']['selected_terms'] : array();
   $lang = isset($form_state['values']['taxonomy']['manager']['top']['language']) ? $form_state['values']['taxonomy']['manager']['top']['language'] : "";
-  $new_terms = taxonomy_manager_mass_add_terms($form_state['values']['add']['mass_add'], $form_state['values']['voc']->vid, $parents, $lang);
+  $term_names_too_long = array();
+  $new_terms = taxonomy_manager_mass_add_terms($form_state['values']['add']['mass_add'], $form_state['values']['voc']->vid, $parents, $lang, $term_names_too_long);
   $term_names = array();
   foreach ($new_terms as $term) {
     $term_names[] = $term->name;
   }
   if (module_exists('i18n_taxonomy') && !empty($lang) && i18n_taxonomy_vocabulary_mode($form_state['values']['voc']->vid, I18N_MODE_TRANSLATE)) {
     drupal_set_message(t("Saving terms to language @lang", array('@lang' => locale_language_name($form_state['values']['taxonomy']['manager']['top']['language']))));
+  }
+  if (count($term_names_too_long)) {
+    drupal_set_message(t("Following term names were too long and truncated to 255 characters: %names.", array('%names' => implode(', ', $term_names_too_long))), 'warning');
   }
   drupal_set_message(t("Terms added: %terms", array('%terms' => implode(', ', $term_names))));
 }
@@ -1267,10 +1271,13 @@ function taxonomy_manager_form_add_submit($form, &$form_state) {
  *   An array of parent term ids for the new inserted terms. Can be 0.
  * @param $lang
  *   The i18n language, if i18n exists.
+ * @param $term_names_too_long
+ *   Return value that is used to indicate that some term names were too long
+ *   and truncated to 255 characters.
  *
  * @return An array of the newly inserted term objects
  */
-function taxonomy_manager_mass_add_terms($input, $vid, $parents, $lang = "") {
+function taxonomy_manager_mass_add_terms($input, $vid, $parents, $lang = "", &$term_names_too_long = array()) {
   $new_terms = array();
   $terms = explode("\n", str_replace("\r", '', $input));
   $parents = count($parents) ? $parents : 0;
@@ -1299,6 +1306,12 @@ function taxonomy_manager_mass_add_terms($input, $vid, $parents, $lang = "") {
       $depth = 0;
       $current_parents = $parents;
     }
+    // Truncate long string names that will cause database exceptions.
+    if (strlen($name) > 255) {
+      $term_names_too_long[] = $name;
+      $name = substr($name, 0, 255);
+    }
+
     $term = new stdClass;
     $term->name = $name;
     $term->vid = $vid;
@@ -1724,6 +1737,9 @@ function taxonomy_manager_term_data_form_validate_parents_add($form, &$form_stat
   }
 }
 
+/**
+ * Submit handler for adding parents for a term.
+ */
 function taxonomy_manager_term_data_form_submit_parents_add($form, &$form_state) {
   $term_data = $form_state['values'];
   $term = taxonomy_term_load($term_data['tid']);
@@ -1732,12 +1748,14 @@ function taxonomy_manager_term_data_form_submit_parents_add($form, &$form_state)
 
   $typed_terms = taxonomy_manager_autocomplete_tags_get_tids($parent_names, $term->vid, TRUE); //insert terms
 
-  foreach ($typed_terms as $parent_info) {
-    db_insert('taxonomy_term_hierarchy')
-      ->fields(array('tid', 'parent'))
-      ->values(array('tid' => $term->tid, 'parent' => $parent_info['tid']))
-      ->execute();
+  if (!isset($term->parent)) {
+    $term->parent = array();
   }
+
+  foreach ($typed_terms as $parent_info) {
+    $term->parent[] = $parent_info['tid'];
+  }
+
   //remove root level entry
   db_delete('taxonomy_term_hierarchy')
     ->condition('tid', $term->tid)
@@ -1762,26 +1780,25 @@ function taxonomy_manager_term_data_form_validate_parents_remove($form, &$form_s
   }
 }
 
+/**
+ * Submit handler for removing a parent of a term.
+ */
 function taxonomy_manager_term_data_form_submit_parents_remove($form, &$form_state) {
   $term = taxonomy_term_load($form_state['values']['tid']);
 
   $parent = $form_state['values']['remove_parent_tid'];
   $parents = taxonomy_get_parents($term->tid);
-  if (count($parents) == 1) {
-    //ensure that a term has a least parent 0
-    db_delete('taxonomy_term_hierarchy')
-      ->condition('tid', $term->tid)
-      ->condition('parent', 0)
-      ->execute();
-    db_insert('taxonomy_term_hierarchy')
-      ->fields(array('tid', 'parent'))
-      ->values(array('tid' => $term->tid, 'parent' => 0))
-      ->execute();
+
+  if (!isset($term->parent)) {
+    $term->parent = array();
   }
-  db_delete('taxonomy_term_hierarchy')
-    ->condition('tid', $term->tid)
-    ->condition('parent', $parent)
-    ->execute();
+
+  // Ensure that a term has a least parent 0.
+  if (count($parents) == 1) {
+    $term->parent[] = 0;
+  }
+
+  $term->parent = array_diff($term->parent, array($parent));
 
   taxonomy_term_save($term); //executes hooks and clears caches
   drupal_set_message(t("Removed parent"));
@@ -2315,43 +2332,49 @@ function taxonomy_manager_delete_terms($tids, $options = array()) {
 
 
 /**
- * moves terms in hierarchies to other parents
+ * Moves terms in hierarchies to other parents
  *
  * @param $parents
- *   array of parent term ids to where children can be moved
- *   array should only contain more parents if multi hiearchy enabled
- *   if array contains 0, terms get placed to first (root) level
+ *   Array of parent term ids to where children can be moved.
+ *   Array should only contain more parents if multi hierarchy is enabled.
+ *   If array contains 0, terms get moved to root level
  * @param $children
- *   array of term ids to move
+ *   Array of term ids to move
  * @param $options
- *   array of additional options for moving
- *   'keep_old_parents': if true, exisiting parents doesn't get deleted (only possible with multi hierarchies)
+ *   Array of additional options for moving
+ *   'keep_old_parents': if true, existing parents does not get deleted (only
+ *      possible with multi hierarchies).
  */
 function taxonomy_manager_move($parents, $children, $options = array()) {
-  if (!is_array($parents)) array($parents);
+  if (!is_array($parents)) {
+    $parents = array($parents);
+  }
+  // Key parent terms array by tid, so that it is always unique.
+  $keyed_array = array();
+  foreach ($parents as $parent) {
+    $keyed_array[$parent] = $parent;
+  }
+  $parents = $keyed_array;
 
   foreach ($children as $child) {
-    if (!isset($options['keep_old_parents']) || !$options['keep_old_parents']) {
-      db_delete('taxonomy_term_hierarchy')
+    $term = taxonomy_term_load($child);
+    $term_parents = $parents;
+
+    if (isset($options['keep_old_parents']) && $options['keep_old_parents']) {
+      // Add existing parents to $term_parents array
+      $results = db_select('taxonomy_term_hierarchy', 'h')
         ->condition('tid', $child)
+        ->fields('h')
         ->execute();
+      foreach ($results as $p) {
+        $term_parents[$p->parent] = $p->parent;
+      }
     }
-    foreach ($parents as $parent) {
-      db_delete('taxonomy_term_hierarchy')
-        ->condition('tid', $child)
-        ->condition('parent', $parent)
-        ->execute(); //prevent duplicated sql errors
-      db_insert('taxonomy_term_hierarchy')
-        ->fields(array('tid', 'parent'))
-        ->values(array('tid' => $child, 'parent' => $parent))
-        ->execute();
-    }
+    $term->parent = $term_parents;
+    taxonomy_term_save($term);
   }
   taxonomy_terms_static_reset();
 }
-
-
-
 
 /**
  * helper function for getting out of term ids from autocomplete fields
@@ -2393,7 +2416,10 @@ function taxonomy_manager_autocomplete_tags_get_tids($typed_input, $vid, $insert
         }
 
         if (!$typed_term_tid && $insert_new) {
-          $edit = array('vid' => $vid, 'name' => $typed_term);
+          // Truncate long string names that will cause database exceptions.
+          if (strlen($typed_term) > 255) {
+            $typed_term = substr($typed_term, 0, 255);
+          }
           $edit = new stdClass;
           $edit->name = $typed_term;
           $edit->vid = $vid;

@@ -15,7 +15,7 @@ function _webform_defaults_number() {
     'pid' => 0,
     'weight' => 0,
     'value' => '',
-    'mandatory' => 0,
+    'required' => 0,
     'extra' => array(
       'type' => 'textfield',
       'field_prefix' => '',
@@ -62,7 +62,7 @@ function _webform_edit_number($component) {
     '#type' => 'textfield',
     '#title' => t('Default value'),
     '#default_value' => $component['value'],
-    '#description' => t('The default value of the field.') . theme('webform_token_help'),
+    '#description' => t('The default value of the field.') . ' ' . theme('webform_token_help'),
     '#size' => 60,
     '#maxlength' => 1024,
     '#weight' => 0,
@@ -254,7 +254,7 @@ function _webform_render_number($component, $value = NULL, $filter = TRUE) {
     '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
     '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
     '#default_value' => $filter ? _webform_filter_values($component['value'], $node, NULL, NULL, FALSE) : $component['value'],
-    '#required' => $component['mandatory'],
+    '#required' => $component['required'],
     '#weight' => $component['weight'],
     '#field_prefix' => empty($component['extra']['field_prefix']) ? NULL : ($filter ? _webform_filter_xss($component['extra']['field_prefix']) : $component['extra']['field_prefix']),
     '#field_suffix' => empty($component['extra']['field_suffix']) ? NULL : ($filter ? _webform_filter_xss($component['extra']['field_suffix']) : $component['extra']['field_suffix']),
@@ -342,8 +342,8 @@ function _webform_display_number($component, $value, $format = 'html') {
  */
 function theme_webform_display_number($variables) {
   $element = $variables['element'];
-  $prefix = $element['#format'] == 'html' ? filter_xss($element['#field_prefix']) : $element['#field_prefix'];
-  $suffix = $element['#format'] == 'html' ? filter_xss($element['#field_suffix']) : $element['#field_suffix'];
+  $prefix = $element['#format'] == 'html' ? '' : $element['#field_prefix'];
+  $suffix = $element['#format'] == 'html' ? '' : $element['#field_suffix'];
   $value = $element['#format'] == 'html' ? check_plain($element['#value']) : $element['#value'];
   return $value !== '' ? ($prefix . $value . $suffix) : ' ';
 }
@@ -438,6 +438,11 @@ function _webform_analysis_number($component, $sids = array(), $single = FALSE) 
       $stddev = sqrt($stddev);
     }
 
+    // Skip the rest of the distribution rows if standard deviation is 0.
+    if (empty($stddev)) {
+      return $rows;
+    }
+
     // Build normal distribution table rows.
     $count = array();
     $percent = array();
@@ -510,7 +515,7 @@ function _webform_csv_headers_number($component, $export_options) {
   $header = array();
   $header[0] = '';
   $header[1] = '';
-  $header[2] = $component['name'];
+  $header[2] = $export_options['header_keys'] ? $component['form_key'] : $component['name'];
   return $header;
 }
 

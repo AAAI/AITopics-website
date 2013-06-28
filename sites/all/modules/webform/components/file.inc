@@ -12,7 +12,7 @@ function _webform_defaults_file() {
   return array(
     'name' => '',
     'form_key' => NULL,
-    'mandatory' => 0,
+    'required' => 0,
     'pid' => 0,
     'weight' => 0,
     'extra' => array(
@@ -99,7 +99,7 @@ function _webform_edit_file($component) {
       '#default_value' => array_intersect($current_types, $types),
     );
 
-    $types = array('txt', 'rtf', 'html', 'odf', 'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'xml');
+    $types = array('txt', 'rtf', 'html', 'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'xml');
     $form['validation']['extensions']['types']['documents'] = array(
       '#type' => 'checkboxes',
       '#title' => t('Documents'),
@@ -127,7 +127,7 @@ function _webform_edit_file($component) {
       '#type' => 'textfield',
       '#title' => t('Additional extensions'),
       '#default_value' => $component['extra']['filtering']['addextensions'],
-      '#description' => t('Enter a list of additional file extensions for this upload field, seperated by commas.<br /> Entered extensions will be appended to checked items above.'),
+      '#description' => t('Enter a list of additional file extensions for this upload field, separated by commas.<br /> Entered extensions will be appended to checked items above.'),
       '#size' => 20,
       '#weight' => 3,
     );
@@ -316,7 +316,7 @@ function _webform_render_file($component, $value = NULL, $filter = TRUE) {
     '#type' => 'managed_file',
     '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
     '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
-    '#required' => $component['mandatory'],
+    '#required' => $component['required'],
     '#default_value' => isset($value[0]) ? $value[0] : NULL,
     '#attributes' => $component['extra']['attributes'],
     '#upload_validators' => array(
@@ -467,7 +467,7 @@ function _webform_csv_headers_file($component, $export_options) {
   $header = array();
   // Two columns in header.
   $header[0] = array('', '');
-  $header[1] = array($component['name'], '');
+  $header[1] = array($export_options['header_keys'] ? $component['form_key'] : $component['name'], '');
   $header[2] = array(t('Name'), t('Filesize (KB)'));
   return $header;
 }

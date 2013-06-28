@@ -43,7 +43,7 @@ function _webform_edit_hidden($component) {
     '#type' => 'textarea',
     '#title' => t('Default value'),
     '#default_value' => $component['value'],
-    '#description' => t('The default value of the field.') . theme('webform_token_help'),
+    '#description' => t('The default value of the field.') . ' ' . theme('webform_token_help'),
     '#cols' => 60,
     '#rows' => 5,
     '#weight' => 0,
@@ -160,13 +160,13 @@ function _webform_table_hidden($component, $value) {
 }
 
 /**
- * Implements _webform_csv_data_component().
+ * Implements _webform_csv_headers_component().
  */
 function _webform_csv_headers_hidden($component, $export_options) {
   $header = array();
   $header[0] = '';
   $header[1] = '';
-  $header[2] = $component['name'];
+  $header[2] = $export_options['header_keys'] ? $component['form_key'] : $component['name'];
   return $header;
 }
 

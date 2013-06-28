@@ -12,7 +12,7 @@ function _webform_defaults_select() {
   return array(
     'name' => '',
     'form_key' => NULL,
-    'mandatory' => 0,
+    'required' => 0,
     'pid' => 0,
     'weight' => 0,
     'value' => '',
@@ -83,6 +83,7 @@ function _webform_edit_select($component) {
       '#default_value' => $component['extra']['other_option'],
       '#description' => t('Check this option if you want to allow users to enter an option not on the list.'),
       '#parents' => array('extra', 'other_option'),
+      '#attributes' => array('class' => array('other-option-checkbox')),
       '#weight' => 2,
     );
     $other['other_text'] = array(
@@ -92,6 +93,11 @@ function _webform_edit_select($component) {
       '#description' => t('If allowing other options, enter text to be used for other-enabling option.'),
       '#parents' => array('extra', 'other_text'),
       '#weight' => 3,
+      '#states' => array(
+        'visible' => array(
+          ':input.other-option-checkbox' => array('checked' => TRUE),
+        ),
+      ),
     );
   }
 
@@ -110,7 +116,7 @@ function _webform_edit_select($component) {
     $form['items']['options'] = array(
       '#type' => 'options',
       '#limit' => 500,
-      '#optgroups' => $component['extra']['aslist'],
+      '#optgroups' => TRUE,
       '#multiple' => $component['extra']['multiple'],
       '#multiple_toggle' => t('Multiple'),
       '#default_value' => $component['value'],
@@ -130,7 +136,7 @@ function _webform_edit_select($component) {
       '#type' => 'textarea',
       '#title' => t('Options'),
       '#default_value' => $component['extra']['items'],
-      '#description' => t('<strong>Key-value pairs MUST be specified as "safe_key|Some readable option"</strong>. Use of only alphanumeric characters and underscores is recommended in keys. One option per line. Option groups may be specified with &lt;Group Name&gt;. &lt;&gt; can be used to insert items at the root of the menu after specifying a group.') . theme('webform_token_help'),
+      '#description' => t('<strong>Key-value pairs MUST be specified as "safe_key|Some readable option"</strong>. Use of only alphanumeric characters and underscores is recommended in keys. One option per line. Option groups may be specified with &lt;Group Name&gt;. &lt;&gt; can be used to insert items at the root of the menu after specifying a group.') . ' ' . theme('webform_token_help'),
       '#cols' => 60,
       '#rows' => 5,
       '#weight' => 0,
@@ -148,7 +154,7 @@ function _webform_edit_select($component) {
       '#type' => 'textfield',
       '#title' => t('Default value'),
       '#default_value' => $component['value'],
-      '#description' => t('The default value of the field identified by its key. For multiple selects use commas to separate multiple defaults.') . theme('webform_token_help'),
+      '#description' => t('The default value of the field identified by its key. For multiple selects use commas to separate multiple defaults.') . ' ' . theme('webform_token_help'),
       '#size' => 60,
       '#maxlength' => 1024,
       '#weight' => 0,
@@ -291,7 +297,7 @@ function _webform_render_select($component, $value = NULL, $filter = TRUE) {
   $element = array(
     '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
     '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
-    '#required' => $component['mandatory'],
+    '#required' => $component['required'],
     '#weight' => $component['weight'],
     '#description' => $filter ? _webform_filter_descriptions($component['extra']['description'], $node) : $component['extra']['description'],
     '#theme_wrappers' => array('webform_element'),
@@ -705,10 +711,15 @@ function _webform_csv_headers_select($component, $export_options) {
 
   if ($component['extra']['multiple'] && $export_options['select_format'] == 'separate') {
     $headers[0][] = '';
-    $headers[1][] = $component['name'];
+    $headers[1][] = $export_options['header_keys'] ? $component['form_key'] : $component['name'];
     $items = _webform_select_options($component, TRUE, FALSE);
     if ($component['extra']['other_option']) {
-      $other_label = !empty($component['extra']['other_text']) ? check_plain($component['extra']['other_text']) : t('Other...');
+      if ($export_options['header_keys']) {
+        $other_label = $component['form_key'] . '_other';
+      }
+      else {
+        $other_label = !empty($component['extra']['other_text']) ? check_plain($component['extra']['other_text']) : t('Other...');
+      }
       $items[$other_label] = $other_label;
     }
     $count = 0;
@@ -730,7 +741,7 @@ function _webform_csv_headers_select($component, $export_options) {
   else {
     $headers[0][] = '';
     $headers[1][] = '';
-    $headers[2][] = $component['name'];
+    $headers[2][] = $export_options['header_keys'] ? $component['form_key'] : $component['name'];
   }
   return $headers;
 }
@@ -779,6 +790,24 @@ function _webform_csv_data_select($component, $export_options, $value) {
   }
 
   return $return;
+}
+
+
+/**
+ * Implements _webform_options_component().
+ *
+ * This function is confusingly an alias of _webform_select_options(). However
+ * this version is intended to be accessed publicly via
+ * webform_component_invoke(), since it is a Webform "hook", rather than an
+ * internal, private function. To get the list of select list options for
+ * a component, use:
+ *
+ * @code
+ * $options = webform_component_invoke($component['type'], 'options', $component);
+ * @endcode
+ */
+function _webform_options_select($component, $flat = FALSE, $filter = TRUE) {
+  return _webform_select_options($component, $flat, $filter);
 }
 
 /**
@@ -873,7 +902,7 @@ function _webform_select_options_callback($name, $component, $flat = FALSE, $fil
 }
 
 /**
- * Utility function to split user-entered values from new-line seperated
+ * Utility function to split user-entered values from new-line separated
  * text into an array of options.
  *
  * @param $text

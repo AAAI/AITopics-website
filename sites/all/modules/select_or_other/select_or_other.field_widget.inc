@@ -83,6 +83,22 @@ function select_or_other_field_widget_form_prepare_option(&$options, $key, $opt,
   }
 }
 
+/***
+  * Get Options from settings
+  * in a separate scope for assurance using 'available_options_php'
+  * @returns array
+  ***/
+function _select_or_other_field_widget_get_available_options($select_or_other_field_widget_settings) {
+    // Create options - similar to code from content_allowed_values().
+  if (!empty($select_or_other_field_widget_settings['available_options_php'])) {
+    ob_start();
+    $select_or_other_field_widget_list = eval($select_or_other_field_widget_settings['available_options_php']);
+    ob_end_clean();
+  } else {
+    $select_or_other_field_widget_list =  explode("\n", $select_or_other_field_widget_settings['available_options']);
+  }
+  return $select_or_other_field_widget_list;
+}
 /**
  * Prepare options for the widget list.
  */
@@ -90,15 +106,7 @@ function select_or_other_field_widget_form_prepare_options($field, $instance, $h
   $options = array();
 
   $settings = &$instance['widget']['settings'];
-
-  // Create options - similar to code from content_allowed_values().
-  $list = explode("\n", $settings['available_options']);
-
-  if (!empty($settings['available_options_php'])) {
-    ob_start();
-    $list = eval($settings['available_options_php']);
-    ob_end_clean();
-  }
+  $list = _select_or_other_field_widget_get_available_options($settings);
 
   foreach ($list as $key => $opt) {
     if (is_array($opt)) {
@@ -148,13 +156,12 @@ function select_or_other_field_widget_form_prepare_options($field, $instance, $h
  */
 function select_or_other_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   // Construct the element.
-  $element = array(
+  $element = $element + array(
     '#type' => 'select_or_other',
-    '#title' => isset($instance['label']) ? $instance['label'] : NULL,
     '#other' => isset($instance['widget']['settings']['other']) ? $instance['widget']['settings']['other'] : t('Other'),
     '#other_title' => !empty($instance['widget']['settings']['other_title']) ? $instance['widget']['settings']['other_title'] : NULL,
     '#other_size' => $instance['widget']['settings']['other_size'],
-    '#default_value' => !empty($items[$delta]['value']) ? $items[$delta]['value'] : NULL,
+    '#default_value' => isset($items[$delta]['value']) ? $items[$delta]['value'] : NULL,
     '#options' => select_or_other_field_widget_form_prepare_options($field, $instance, !empty($items[$delta])),
     '#description' => isset($instance['description']) ? $instance['description'] : '',
     '#multiple' => $field['cardinality'] == 1 ? FALSE : $field['cardinality'],
@@ -357,7 +364,7 @@ function select_or_other_field_widget_validate($element, &$form_state) {
       $values = array();
       foreach ((array)$value as $v) {
         if ($field_info['type'] == 'number_integer' && !preg_match('/^-?\d+$/', $v)) {
-          form_error($element, t('!name field must be a valid integer.', array('%name' => t($element['select']['#title']))));
+          form_error($element, t('!name field must be a valid integer.', array('!name' => t($element['select']['#title']))));
           break;
         }
         if (($field_info['type'] == 'number_float' || $field_info['type'] == 'number_decimal') && !is_numeric($v)) {

@@ -164,7 +164,7 @@ function webform_schema() {
         'type' => 'text',
         'not null' => TRUE,
       ),
-      'mandatory' => array(
+      'required' => array(
         'description' => 'Boolean flag for if this component is required.',
         'type' => 'int',
         'size' => 'tiny',
@@ -349,6 +349,11 @@ function webform_schema() {
         'size' => 'tiny',
         'not null' => TRUE,
         'default' => 0,
+      ),
+      'extra' => array(
+        'description' => 'A serialized array of additional options for the e-mail configuration, including excluded components and value mapping for the TO and FROM addresses for select lists.',
+        'type' => 'text',
+        'not null' => TRUE,
       ),
     ),
     'primary key' => array('nid', 'eid'),
@@ -546,7 +551,7 @@ function webform_uninstall() {
   // Unset webform variables.
   variable_del('webform_node_types');
   variable_del('webform_node_types_primary');
-  variable_del('webform_use_cookies');
+  variable_del('webform_tracking_mode');
   variable_del('webform_default_from_address');
   variable_del('webform_default_from_name');
   variable_del('webform_default_subject');
@@ -1070,6 +1075,10 @@ function webform_update_7401(&$sandbox) {
         drupal_write_record('webform_emails', $email, array('nid', 'eid'));
       }
     }
+
+    // Update the last processed NID.
+    $sandbox['last_nid_processed'] = $nid;
+    $sandbox['progress']++;
   }
 
   // If less than limit was processed, the update process is finished.
@@ -1302,6 +1311,10 @@ function webform_update_7403(&$sandbox) {
         drupal_write_record('webform_component', $component, array('nid', 'cid'));
       }
     }
+
+    // Update the last processed NID.
+    $sandbox['last_nid_processed'] = $nid;
+    $sandbox['progress']++;
   }
 
   // If less than limit was processed, the update process is finished.
@@ -1329,4 +1342,81 @@ function webform_update_7404() {
   foreach ($fids as $fid) {
     _webform_delete_file(NULL, array($fid));
   }
+}
+
+/**
+ * Add an "extra" column to the e-mail table for for non-queryable options.
+ */
+function webform_update_7405() {
+  $schema = array(
+    'description' => 'A serialized array of additional options for the e-mail configuration, including excluded components and value mapping for the TO and FROM addresses for select lists.',
+    'type' => 'text',
+    'not null' => FALSE,
+    'initial' => '',
+  );
+  if (!db_field_exists('webform_emails', 'extra')) {
+    db_add_field('webform_emails', 'extra', $schema);
+  }
+}
+
+/**
+ * Convert the "webform_use_cookies" setting to "webform_tracking_mode".
+ */
+function webform_update_7406() {
+  // Previously, we only had "strict" and "ip_address" checking. Using cookies
+  // meant cookies in addition to IP address.
+  $use_cookies = variable_get('webform_use_cookies');
+  if (isset($use_cookies)) {
+    variable_set('webform_tracking_mode', $use_cookies ? 'strict' : 'ip_address');
+    variable_del('webform_use_cookies');
+  }
+}
+
+/**
+ * Remove orphaned conditional rules.
+ */
+function webform_update_7407() {
+  // Delete entire conditions for deleted components that were the target.
+  $result = db_query("SELECT rg.* FROM {webform_conditional} rg LEFT JOIN {webform_component} c ON rg.nid = c.nid AND rg.target_type = 'component' AND rg.target = c.cid WHERE c.cid IS NULL");
+  foreach ($result as $row) {
+    db_delete('webform_conditional')
+      ->condition('nid', $row->nid)
+      ->condition('rgid', $row->rgid)
+      ->execute();
+    db_delete('webform_conditional_rules')
+      ->condition('nid', $row->nid)
+      ->condition('rgid', $row->rgid)
+      ->execute();
+  }
+  // Delete conditional rules for deleted components that were the source.
+  $result = db_query("SELECT r.* FROM {webform_conditional_rules} r LEFT JOIN {webform_component} c ON r.nid = c.nid AND r.source_type = 'component' AND r.source = c.cid WHERE c.cid IS NULL");
+  foreach ($result as $row) {
+    db_delete('webform_conditional_rules')
+      ->condition('nid', $row->nid)
+      ->condition('rgid', $row->rgid)
+      ->condition('rid', $row->rid)
+      ->execute();
+  }
+  // Delete any conditions that no longer have any rules left in them.
+  $result = db_query("SELECT rg.* FROM {webform_conditional} rg LEFT JOIN {webform_conditional_rules} r ON rg.nid = r.nid AND rg.rgid = r.rgid WHERE r.rgid IS NULL");
+  foreach ($result as $row) {
+    db_delete('webform_conditional')
+      ->condition('nid', $row->nid)
+      ->condition('rgid', $row->rgid)
+      ->execute();
+  }
+}
+
+/**
+ * Rename the "mandatory" column to "required".
+ */
+function webform_update_7408() {
+  $spec = array(
+    'description' => 'Boolean flag for if this component is required.',
+    'type' => 'int',
+    'size' => 'tiny',
+    'not null' => TRUE,
+    'default' => 0,
+  );
+  db_change_field('webform_component', 'mandatory', 'required', $spec);
 }

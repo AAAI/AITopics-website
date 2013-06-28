@@ -15,7 +15,7 @@ function _webform_defaults_grid() {
   return array(
     'name' => '',
     'form_key' => NULL,
-    'mandatory' => 0,
+    'required' => 0,
     'pid' => 0,
     'weight' => 0,
     'extra' => array(
@@ -150,7 +150,7 @@ function _webform_render_grid($component, $value = NULL, $filter = TRUE) {
     '#type' => 'webform_grid',
     '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
     '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
-    '#required' => $component['mandatory'],
+    '#required' => $component['required'],
     '#weight' => $component['weight'],
     '#description' => $filter ? _webform_filter_descriptions($component['extra']['description'], $node) : $component['extra']['description'],
     '#grid_questions' => _webform_select_options_from_text($component['extra']['questions'], TRUE),
@@ -365,7 +365,7 @@ function _webform_table_grid($component, $value) {
 function _webform_csv_headers_grid($component, $export_options) {
   $header = array();
   $header[0] = array('');
-  $header[1] = array($component['name']);
+  $header[1] = array($export_options['header_keys'] ? $component['form_key'] : $component['name']);
   $items = _webform_select_options_from_text($component['extra']['questions'], TRUE);
   $count = 0;
   foreach ($items as $key => $item) {
@@ -375,7 +375,7 @@ function _webform_csv_headers_grid($component, $export_options) {
       $header[1][] = '';
     }
     // The value for this option.
-    $header[2][] = $item;
+    $header[2][] = $export_options['header_keys'] ? $key : $item;
     $count++;
   }
 

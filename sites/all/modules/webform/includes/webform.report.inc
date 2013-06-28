@@ -224,7 +224,7 @@ function theme_webform_results_table($variables) {
   $rows = array();
   $cell = array();
 
-  // This header has to be generated seperately so we can add the SQL necessary.
+  // This header has to be generated separately so we can add the SQL necessary.
   // to sort the results.
   $header = theme('webform_results_table_header', array('node' => $node));
 
@@ -339,6 +339,17 @@ function webform_results_download_form($form, &$form_state, $node) {
       '.'  => t('Period (.)'),
       ' '  => t('Space ( )'),
     ),
+  );
+
+  $form['header_keys'] = array(
+    '#type' => 'radios',
+    '#title' => t('Column header format'),
+    '#options' => array(
+      0 => t('Label'),
+      1 => t('Field Key'),
+    ),
+    '#default_value' => isset($form_state['values']['header_keys']) ? $form_state['values']['header_keys'] : 0,
+    '#description' => t('Choose whether to show the label or field key in each column header.'),
   );
 
   $form['select_options'] = array(
@@ -504,6 +515,11 @@ function webform_results_download_range_validate($element, $form_state) {
           }
         }
       }
+      // Check that the range will return something at all.
+      $form_state['values']['sids'] = webform_download_sids($form_state['values']['node']->nid, array('range_type' => $element['range_type']['#value'], 'start' => $element['start']['#value'], 'end' => $element['end']['#value']));
+      if (empty($form_state['values']['sids'])) {
+        form_error($element['start'], t('The specified range will not return any results.'));
+      }
       break;
   }
 
@@ -516,14 +532,19 @@ function webform_results_download_form_submit(&$form, &$form_state) {
   $options = array(
     'delimiter' => $form_state['values']['delimiter'],
     'components' => array_keys(array_filter($form_state['values']['components'])),
+    'header_keys' => $form_state['values']['header_keys'],
     'select_keys' => $form_state['values']['select_keys'],
     'select_format' => $form_state['values']['select_format'],
     'range_type' => $form_state['values']['range']['range_type'],
     'download' => $form_state['values']['download'],
   );
 
+  // Use a pre-built list of SIDs provided by validate handlers (if any).
+  if (isset($form_state['values']['sids'])) {
+    $options['sids'] = $form_state['values']['sids'];
+  }
   // Retrieve the list of required SIDs.
-  if ($options['range_type'] != 'all') {
+  elseif ($options['range_type'] != 'all') {
     $options['sids'] = webform_download_sids($form_state['values']['node']->nid, $form_state['values']['range']);
   }
 
@@ -692,6 +713,7 @@ function webform_results_export($node, $format = 'delimited', $options = array()
     $options = array(
       'delimiter' => variable_get('webform_csv_delimiter', '\t'),
       'components' => array_merge(array_keys($submission_information), array_keys(webform_component_list($node, 'csv', TRUE))),
+      'header_keys' => 0,
       'select_keys' => 0,
       'select_format' => 'separate',
       'range_type' => 'all',
@@ -716,8 +738,16 @@ function webform_results_export($node, $format = 'delimited', $options = array()
   $header[2] = $header[1] = $header[0] = count($submission_information) ? array_fill(0, count($submission_information), '') : array();
   if (count($submission_information)) {
     $header[0][0] = $node->title;
-    $header[1][0] = t('Submission Details');
-    foreach (array_values($submission_information) as $column => $label) {
+
+    if ($options['header_keys']) {
+      $header[1][0] = t('submission_details');
+      $submission_information_headers = array_keys($submission_information);
+    }
+    else {
+      $header[1][0] = t('Submission Details');
+      $submission_information_headers = array_values($submission_information);
+    }
+    foreach ($submission_information_headers as $column => $label) {
       $header[2][$column] = $label;
     }
   }
@@ -733,6 +763,9 @@ function webform_results_export($node, $format = 'delimited', $options = array()
         $header[0] = array_merge($header[0], (array) $component_header[0]);
         $header[1] = array_merge($header[1], (array) $component_header[1]);
         $header[2] = array_merge($header[2], (array) $component_header[2]);
+
+        // Allow modules to modify the CSV header.
+        drupal_alter('webform_csv_header', $component_header, $component);
       }
     }
   }
@@ -751,6 +784,7 @@ function webform_results_export($node, $format = 'delimited', $options = array()
 
   // Generate a row for each submission.
   $row_count = 0;
+  $sid = 0;
   foreach ($submissions as $sid => $submission) {
     $row_count++;
 
@@ -784,6 +818,10 @@ function webform_results_export($node, $format = 'delimited', $options = array()
         $raw_data = isset($submission->data[$cid]) ? $submission->data[$cid] : NULL;
         if (webform_component_feature($component['type'], 'csv')) {
           $data = webform_component_invoke($component['type'], 'csv_data', $component, $options, $raw_data);
+
+          // Allow modules to modify the CSV data.
+          drupal_alter('webform_csv_data', $data, $component, $submission);
+
           if (is_array($data)) {
             $row = array_merge($row, array_values($data));
           }

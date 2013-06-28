@@ -6,6 +6,20 @@
  */
 class FeedsXPathParserHTML extends FeedsXPathParserBase {
 
+  protected $hasSaveHTML = FALSE;
+
+  /**
+   * Overrides parent::__construct().
+   */
+  public function __construct($id) {
+    parent::__construct($id);
+
+    // DOMDocument::saveHTML() cannot take $node as an argument prior to 5.3.6.
+    if (version_compare(phpversion(), '5.3.6', '>=')) {
+      $this->hasSaveHTML = TRUE;
+    }
+  }
+
   /**
    * Implements FeedsXPathParserBase::setup().
    */
@@ -39,5 +53,13 @@ class FeedsXPathParserHTML extends FeedsXPathParserBase {
       throw new Exception(t('There was an error parsing the HTML document.'));
     }
     return $doc;
+  }
+
+  protected function getRaw(DOMNode $node) {
+    if ($this->hasSaveHTML) {
+      return $this->doc->saveHTML($node);
+    }
+
+    return $this->doc->saveXML($node, LIBXML_NOEMPTYTAG);
   }
 }

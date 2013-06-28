@@ -9,33 +9,33 @@ module_load_include('inc', 'term_reference_tree', 'term_reference_tree.widget');
 function term_reference_tree_element_info() {
   $types = array(
     'checkbox_tree' => array(
-      '#input' => true,
+      '#input' => TRUE,
       '#process' => array('term_reference_tree_process_checkbox_tree'),
       '#theme' => array('checkbox_tree'),
       '#pre_render' => array('form_pre_render_conditional_form_element'),
     ),
     'checkbox_tree_level' => array(
-      '#input' => false,
+      '#input' => FALSE,
       '#theme' => array('checkbox_tree_level'),
       '#pre_render' => array('form_pre_render_conditional_form_element'),
     ),
     'checkbox_tree_item' => array(
-      '#input' => false,
+      '#input' => FALSE,
       '#theme' => array('checkbox_tree_item'),
       '#pre_render' => array('form_pre_render_conditional_form_element'),
     ),
     'checkbox_tree_label' => array(
-      '#input' => false,
+      '#input' => FALSE,
       '#theme' => array('checkbox_tree_label'),
       '#pre_render' => array('form_pre_render_conditional_form_element'),
     ),
     'checkbox_tree_track_list' => array(
-      '#input' => false,
+      '#input' => FALSE,
       '#theme' => array('checkbox_tree_track_list'),
       '#pre_render' => array('form_pre_render_conditional_form_element'),
     ),
   );
-  
+
   return $types;
 }
 
@@ -75,38 +75,22 @@ function term_reference_tree_theme() {
  *   The vocabulary ID to restrict the child search.
  *
  * @return
- *   A nested array of the term's child objects.  
+ *   A nested array of the term's child objects.
  */
 function _term_reference_tree_get_term_hierarchy($tid, $vid, &$allowed, $filter, $label, $default = array()) {
   $terms = _term_reference_tree_get_children($tid, $vid, $default);
-  
+
   $result = array();
 
   if ($filter != '') {
-    foreach($allowed as $k => $v) {
+    foreach ($allowed as $k => $v) {
       if (array_key_exists($k, $terms)) {
         $term =& $terms[$k];
         $children = _term_reference_tree_get_term_hierarchy($term->tid, $vid, $allowed, $filter, $label, $default);
         if (is_array($children)) {
           $term->children = $children;
-          $term->children_selected = _term_reference_tree_children_selected($term, $default); 
-        } 
-        else {
-          $term->children_selected = FALSE;
+          $term->children_selected = _term_reference_tree_children_selected($term, $default);
         }
-        $term->TEST = $label;
-        array_push($result, $term);
-      }      
-    }
-  }
-  else {
-    foreach($terms as &$term) {
-      if ($filter == '' || array_key_exists($term->tid, $allowed)) {
-        $children = _term_reference_tree_get_term_hierarchy($term->tid, $vid, $allowed, $filter, $label, $default);
-        if (is_array($children)) {
-          $term->children = $children;
-          $term->children_selected = _term_reference_tree_children_selected($term, $default);        
-        } 
         else {
           $term->children_selected = FALSE;
         }
@@ -115,7 +99,23 @@ function _term_reference_tree_get_term_hierarchy($tid, $vid, &$allowed, $filter,
       }
     }
   }
-  
+  else {
+    foreach ($terms as &$term) {
+      if ($filter == '' || array_key_exists($term->tid, $allowed)) {
+        $children = _term_reference_tree_get_term_hierarchy($term->tid, $vid, $allowed, $filter, $label, $default);
+        if (is_array($children)) {
+          $term->children = $children;
+          $term->children_selected = _term_reference_tree_children_selected($term, $default);
+        }
+        else {
+          $term->children_selected = FALSE;
+        }
+        $term->TEST = $label;
+        array_push($result, $term);
+      }
+    }
+  }
+
   return $result;
 }
 
@@ -136,38 +136,41 @@ function _term_reference_tree_get_children($tid, $vid) {
   // very bad on large vocabularies.  Instead, we load the term as necessary
   // in cases where it's needed (such as using tokens or when the locale
   // module is enabled).
-  $select = db_select('taxonomy_term_data', 'd');
-  $select->join('taxonomy_term_hierarchy', 'h', 'd.tid = h.tid');
-  $result = $select->fields('d', array('tid', 'name'))
-    ->condition('d.vid', $vid, '=')
-    ->condition('h.parent', $tid, '=')
-    ->orderBy('weight')
-    ->orderBy('name')
-    ->orderBy('tid')
-    ->execute();
+  $query = db_select('taxonomy_term_data', 't');
+  $query->join('taxonomy_term_hierarchy', 'h', 't.tid = h.tid');
+  $query->join('taxonomy_vocabulary', 'v', 'v.vid = t.vid');
+  $query->fields('t', array('tid', 'name'));
+  $query->addField('v', 'machine_name', 'vocabulary_machine_name');
+  $query->condition('t.vid', $vid);
+  $query->condition('h.parent', $tid);
+  $query->addTag('term_access');
+  $query->addTag('translatable');
+  $query->orderBy('t.weight');
+  $query->orderBy('t.name');
+  $results = $query->execute();
 
   $terms = array();
-  while($term = $result->fetchAssoc()) {
-    $terms[$term['tid']] = (object) $term;
+  while ($term = $results->fetchObject()) {
+    $terms[$term->tid] = $term;
   }
 
   return $terms;
 }
 
 function _term_reference_tree_children_selected($terms, $default) {
-  foreach($terms->children as $term) {
-    if(isset($default[$term->tid]) || $term->children_selected) {
-      return true;
+  foreach ($terms->children as $term) {
+    if (isset($default[$term->tid]) || $term->children_selected) {
+      return TRUE;
     }
   }
-  return false;
+  return FALSE;
 }
 
 function _term_reference_tree_get_parent($tid) {
-  $q = db_query_range("select h.parent from {taxonomy_term_hierarchy} h where h.tid = :tid", 0, 1, array(':tid'  => $tid));
+  $q = db_query_range("SELECT h.parent FROM {taxonomy_term_hierarchy} h WHERE h.tid = :tid", 0, 1, array(':tid' => $tid));
 
   $t = 0;
-  foreach($q as $term) {
+  foreach ($q as $term) {
     $t = $term->parent;
   }
 
@@ -181,7 +184,7 @@ function _term_reference_tree_get_parent($tid) {
 function _term_reference_tree_flatten($element, &$form_state) {
   $output = array();
   $children = element_children($element);
-  foreach($children as $c) {
+  foreach ($children as $c) {
     $child = $element[$c];
     if (array_key_exists('#type', $child) && ($child['#type'] == 'radio' || $child['#type'] == 'checkbox')) {
       $output[] = $child;
@@ -195,9 +198,9 @@ function _term_reference_tree_flatten($element, &$form_state) {
 
 /**
  * Return an array of options.
- * 
+ *
  * This function converts a list of taxonomy terms to a key/value list of options.
- * 
+ *
  * @param $terms
  *   An array of taxonomy term IDs.
  * @param $allowed
@@ -205,7 +208,7 @@ function _term_reference_tree_flatten($element, &$form_state) {
  * @param $filter
  *   A string defining the view to filter by (only used to detect whether view
  *   filtering is enabled
- * 
+ *
  * @return
  *   A key/value array of taxonomy terms (name => id)
  */
@@ -213,7 +216,7 @@ function _term_reference_tree_get_options(&$terms, &$allowed, $filter) {
   $options = array();
 
   if (is_array($terms) && count($terms) > 0) {
-    foreach($terms as $term) {
+    foreach ($terms as $term) {
       if (!$filter || (is_array($allowed) && $allowed[$term->tid])) {
         $options[$term->tid] = entity_label('taxonomy_term', $term);
         $options += _term_reference_tree_get_options($term->children, $allowed, $filter);
@@ -222,4 +225,3 @@ function _term_reference_tree_get_options(&$terms, &$allowed, $filter) {
   }
   return $options;
 }
-
