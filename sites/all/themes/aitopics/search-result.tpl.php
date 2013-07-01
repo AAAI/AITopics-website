@@ -112,13 +112,6 @@ if(!empty($result['fields']['im_field_topics'])) {
       <?php endif; ?>
     </div>
 
-    <?php if(!empty($primary_link)) {
-            echo "<p>";
-            display_link($primary_link, 'Source');
-            echo "</p>";
-    } ?>
-
-
     <table class="metadata">
     <tr>
     <td>
