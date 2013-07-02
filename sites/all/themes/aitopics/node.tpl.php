@@ -126,11 +126,6 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
       <?php $summary = field_get_items('node', $node, 'body');
             $value = field_view_value('node', $node, 'body', $summary[0], 'teaser');
             print render($value); ?>
-      <?php if(!empty($field_original_link)) {
-            echo "<p>";
-            display_link($field_original_link['und'][0], 'Source');
-            echo "</p>";
-      } ?>
    </div>
 
     <div class="metadata intopic">
@@ -205,12 +200,6 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
             $value = field_view_value('node', $node, 'body', $summary[0], 'teaser');
             print render($value);
       ?>
-      <?php if(!empty($field_original_link)) {
-            echo "<p>";
-            display_link($field_original_link['und'][0], 'Source');
-            echo "</p>";
-      } ?>
-
     </div>
 
     <table class="metadata">
@@ -298,29 +287,6 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
         echo '<div style="text-align: center; margin: 2em;">';
         echo $field_embedding[0]['value'];
         echo '</div>';
-    } ?>
-
-    <?php if(!empty($field_original_link)) {
-          echo "<p>";
-          display_link($field_original_link[0], 'Source');
-          echo "</p>";
-    } ?>
-
-    <?php
-    $extra_links = array();
-    foreach($field_link as $link) {
-        if($link['title'] != "") {
-            $extra_links[] = $link;
-        }
-    }
-    if(!empty($extra_links)) {
-            echo "<p>Extra links:<ul>";
-            foreach($extra_links as $link) {
-              print "<li>";
-              display_link($link, $link['title']);
-              print "</li>";
-            }
-            echo "</ul></p>";
     } ?>
 
     <div class="metadata fullview">
