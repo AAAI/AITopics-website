@@ -98,7 +98,7 @@ if(!empty($result['fields']['im_field_topics'])) {
     <div class="nodetype-name"><?php if($item_type_str == 'News') { echo "AI in the News"; } else { echo $item_type_str; } ?></div>
 
     <?php print render($title_prefix); ?>
-    <h2<?php print $title_attributes; ?>><?php if(!empty($primary_link)) { display_link($primary_link, $title); } else { echo "<a href=\"$url\">$title</a>"; } ?></h2>
+    <h2<?php print $title_attributes; ?>><?php if(!empty($primary_link)) { display_link($primary_link, $title); } else { echo "<a href=\"/node/".$result['fields']['entity_id']."\">$title</a>"; } ?></h2>
     <?php print render($title_suffix); ?>
 
     <div class="summary search-snippet-info">
