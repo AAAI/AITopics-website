@@ -207,12 +207,6 @@ fieldset.vertical-tabs-pane > legend {
     display: none !important;
 }
 
-#tasks {
-    width: 400px;
-    float: right;
-    margin-top: 10px;
-}
-
 #main-content {
     margin-right: 20px;
 }
@@ -715,12 +709,18 @@ table.views-view-grid td {
     margin: 0px 0px 10px 0px;
 }
 
+#page div.region-help {
+    clear: both;
+    margin-top: 50px;
+}
+
 table.metadata {
     margin: 0;
 }
 
-div.nodetype table.metadata td {
+div.nodetype table.metadata > tbody > tr > td {
     padding: 0;
+    width: 50%;
 }
 
 div.nodetype table.metadata td div.topics td {
