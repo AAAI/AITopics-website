@@ -208,17 +208,17 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
     <div class="metadata notintopic">
       <?php
         $metadata = array();
-        if(!empty($field_authors) && preg_match('/\w/', $field_authors[0]['value'])) {
-          array_push($metadata, "By ".$field_authors[0]['value']);
+        if(!empty($field_authors) && preg_match('/\w/', $field_authors['und'][0]['value'])) {
+          array_push($metadata, "By ".$field_authors['und'][0]['value']);
         }
         if(!empty($field_source) && preg_match('/\w/', $field_source[0]['value'])) {
           array_push($metadata, $field_source[0]['value']);
         }
-        if(!empty($field_minutes) && preg_match('/\w/', $field_minutes[0]['value'])) {
-          array_push($metadata, $field_minutes[0]['value']." min");
+        if(!empty($field_minutes) && preg_match('/\w/', $field_minutes['und'][0]['value'])) {
+          array_push($metadata, $field_minutes['und'][0]['value']." min");
         }
         if(empty($field_publication_date) && !empty($field_publication_year_int)) {
-          array_push($metadata, $field_publication_year_int[0]['value']);
+          array_push($metadata, $field_publication_year_int['und'][0]['value']);
         }
         if(!empty($field_publication_date)) {
           $date = field_get_items('node', $node, 'field_publication_date');
