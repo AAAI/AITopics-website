@@ -319,6 +319,8 @@ function aitopics_preprocess_views_view_summary(&$vars) {
   }
 }
 
+/*
 function dsm($arr) {
   drupal_set_message('<pre>'.print_r($arr, 1).'</pre>');
 }
+*/
