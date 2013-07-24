@@ -98,7 +98,7 @@ if(!empty($result['fields']['im_field_topics'])) {
     <div class="nodetype-name"><?php if($item_type_str == 'News') { echo "AI in the News"; } else { echo $item_type_str; } ?></div>
 
     <?php print render($title_prefix); ?>
-    <h2<?php print $title_attributes; ?>><?php if(!empty($primary_link)) { display_link($primary_link, $title); } else { echo "<a href=\"$url\">$title</a>"; } ?></h2>
+    <h2<?php print $title_attributes; ?>><?php if(!empty($primary_link)) { display_link($primary_link, $title); } else { echo "<a href=\"/node/".$result['fields']['entity_id']."\">$title</a>"; } ?></h2>
     <?php print render($title_suffix); ?>
 
     <div class="summary search-snippet-info">
@@ -119,13 +119,13 @@ if(!empty($result['fields']['im_field_topics'])) {
       <?php
         $metadata = array();
         if(!empty($result['snippets']['tos_field_authors'])) {
-          array_push($metadata, $result['snippets']['tos_field_authors']);
+          array_push($metadata, $result['snippets']['tos_field_authors'][0]);
         } elseif(!empty($result['fields']['tos_field_authors'])) {
           array_push($metadata, $result['fields']['tos_field_authors']);
         }
 
         if(!empty($result['snippets']['tos_field_source'])) {
-          array_push($metadata, $result['snippets']['tos_field_source']);
+          array_push($metadata, $result['snippets']['tos_field_source'][0]);
         } elseif(!empty($result['fields']['tos_field_source'])) {
           array_push($metadata, $result['fields']['tos_field_source']);
         }
@@ -144,6 +144,7 @@ if(!empty($result['fields']['im_field_topics'])) {
         print implode("<br/>", $metadata);
         if(!empty($metadata)) { print "<br/>"; }
       ?>
+
       <?php if(user_access('administer nodes')): ?>
       &mdash; <a href="<?php print "/node/".$result['fields']['entity_id']; ?>">View</a> | <a href="<?php print "/node/".$result['fields']['entity_id']."/edit"; ?>">Edit...</a>
       <?php endif; ?>
