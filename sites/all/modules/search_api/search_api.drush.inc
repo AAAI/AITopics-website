@@ -184,6 +184,10 @@ function drush_search_api_index($index_id = NULL, $limit = NULL, $batch_size = N
     $datasource = $index->datasource();
     $index_status = $datasource->getIndexStatus($index);
     $remaining = $index_status['total'] - $index_status['indexed'];
+    if ($remaining <= 0) {
+      drush_log(dt("The index !index is up to date.", array('!index' => $index->name)), 'ok');
+      continue;
+    }
 
     // Get the number of items to index per batch run.
     if (!isset($batch_size)) {
@@ -202,7 +206,7 @@ function drush_search_api_index($index_id = NULL, $limit = NULL, $batch_size = N
 
     // Create the batch.
     if (!_search_api_batch_indexing_create($index, $batch_size, $limit, $remaining, TRUE)) {
-      drush_log(dt("Couldn't create a batch, please check the batch_sise and limit parameters."), 'error');
+      drush_log(dt("Couldn't create a batch, please check the batch size and limit parameters."), 'error');
     }
     else {
       // Launch the batch process.

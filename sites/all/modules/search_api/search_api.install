@@ -214,18 +214,13 @@ function search_api_install() {
     'server' => NULL,
     'item_type' => 'node',
     'options' => array(
+      'index_directly' => 1,
       'cron_limit' => '50',
       'data_alter_callbacks' => array(
-        'search_api_alter_add_fulltext' => array(
-          'status' => 0,
+        'search_api_alter_node_access' => array(
+          'status' => 1,
           'weight' => '0',
-          'settings' => array(
-            'fields' => array(),
-          ),
-        ),
-        'search_api_alter_add_url' => array(
-          'status' => 0,
-          'weight' => '0',
+          'settings' => array(),
         ),
       ),
       'processors' => array(
@@ -289,9 +284,6 @@ function search_api_install() {
         ),
         'search_api_language' => array(
           'type' => 'string',
-        ),
-        'search_api_fulltext' => array(
-          'type' => 'text',
         ),
         'body:value' => array(
           'type' => 'text',
