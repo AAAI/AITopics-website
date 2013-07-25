@@ -1,4 +1,0 @@
-name = Items faceted
-description = Extra code to make the items faceted view work better.
-core = 7.x
-package = AITopics

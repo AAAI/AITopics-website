@@ -55,7 +55,7 @@
     <a href="#main-content" class="element-invisible element-focusable"><?php print t('Skip to main content'); ?></a>
   </div>
   <?php print $page_top; ?>
-  <?php print $page; ?>
+  <?php print strtr($page, array("XXXTITLEXXX" => preg_replace("/ \\| AITopics/", "", $head_title))); ?>
   <?php print $page_bottom; ?>
 </body>
 </html>
