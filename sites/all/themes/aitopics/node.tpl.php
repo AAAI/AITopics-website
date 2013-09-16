@@ -289,6 +289,17 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
         echo '</div>';
     } ?>
 
+<div style="text-align: center">
+<?php if(!empty($field_video)) {
+              $items = array();
+              foreach($field_video as $video) {
+                  array_push($items, array('uri' => $video['url'], 'filemime' => 'video/mp4'));
+              }
+              print(theme('videojs', array('items' => $items, 'player_id' => 'mp4-video')));
+          }
+?>
+</div>
+
     <div class="metadata fullview">
       <?php
         $metadata = array();
