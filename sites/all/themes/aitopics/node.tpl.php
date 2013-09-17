@@ -289,16 +289,16 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
         echo '</div>';
     } ?>
 
-<div style="text-align: center">
-<?php if(!empty($field_video)) {
+<p style="text-align: center">
+<?php if(!empty($field_video_mp4_url)) {
               $items = array();
-              foreach($field_video as $video) {
+              foreach($field_video_mp4_url as $video) {
                   array_push($items, array('uri' => $video['url'], 'filemime' => 'video/mp4'));
               }
               print(theme('videojs', array('items' => $items, 'player_id' => 'mp4-video')));
           }
 ?>
-</div>
+</p>
 
     <div class="metadata fullview">
       <?php
