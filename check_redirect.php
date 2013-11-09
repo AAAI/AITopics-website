@@ -2,6 +2,7 @@
 
 $redirected = "false";
 
+/*
 $ip = $_SERVER['REMOTE_ADDR'];
 if(copy('/tmp/redirect-log', '/tmp/redirect-log-copy')) {
     $f = fopen('/tmp/redirect-log', 'w');
@@ -21,5 +22,6 @@ if(copy('/tmp/redirect-log', '/tmp/redirect-log-copy')) {
         fclose($f);
     }
 }
+*/
 
 print $redirected;
