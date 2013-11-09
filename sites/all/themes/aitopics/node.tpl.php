@@ -111,7 +111,7 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
 
     <?php print render($title_prefix); ?>
     <?php if (!$page): ?>
-    <h2<?php print $title_attributes; ?>><?php if(!empty($field_original_link)) { display_link($field_original_link['und'][0], $title); } else { echo "<a href=\"$node_url\">$title</a>"; } ?></h2>
+    <h2<?php print $title_attributes; ?>><?php if(!empty($field_original_link)) { display_link($field_original_link[0], $title); } else { echo "<a href=\"$node_url\">$title</a>"; } ?></h2>
     <?php endif; ?>
     <?php print render($title_suffix); ?>
 
@@ -184,7 +184,7 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
 
     <?php print render($title_prefix); ?>
     <?php if (!$page): ?>
-    <h2<?php print $title_attributes; ?>><?php if(!empty($field_original_link)) { display_link($field_original_link['und'][0], $title); } else { echo "<a href=\"$node_url\">$title</a>"; } ?></h2>
+    <h2<?php print $title_attributes; ?>><?php if(!empty($field_original_link)) { display_link($field_original_link[0], $title); } else { echo "<a href=\"$node_url\">$title</a>"; } ?></h2>
     <?php endif; ?>
     <?php print render($title_suffix); ?>
 
