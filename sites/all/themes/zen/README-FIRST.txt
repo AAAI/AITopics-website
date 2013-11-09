@@ -6,7 +6,7 @@ they download the Zen theme is that there are A LOT of files -- way more than
 other themes.
 
 Don't worry! You don't need to learn everything all at once in order to make a
-drupal theme. Zen will do the bits you haven't learned and patiently wait for
+Drupal theme. Zen will do the bits you haven't learned and patiently wait for
 you to discover the documentation and inline comments about them.
 
 
@@ -64,30 +64,21 @@ ONLINE READING
 --------------
 
 Full documentation on the Zen theme can be found in Drupal's Handbook:
-  http://drupal.org/documentation/theme/zen
+  https://drupal.org/documentation/theme/zen
 
 Excellent documentation on Drupal theming can be found in the Theme Guide:
-  http://drupal.org/theme-guide
+  https://drupal.org/theme-guide
 
 
 INSTALLATION
 ------------
 
- 1. Download Zen from http://drupal.org/project/zen
+ 1. Download Zen from https://drupal.org/project/zen
 
  2. Unpack the downloaded file, take the entire zen folder and place it in your
-    Drupal installation under one of the following locations:
-      sites/all/themes
-        making it available to the default Drupal site and to all Drupal sites
-        in a multi-site configuration
-      sites/default/themes
-        making it available to only the default Drupal site
-      sites/example.com/themes
-        making it available to only the example.com site if there is a
-        sites/example.com/settings.php configuration file
-
-    Please note: you will need to manually create the "themes" folder under
-    "sites/default/".
+    Drupal installation under sites/all/themes. (Additional installation folders
+    can be used; see https://drupal.org/getting-started/install-contrib/themes
+    for more information.)
 
     For more information about acceptable theme installation directories, read
     the sites/default/default.settings.php file in your Drupal installation.

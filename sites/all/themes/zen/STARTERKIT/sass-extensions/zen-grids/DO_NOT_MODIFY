@@ -2,7 +2,7 @@ This is a copy of the "zen-grids" extension.
 
 It now overrides the original which was found here:
 
-/Library/Ruby/Gems/1.8/gems/zen-grids-1.2
+/Library/Ruby/Gems/1.8/gems/zen-grids-1.4
 
 Unpacking an extension is useful when you need to easily peruse the
 extension's source. You might find yourself tempted to change the

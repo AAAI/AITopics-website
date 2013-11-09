@@ -7,10 +7,11 @@ Gem::Specification.new do |s|
   s.description = %q{Zen Grids is an intuitive, flexible grid system that leverages the natural source order of your content to make it easier to create fluid responsive designs. With an easy-to-use Sass mixin set, the Zen Grids system can be applied to an infinite number of layouts, including responsive, adaptive, fluid and fixed-width layouts.}
 
   s.homepage    = 'http://zengrids.com'
+  s.license     = 'GPL-2'
   s.rubyforge_project =
 
-  s.version     = '1.2'
-  s.date        = '2012-05-04'
+  s.version     = '1.4'
+  s.date        = '2013-04-02'
 
   s.authors     = ['John Albin Wilkins']
   s.email       = 'virtually.johnalbin@gmail.com'
@@ -22,12 +23,14 @@ Gem::Specification.new do |s|
     README.txt
     lib/zen-grids.rb
     stylesheets/_zen.scss
-    stylesheets/zen/_background-grid.scss
+    stylesheets/zen/_background.scss
     stylesheets/zen/_grids.scss
+    templates/project/_init.scss
+    templates/project/_layout.scss
+    templates/project/_modules.scss
+    templates/project/_visually-hidden.scss
     templates/project/example.html
     templates/project/manifest.rb
-    templates/project/common.scss
-    templates/project/layout.scss
     templates/project/styles.scss
     templates/unit-tests/manifest.rb
     templates/unit-tests/README.txt
@@ -37,6 +40,7 @@ Gem::Specification.new do |s|
     templates/unit-tests/sass/function-zen-unit-width.scss
     templates/unit-tests/sass/zen-clear.scss
     templates/unit-tests/sass/zen-float.scss
+    templates/unit-tests/sass/zen-grid-background.scss
     templates/unit-tests/sass/zen-grid-container.scss
     templates/unit-tests/sass/zen-grid-flow-item.scss
     templates/unit-tests/sass/zen-grid-item-base.scss
@@ -48,6 +52,7 @@ Gem::Specification.new do |s|
     templates/unit-tests/test-results/function-zen-unit-width.css
     templates/unit-tests/test-results/zen-clear.css
     templates/unit-tests/test-results/zen-float.css
+    templates/unit-tests/test-results/zen-grid-background.css
     templates/unit-tests/test-results/zen-grid-container.css
     templates/unit-tests/test-results/zen-grid-flow-item.css
     templates/unit-tests/test-results/zen-grid-item-base.css

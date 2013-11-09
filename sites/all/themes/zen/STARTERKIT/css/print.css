@@ -5,49 +5,61 @@
  * We provide some sane print styling for Drupal using Zen's layout method.
  */
 
+/**
+ * By importing this CSS file as media "all", we allow this print file to be
+ * aggregated with other stylesheets, for improved front-end performance.
+ */
 @media print {
 
+  /* Underline all links. */
   a:link,
-  a:visited { /* underline all links */
+  a:visited {
     text-decoration: underline !important;
   }
 
-  #site-name a:link,
-  #site-name a:visited { /* Don't underline header */
+  /* Don't underline header. */
+  a:link.header__site-link,
+  a:visited.header__site-link {
     text-decoration: none !important;
   }
 
-  #content a[href]:after { /* Add visible URL after links. */
+  /* Add visible URL after links. */
+  #content a[href]:after {
     content: " (" attr(href) ")";
     font-weight: normal;
     font-size: 16px;
   }
 
+  /* Only display useful links. */
   #content a[href^="javascript:"]:after,
-  #content a[href^="#"]:after { /* Only display useful links. */
+  #content a[href^="#"]:after {
     content: "";
   }
 
-  #content abbr[title]:after { /* Add visible title after abbreviations. */
+  /* Add visible title after abbreviations. */
+  #content abbr[title]:after {
     content: " (" attr(title) ")";
   }
 
-  #content { /* Un-float the content */
+  /* Un-float the content. */
+  #content {
     float: none !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
+  /* Turn off any background colors or images. */
   body,
   #page,
   #main,
-  #content { /* Turn off any background colors or images */
+  #content {
     color: #000;
     background-color: transparent !important;
     background-image: none !important;
   }
 
+  /* Hide sidebars and nav elements. */
   #skip-link,
   #toolbar,
   #navigation,
@@ -61,9 +73,8 @@
   .book-navigation,
   .forum-topic-navigation,
   .pager,
-  .feed-icons { /* Hide sidebars and nav elements */
+  .feed-icons {
     visibility: hidden;
     display: none;
   }
-
-} /* End @media print */
+}

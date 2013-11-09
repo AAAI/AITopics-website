@@ -1,5 +1,5 @@
 name        = Zen
-description = Zen sub-themes are the ultimate starting themes for Drupal 7. Read the <a href="http://drupal.org/node/873778">online docs</a> or the included README-FIRST.txt on how to create a theme with Zen.
+description = Zen sub-themes are the ultimate starting themes for Drupal 7. Read the <a href="https://drupal.org/node/873778">online docs</a> or the included README-FIRST.txt on how to create a theme with Zen.
 screenshot  = zen-internals/screenshot.png
 
 core        = 7.x
@@ -22,7 +22,7 @@ regions[page_bottom]    = Page bottom
 settings[zen_breadcrumb]           = yes
 settings[zen_breadcrumb_separator] = ' › '
 settings[zen_breadcrumb_home]      = 1
-settings[zen_breadcrumb_trailing]  = 1
+settings[zen_breadcrumb_trailing]  = 0
 settings[zen_breadcrumb_title]     = 0
 settings[zen_layout]               = zen-responsive-sidebars
 settings[zen_skip_link_anchor]     = main-menu
@@ -33,9 +33,11 @@ settings[zen_html5_respond_meta][] = meta
 settings[zen_rebuild_registry]     = 0
 settings[zen_wireframes]           = 0
 
-; Information added by drupal.org packaging script on 2012-05-18
-version = "7.x-5.1"
+plugins[panels][layouts] = panels-layouts
+
+; Information added by drupal.org packaging script on 2013-08-21
+version = "7.x-5.4"
 core = "7.x"
 project = "zen"
-datestamp = "1337337097"
+datestamp = "1377107504"
 

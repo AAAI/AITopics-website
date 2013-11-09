@@ -6,32 +6,6 @@
  */
 
 /**
- * Required minimum Views RSS module build.
- */
-define('VIEWS_RSS_ITUNES_REQUIRED_BUILD', '7.x-2.x-dev-20120215');
-
-/**
- * Implements hook_requirements().
- */
-function views_rss_itunes_requirements($phase) {
-  $requirements = array();
-  if (!defined('VIEWS_RSS_BUILD') || array_pop(explode('-', VIEWS_RSS_BUILD)) < array_pop(explode('-', VIEWS_RSS_ITUNES_REQUIRED_BUILD))) {
-    $t = get_t();
-    $requirements['views_rss_itunes'] = array(
-      'title' => $t('Views RSS: iTunes Elements'),
-      'description' => $t('Your current build of <a href="@views_rss_url">Views RSS</a> module (!views_rss_build) is too old for this version of <em>Views RSS: iTunes Elements</em> module to work properly. Minimum version required is <strong>!views_rss_required</strong>. Please upgrade.', array(
-        '@views_rss_url' => url('http://drupal.org/project/views_rss'),
-        '!views_rss_build' => defined('VIEWS_RSS_BUILD') ? VIEWS_RSS_BUILD : $t('undefined'),
-        '!views_rss_required' => VIEWS_RSS_ITUNES_REQUIRED_BUILD,
-      )),
-      'severity' => REQUIREMENT_ERROR,
-      'value' => NULL,
-    );
-  }
-  return $requirements;
-}
-
-/**
  * Implements hook_install().
  */
 function views_rss_itunes_install() {

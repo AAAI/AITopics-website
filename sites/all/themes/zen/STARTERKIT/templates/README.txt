@@ -10,7 +10,7 @@ sub-theme's templates folder.
 
 As always, when adding a new template file to your sub-theme, you will need to
 rebuild the "theme registry" in order for Drupal to see it. For more info, see:
-  http://drupal.org/node/173880#theme-registry
+  https://drupal.org/node/173880#theme-registry
 
 Located in zen/templates:
   html.tpl.php

@@ -98,7 +98,8 @@ http://localhost:8983/solr/admin/
 Now, you should enable the "Apache Solr framework" and "Apache Solr search"
 modules. Check that you can connect to Solr at ?q=admin/setting/apachesolr
 Now run cron on your Drupal site until your content is indexed. You
-can monitor the index at ?q=admin/settings/apachesolr/index
+can monitor the index at ?q=admin/config/search/apachesolr and select the correct
+environment there where you can click on index.
 
 The solrconfig.xml that comes with this modules defines auto-commit, so
 it may take a few minutes between running cron and when the new content
@@ -109,6 +110,15 @@ This module will allow you to define and set facets next to your search pages.
 Once this module is enabled, enable blocks for facets first at
 Administer > Site configuration > Apache Solr > Enabled filters
 then position them as you like at Administer > Site building > Blocks.
+
+Access Sub-module
+------------
+The included Apache Solr Access module integrates with the node access
+system using node access grants. It does not (and can not) work
+with modules using hook_node_access() to block viewing of nodes because
+it's impossible to apply those dynamic filters to as-yet-unknown search
+results to return the correct number per page.  This same restriction
+applies to any module that does content searching or listing (e.g. Views).
 
 Settings.php
 ------------
