@@ -2,7 +2,6 @@
  * @file
  * Test zen-grid-item-width()
  */
-/* line 8, ../sass/function-zen-grid-item-width.scss */
 #test-zen-grid-item-width {
   /* Test zen-grid-item-width(1) with default $zen-column-count: 1 */
   width: 100%;
@@ -14,6 +13,10 @@
   width: 100px;
   /* Test zen-grid-item-width(2, 5) with $zen-grid-width: 100px */
   width: 40px;
-  /* Test zen-grid-item-width(2, 5, 100px) */
-  width: 40px;
+  /* Test zen-grid-item-width(2, 5, $grid-width: 1000px) */
+  width: 400px;
+  /* Test zen-grid-item-width(2, 5, $grid-width: 1000px, $box-sizing: content-box) */
+  width: 380px;
+  /* Test zen-grid-item-width(2, 5, $gutter-width: 10px, $grid-width: 1000px, $box-sizing: content-box) */
+  width: 390px;
 }

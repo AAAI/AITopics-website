@@ -1,4 +1,3 @@
-// $Id: README.txt,v 1.2 2009/12/20 00:44:04 quicksketch Exp $
 
 The External Links module is a very simple approach to adding icons to links
 to external websites or e-mail addresses. It is a purely JavaScript

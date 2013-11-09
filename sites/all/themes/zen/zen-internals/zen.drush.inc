@@ -19,14 +19,14 @@ function zen_drush_command() {
     'options' => array(
       'name'         => 'A name for your theme.',
       'machine-name' => '[a-z, 0-9] A machine-readable name for your theme.',
+      'path'         => 'The path where your theme will be created. Defaults to: sites/all/themes',
       'description'  => 'A description of your theme.',
       'without-rtl'  => 'Remove all RTL stylesheets.',
-      // @TODO: Add these options:
-      // 'layout'       => '[fixed,fluid,960gs] Choose the page layout method.',
     ),
     'examples' => array(
       'drush zen "My theme name"' => 'Create a sub-theme, using the default options.',
       'drush zen "My theme name" my_theme' => 'Create a sub-theme with a specific machine name.',
+      'drush zen "My theme" --without-rtl --path=sites/default/themes' => 'Create a sub-theme in the specified directory without RTL stylesheets.',
     ),
   );
 
@@ -56,25 +56,30 @@ function drush_zen($name = NULL, $machine_name = NULL) {
   );
   $machine_name = preg_replace($search, '', $machine_name);
 
-  // Determine the path to the new subtheme by finding the path to Zen.
-  $zen_path = drush_locate_root() . '/' . drupal_get_path('theme', 'zen');
-  $subtheme_path = explode('/', $zen_path);
-  array_pop($subtheme_path);
-  $subtheme_path = implode('/', $subtheme_path) . '/' . str_replace('_', '-', $machine_name);
+  // Determine the path to the new subtheme.
+  $subtheme_path = 'sites/all/themes';
+  if ($path = drush_get_option('path')) {
+    $subtheme_path = drush_trim_path($path);
+  }
+  $subtheme_path = drush_normalize_path(drush_get_context('DRUSH_DRUPAL_ROOT') . '/' . $subtheme_path . '/' . $machine_name);
 
   // Make a fresh copy of the original starter kit.
-  drush_op('zen_copy', $zen_path . '/STARTERKIT', $subtheme_path);
+  $starter_path = drush_normalize_path(drush_get_context('DRUSH_DRUPAL_ROOT') . '/' . drupal_get_path('theme', 'zen') . '/STARTERKIT');
+  if (!is_dir(dirname($subtheme_path))) {
+    drush_die(dt('The directory "!directory" was not found.', array('!directory' => dirname($subtheme_path))));
+  }
+  drush_op('drush_copy_dir', $starter_path, $subtheme_path);
 
   // Rename the .info file.
   $subtheme_info_file = $subtheme_path . '/' . $machine_name . '.info';
-  drush_op('rename', $subtheme_path . '/STARTERKIT.info.txt', $subtheme_info_file);
+  drush_op('rename', drush_normalize_path($subtheme_path . '/STARTERKIT.info.txt'), drush_normalize_path($subtheme_info_file));
 
   // Alter the contents of the .info file based on the command options.
   $alterations = array(
     '= Zen Sub-theme Starter Kit' => '= ' . $name,
   );
   if ($description = drush_get_option('description')) {
-    $alterations['Read the <a href="http://drupal.org/node/873778">online docs</a> or the included README.txt on how to create a theme with Zen.'] = $description;
+    $alterations['Read the <a href="https://drupal.org/node/873778">online docs</a> or the included README.txt on how to create a theme with Zen.'] = $description;
   }
   drush_op('zen_file_str_replace', $subtheme_info_file, array_keys($alterations), $alterations);
 
@@ -84,12 +89,22 @@ function drush_zen($name = NULL, $machine_name = NULL) {
 
   // Remove all RTL stylesheets.
   if ($without_rtl = drush_get_option('without-rtl')) {
-    foreach (array('forms', 'layouts/fixed-width', 'navigation', 'normalize', 'pages', 'tabs') as $file) {
-      // Remove the RTL stylesheet.
-      drush_op('unlink', $subtheme_path . '/css/' . $file . '-rtl.css');
-      drush_op('zen_file_str_replace', $subtheme_path . '/css/' . $file . '.css', ' /* LTR */', '');
+    foreach (array('layouts/_fixed', 'layouts/_responsive', 'components/_misc', '_normalize', 'styles') as $file) {
+      // Move any sub-directory into a separate variable.
+      list($sub_dir, $css_file) = explode('/', $file . '/');
+      if (!$css_file) {
+        $css_file = $sub_dir;
+        $sub_dir = '';
+      }
+      else {
+        $sub_dir .= '/';
+      }
+      // Remove the RTL css file.
+      $css_file = $sub_dir . (($css_file[0] == '_') ? substr($css_file, 1) : $css_file);
+      drush_op('unlink', drush_normalize_path($subtheme_path . '/css/' . $css_file . '-rtl.css'));
+      drush_op('zen_file_str_replace', $subtheme_path . '/css/' . $css_file . '.css', ' /* LTR */', '');
       // Remove the RTL sass file.
-      drush_op('unlink', $subtheme_path . '/sass/' . $file . '-rtl.scss');
+      drush_op('unlink', drush_normalize_path($subtheme_path . '/sass/' . $file . '-rtl.scss'));
       drush_op('zen_file_str_replace', $subtheme_path . '/sass/' . $file . '.scss', ' /* LTR */', '');
     }
   }
@@ -102,31 +117,10 @@ function drush_zen($name = NULL, $machine_name = NULL) {
 }
 
 /**
- * Copy a directory recursively.
- */
-function zen_copy($source_dir, $target_dir, $ignore = '/^(\.(\.)?|CVS|\.svn|\.git|\.DS_Store)$/') {
-  if (!is_dir($source_dir)) {
-    drush_die(dt('The directory "!directory" was not found.', array('!directory' => $source_dir)));
-  }
-  $dir = opendir($source_dir);
-  @mkdir($target_dir);
-  while($file = readdir($dir)) {
-    if (!preg_match($ignore, $file)) {
-      if (is_dir($source_dir . '/' . $file)) {
-        zen_copy($source_dir . '/' . $file, $target_dir . '/' . $file, $ignore);
-      }
-      else {
-        copy($source_dir . '/' . $file, $target_dir . '/' . $file);
-      }
-    }
-  }
-  closedir($dir);
-}
-
-/**
  * Replace strings in a file.
  */
 function zen_file_str_replace($file_path, $find, $replace) {
+  $file_path = drush_normalize_path($file_path);
   $file_contents = file_get_contents($file_path);
   $file_contents = str_replace($find, $replace, $file_contents);
   file_put_contents($file_path, $file_contents);

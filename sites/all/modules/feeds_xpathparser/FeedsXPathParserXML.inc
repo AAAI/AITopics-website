@@ -34,4 +34,8 @@ class FeedsXPathParserXML extends FeedsXPathParserBase {
     }
     return $doc;
   }
+
+  protected function getRaw(DOMNode $node) {
+    return $this->doc->saveXML($node);
+  }
 }

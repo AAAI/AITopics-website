@@ -12,8 +12,10 @@
 function _zen_theme(&$existing, $type, $theme, $path) {
   // If we are auto-rebuilding the theme registry, warn about the feature.
   if (
+    // Don't display on update.php or install.php.
+    !defined('MAINTENANCE_MODE')
     // Only display for site config admins.
-    function_exists('user_access') && user_access('administer site configuration')
+    && function_exists('user_access') && user_access('administer site configuration')
     && theme_get_setting('zen_rebuild_registry')
     // Always display in the admin section, otherwise limit to three per hour.
     && (arg(0) == 'admin' || flood_is_allowed($GLOBALS['theme'] . '_rebuild_registry_warning', 3))
