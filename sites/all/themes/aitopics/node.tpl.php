@@ -150,7 +150,9 @@ if($node->type == 'misc_page') { $item_type = 'misc_page'; $item_type_str = 'Mis
         }
         if(!empty($field_collections)) {
           $term = taxonomy_term_load($field_collections['und'][0]['tid']);
-          array_push($metadata, $term->name);
+          if(!empty($term)) {
+              array_push($metadata, $term->name);
+          }
         }
 
         print implode(", ", $metadata);
