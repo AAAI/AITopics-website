@@ -150,23 +150,16 @@ function apachesolr_search_menu() {
   );
 
   // Environment specific settings
-  $base_path = 'admin/config/search/apachesolr';
-  foreach (apachesolr_load_all_environments() as $env_id => $environment) {
-    $settings_path = $base_path . '/env-'.$env_id;
-    // Don't show tabs for offline environments
-    $env_is_online = apachesolr_server_status($environment['url'], $environment['service_class']);
-
-    $items[$settings_path . '/bias'] = array(
-      'title'            => 'Bias',
-      'page callback'    => 'apachesolr_bias_settings_page',
-      'page arguments'   => array($env_id),
-      'access arguments' => array('administer search'),
-      'weight'           => 4,
-      'type'             => $env_is_online ? MENU_LOCAL_TASK : MENU_CALLBACK,
-      'context'          => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
-      'file'             => 'apachesolr_search.admin.inc',
-    );
-  }
+  $settings_path = 'admin/config/search/apachesolr/settings/';
+  $items[$settings_path . '%apachesolr_environment/bias'] = array(
+    'title'            => 'Bias',
+    'page callback'    => 'apachesolr_bias_settings_page',
+    'page arguments'   => array(5),
+    'access arguments' => array('administer search'),
+    'weight'           => 4,
+    'type'             => MENU_LOCAL_TASK,
+    'file'             => 'apachesolr_search.admin.inc',
+  );
   return $items;
 }
 

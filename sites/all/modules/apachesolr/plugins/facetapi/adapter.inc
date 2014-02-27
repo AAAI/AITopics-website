@@ -20,12 +20,12 @@ class ApacheSolrFacetapiAdapter extends FacetapiAdapter {
    *   The path to the admin settings.
    */
   public function getPath($realm_name) {
-    $path = 'admin/config/search/apachesolr';
+    $path = 'admin/config/search/apachesolr/settings';
     // $adapter will be an instance of class FacetapiAdapter
     if ($adapter = menu_get_object('facetapi_adapter', 4)) {
       // Get the environment ID from the machine name of the searcher.
       $env_id = ltrim(strstr($adapter->getSearcher(), '@'), '@');
-      $path .= '/env-' . $env_id . '/facets';
+      $path .= '/' . $env_id . '/facets';
       // Add the realm name to the path if it is not the first one in the list.
       if (key(facetapi_get_realm_info()) != $realm_name) {
         $path .= '/' . $realm_name;

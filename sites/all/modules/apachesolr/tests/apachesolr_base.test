@@ -96,7 +96,7 @@ class DrupalSolrOfflineEnvironmentWebTestCase extends DrupalSolrOfflineWebTestCa
     $status = apachesolr_server_status($environment['url']);
     $this->assertFalse($status, t('A false URL could not be loaded and is offline'));
     $this->drupalLogin($this->admin_user);
-    $this->drupalGet('admin/config/search/apachesolr/env-'.$env_id);
+    $this->drupalGet('admin/config/search/apachesolr');
     $text = t('The server seems to be unavailable. Please verify the server settings');
     $this->assertText($text, t('When checking the status of the server it gives the correct message to inform the user that the server is not reachable'));
   }
@@ -113,13 +113,13 @@ class DrupalSolrOfflineEnvironmentWebTestCase extends DrupalSolrOfflineWebTestCa
     $paths = array(
       'user',
       'node',
-      'admin/config/search/apachesolr/env-'.$env_id,
+      'admin/config/search/apachesolr',
       'admin/config/search/apachesolr/search-pages',
       'admin/config/search/apachesolr/search-pages/core_search/edit',
       'admin/structure/block/manage/apachesolr_search/mlt-001/configure',
-      'admin/config/search/apachesolr/env-'.$env_id.'/bias',
-      'admin/config/search/apachesolr/env-'.$env_id.'/index',
-      'admin/config/search/apachesolr/env-'.$env_id.'/edit',
+      'admin/config/search/apachesolr/settings/solr/bias',
+      'admin/config/search/apachesolr/settings/solr/index',
+      'admin/config/search/apachesolr/settings/solr/edit',
       'admin/reports/apachesolr',
       'admin/reports/apachesolr/conf',
       'search/site',
@@ -161,13 +161,13 @@ class DrupalSolrOfflineEnvironmentWebTestCase extends DrupalSolrOfflineWebTestCa
     );
     $this->drupalLogin($this->admin_user);
     foreach ($urls as $url) {
-      $this->drupalGet('admin/config/search/apachesolr');
+      $this->drupalGet('admin/config/search/apachesolr/settings');
       $this->clickLink(t('Edit'));
       $this->assertText(t('Example: http://localhost:8983/solr'), t('Edit page was succesfully loaded'));
       $edit = array('url' => $url);
       $this->drupalPost($this->getUrl(), $edit, t('Save'));
       $this->assertResponse(200);
-      $this->drupalGet('admin/config/search/apachesolr');
+      $this->drupalGet('admin/config/search/apachesolr/settings');
       $this->assertText($url, t('Search environment url was succesfully set to !url', array('!url' => $url)));
     }
   }
@@ -176,15 +176,14 @@ class DrupalSolrOfflineEnvironmentWebTestCase extends DrupalSolrOfflineWebTestCa
    * Asserts that we can clone a search environment
    */
   function testCloneSearchEnvironment() {
-    $env_id = apachesolr_default_environment();
     $this->drupalLogin($this->admin_user);
-    $this->drupalGet('admin/config/search/apachesolr');
+    $this->drupalGet('admin/config/search/apachesolr/settings');
     $this->assertText(t('Clone'), t('Clone button is available'));
-    $this->drupalGet('admin/config/search/apachesolr/env-'.$env_id.'/clone');
+    $this->drupalGet('admin/config/search/apachesolr/settings/solr/clone');
     $this->assertText(t('Are you sure you want to clone search environment localhost server'), t('Clone confirmation page was succesfully loaded'));
     $this->drupalPost($this->getUrl(), array(), t('Clone'));
     $this->assertResponse(200);
-    $this->drupalGet('admin/config/search/apachesolr');
+    $this->drupalGet('admin/config/search/apachesolr/settings');
     $this->assertText(t('localhost server [cloned]'), t('Search Environment was succesfully cloned'));
     // Check if the bundles and configurations are exactly the same
     // after we clear the caches.
@@ -204,25 +203,25 @@ class DrupalSolrOfflineEnvironmentWebTestCase extends DrupalSolrOfflineWebTestCa
   function testCreateNewSearchEnvironment() {
     // Create a new environment
     $this->drupalLogin($this->admin_user);
-    $this->drupalGet('admin/config/search/apachesolr');
+    $this->drupalGet('admin/config/search/apachesolr/settings');
     $this->assertText(t('Add search environment'), t('Create new environment link is available'));
     $this->clickLink(t('Add search environment'));
     $this->assertText(t('Make this Solr search environment the default'), t('Environment creation page succesfully added'));
     $edit = array('url' => 'http://localhost:8983/solr', 'name' => 'my test description', 'env_id' => 'solr_test');
     $this->drupalPost($this->getUrl(), $edit, t('Save'));
     $this->assertResponse(200);
-    $this->drupalGet('admin/config/search/apachesolr');
+    $this->drupalGet('admin/config/search/apachesolr/settings');
     $this->assertText(t('my test description'), t('Search Environment was succesfully created'));
 
     // Make this new search environment the default
-    $this->drupalGet('admin/config/search/apachesolr');
+    $this->drupalGet('admin/config/search/apachesolr/settings');
     // Click on the second environment edit link
     $this->clickLink(t('Edit'), 1);
     $this->assertText(t('Example: http://localhost:8983/solr'), t('Edit page was succesfully loaded'));
     $edit = array('make_default' => 1, 'conf[apachesolr_read_only]' => APACHESOLR_READ_ONLY);
     $this->drupalPost($this->getUrl(), $edit, t('Save'));
     $this->assertResponse(200);
-    $this->drupalGet('admin/config/search/apachesolr');
+    $this->drupalGet('admin/config/search/apachesolr/settings');
     $this->assertText(t('my test description (Default)'), t('New Search environment was succesfully changed to default environment'));
     // Clear our cache.
     apachesolr_environments_clear_cache();

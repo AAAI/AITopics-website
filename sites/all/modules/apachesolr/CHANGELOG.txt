@@ -1,5 +1,13 @@
 Apache Solr integration 7.x-1.x, xxxx-xx-xx
 -----------------------------
+
+Apache Solr integration 7.x-1.6, 2013-11-14
+-----------------------------
+#2008832 by Nick_vh, j0rd: Re-apply added Allow turning off 'successful" actions in watchdog.
+REVERTED: #1827868 and releated path changes in #2008832
+
+Apache Solr integration 7.x-1.5, 2013-10-23
+-----------------------------
 #2118947 by Nick_vh: Added Allow mapping to accept multiple index_callbacks().
 #1828014 by ianthomas_uk, Nick_vh, DeFr: Fixed Mass re-indexation can miss (a lot of) content.
 #2106693 by wulff: Fixed Drush help refers to non-existent command.
@@ -12,10 +20,10 @@ Apache Solr integration 7.x-1.x, xxxx-xx-xx
 #1828134 by ianmthomasuk, Nick_vh: Fixed apachesolr_entity_delete() should apply to all writable environments.
 #2006602 by pwolanin, David_Rothstein: Fixed Documents are deleted from the Solr index in read-only environments.
 #1916558 by jwalz: Fixed Custom Filters are ignored in facet blocks on non-search paths.
-#2008832 by Nick_vh, j0rd: Added Allow to optionally turn of 'successful" actions in watchdog.
+#2008832 by Nick_vh, j0rd: Added Allow to optionally turn off 'successful" actions in watchdog.
 #1952296 by David_Rothstein, zerolab, SamChez: Added Date facet granularity support.
 #1930686 by kevin.dutra: Fixed Multiple search pages can have the same path.
-#1827868 by ianmthomasuk, Nick_vh: Added Improve usability of admin interface when using multiple environments.
+REVERTED: #1827868 by ianmthomasuk, Nick_vh: Added Improve usability of admin interface when using multiple environments.
 #1433366 by Darren Oh | becw: Added Text field values not mapped in field_apachesolr_field_mappings().
 #1881878 by thsutton: Added Include source field ID in facet admin interface.
 #1365304 by brianV, deviantintegral, Nick_vh: Fixed Date field minimum/maximum range callbacks don't handle some cases; cause Solr exceptions.

@@ -98,8 +98,7 @@ http://localhost:8983/solr/admin/
 Now, you should enable the "Apache Solr framework" and "Apache Solr search"
 modules. Check that you can connect to Solr at ?q=admin/setting/apachesolr
 Now run cron on your Drupal site until your content is indexed. You
-can monitor the index at ?q=admin/config/search/apachesolr and select the correct
-environment there where you can click on index.
+can monitor the index at ?q=admin/settings/apachesolr/index
 
 The solrconfig.xml that comes with this modules defines auto-commit, so
 it may take a few minutes between running cron and when the new content

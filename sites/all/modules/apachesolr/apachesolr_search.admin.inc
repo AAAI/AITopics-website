@@ -660,12 +660,6 @@ function apachesolr_search_get_fields($environment = NULL) {
  * Menu callback - Bias settings form.
  */
 function apachesolr_bias_settings_page($environment = NULL) {
-  // Check if we got an argument as to which environment to load
-  if (is_string($environment)) {
-    $environment = apachesolr_environment_load($environment);
-  }
-
-  // if nothing was given, load the default
   if (empty($environment)) {
     $env_id = apachesolr_default_environment();
     $environment = apachesolr_environment_load($env_id);
