@@ -67,6 +67,7 @@ abstract class FeedsXPathParserBase extends FeedsParser {
     $this->xpath->setConfig($config);
 
     $context_query = '(' . $source_config['context'] . ')';
+
     if (empty($state->total)) {
       $state->total = $this->xpath->namespacedQuery('count(' . $context_query . ')', $this->doc, 'count');
     }
@@ -80,7 +81,7 @@ abstract class FeedsXPathParserBase extends FeedsParser {
 
     $progress = $state->pointer ? $state->pointer : 0;
 
-    $all_nodes = $this->xpath->namespacedQuery($context_query, NULL, 'context');
+    $all_nodes = $this->xpath->namespacedQuery($context_query, $this->doc, 'context');
 
     foreach ($all_nodes as $node) {
       // Invoke a hook to check whether the domnode should be skipped.
