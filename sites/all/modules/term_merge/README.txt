@@ -15,8 +15,12 @@ synonymous terms, thereby pruning the taxonomy to a more manageable set.
 This module allows you to merge multiple terms into one, while updating
 all fields referring to those terms to refer to the replacement term instead.
 
-Currently, the module only acts on fields of term reference type and Views
-Taxonomy Term filter handlers. It would be desirable to update other possible
+Currently, the module only acts on:
+ * fields of 'taxonomy term reference' type
+ * Views Taxonomy Term filter handlers
+ * Redirects
+
+It would be desirable to update other possible
 places where deleted terms are used.
 
 Integration

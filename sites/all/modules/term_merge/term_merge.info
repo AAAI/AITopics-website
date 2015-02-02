@@ -8,9 +8,9 @@ files[] = term_merge.test
 dependencies[] = taxonomy
 dependencies[] = entity
 
-; Information added by drupal.org packaging script on 2013-03-09
-version = "7.x-1.0"
+; Information added by Drupal.org packaging script on 2015-01-14
+version = "7.x-1.2"
 core = "7.x"
 project = "term_merge"
-datestamp = "1362821474"
+datestamp = "1421194982"
 

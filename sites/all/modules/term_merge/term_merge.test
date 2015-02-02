@@ -62,7 +62,7 @@ class TermMergeWebTestCase extends DrupalWebTestCase {
    *   Fully loaded taxonomy vocabulary object
    *
    * @return object
-   *   Fully loaded taxonomy term object of the last interted term into
+   *   Fully loaded taxonomy term object of the last inserted term into
    *   the specified vocabulary
    */
   protected function getLastTerm($vocabulary) {
@@ -385,7 +385,9 @@ class TermMergeTermMergeWebTestCase extends TermMergeWebTestCase {
   /**
    * Test all cases for potentially "buggy" input.
    *
-   * Test the functionality of the action "Term Merge".
+   * Test the functionality of the action "Term Merge" with various suspicious
+   * input arguments, and testing the web UI of the module with suspicious
+   * input.
    */
   public function testTermMergeResistance() {
     drupal_static_reset();
@@ -465,6 +467,14 @@ class TermMergeTermMergeWebTestCase extends TermMergeWebTestCase {
       'term_branch_keep' => FALSE,
     ));
     $this->termMergeResistanceAssert($terms, 'Testing merging a term into itself.');
+
+    // Making sure the access rights are respected.
+    $account = $this->drupalCreateUser(array('merge vocabulary2 terms'));
+    $this->drupalLogin($account);
+    $this->drupalGet('admin/structure/taxonomy/' . $this->vocabulary->machine_name . '/merge');
+    $this->assertResponse(403, 'Per vocabulary term merge permissions are respected in the module - an account cannot merge terms in the vocabulary in which he is not supposed to be able to merge.');
+    $this->drupalGet('admin/structure/taxonomy/vocabulary2/merge');
+    $this->assertResponse(200, 'Per vocabulary term merge permissions are respected in the module - an account can merge terms in the vocabulary in which he is supposed to be able to merge.');
   }
 
   /**
@@ -813,7 +823,7 @@ class TermMergeTermMergeWebTestCase extends TermMergeWebTestCase {
    * @param array $terms
    *   Array of taxonomy terms objects
    * @param string $message
-   *   Assertion message to be showen on the test results page
+   *   Assertion message to be shown on the test results page
    */
   protected function termMergeResistanceAssert($terms, $message) {
     foreach ($terms as $term) {
@@ -857,57 +867,72 @@ class DuplicatesTermMergeWebTestCase extends TermMergeWebTestCase {
 
   /**
    * Test merging duplicates feature of Term Merge module.
+   *
+   * Test the following features:
+   * - Correctness of merging a group of duplicate terms, namely:
+   *   - Correctness of merge operation when duplicates feature is invoked on
+   *     the entire vocabulary
+   *   - Correctness of merge operation when duplicates feature is invoked on a
+   *     term (merge its children one into another)
+   * - Correctness of the mechanism that groups terms into sets of duplicate
+   *   entries, namely:
+   *   - Correctness of grouping by term name, i.e. unique terms should not be
+   *     listed in any set of duplicate terms
+   *   - Correctness of the initial set of terms, on which the duplicate tool is
+   *     invoked, i.e. when invoked on a vocabulary, we search for duplicates
+   *     in the whole vocabulary, but when invoked on a term, the tool should
+   *     only search for duplicate among the children of that term
    */
   public function testDuplicates() {
     // Creating duplicate terms firstly.
     $groups = array(
       'single' => 1,
-      'double' => 2,
+      'triple_different_parent' => 3,
       'random' => rand(2, 5),
+      // We need some term, that will be a parent of some other terms.
+      'parent' => 1,
     );
     $groups = $this->createTerms($groups);
+
+    // Let us make two of 'triple_different_parent' terms children of 'parent'
+    // term.
+    $groups['triple_different_parent'][1]->parent = $groups['parent'][0]->tid;
+    taxonomy_term_save($groups['triple_different_parent'][1]);
+    $groups['triple_different_parent'][2]->parent = $groups['parent'][0]->tid;
+    taxonomy_term_save($groups['triple_different_parent'][2]);
 
     // Assuring the single term is not listed as duplicate.
     $this->drupaLGet('admin/structure/taxonomy/' . $this->vocabulary->machine_name . '/merge/duplicates');
     $this->assertNoText($groups['single'][0]->name, 'Single term is not listed as a duplicate.');
 
-    // Deciding what terms to merge.
+    // Making sure the term in 'triple_different_parent' that does not have a
+    // parent, is not listed when we invoke duplicate tool on a parent term.
+    $this->drupalGet('taxonomy/term/' . $groups['parent'][0]->tid . '/merge/duplicates');
+    $this->assertNoFieldByName('group[' . $this->duplicateProcessName('triple_different_parent') . '][duplicates][' . $groups['triple_different_parent'][0]->tid . ']', 'Duplicate term is not listed when it is not among children of a term, on which Term Merge module was invoked.');
+
     $edit = array();
-    foreach ($groups as $name => $terms) {
-      $edit_key = term_merge_duplicates_process_name($name);
-      // Firstly we pick the trunk term, to make it easier, let it be the 1st
-      // term of available collection.
-      $edit['group[' . $edit_key . '][trunk_tid]'] = $terms[0]->tid;
-      switch ($name) {
-        case 'single':
-          // For this case we do not expect to merge anything, so we just revert
-          // our selected trunk term.
-          unset($edit['group[' . $edit_key . '][trunk_tid]']);
-          break;
+    // Trying to merge a term into another, invoking Duplicate tool on a parent
+    // term of both. Important note: we do not test merging options, because
+    // supposedly those are tested in the main test of this module.
+    $edit['group[' . $this->duplicateProcessName('triple_different_parent') . '][trunk_tid]'] = $groups['triple_different_parent'][1]->tid;
+    $edit['group[' . $this->duplicateProcessName('triple_different_parent') . '][duplicates][' . $groups['triple_different_parent'][2]->tid . ']'] = TRUE;
+    $groups['triple_different_parent'][2]->merged = TRUE;
+    $this->drupalPost('taxonomy/term/' . $groups['parent'][0]->tid . '/merge/duplicates', $edit, 'Submit');
 
-        case 'double':
-          $edit['group[' . $edit_key . '][duplicates][' . $terms[1]->tid . ']'] = TRUE;
-          $groups[$name][1]->merged = TRUE;
-          break;
-
-        case 'random':
-          // In case of random, we merge all but the 1st term.
-          foreach ($terms as $k => $term) {
-            if ($k != 0) {
-              $edit['group[' . $edit_key . '][duplicates][' . $term->tid . ']'] = TRUE;
-              $groups[$name][$k]->merged = TRUE;
-            }
-          }
-          break;
+    //  Trying to merge multiple terms. We merge all but the 1st term.
+    $edit = array();
+    $edit['group[' . $this->duplicateProcessName('random') . '][trunk_tid]'] = $groups['random'][0]->tid;
+    foreach ($groups['random'] as $k => $term) {
+      if ($k != 0) {
+        $edit['group[' . $this->duplicateProcessName('random') . '][duplicates][' . $term->tid . ']'] = TRUE;
+        $groups['random'][$k]->merged = TRUE;
       }
     }
-    // We do not test merging options, because supposedly those are tested in
-    // the main test of this module.
     $this->drupalPost('admin/structure/taxonomy/' . $this->vocabulary->machine_name . '/merge/duplicates', $edit, 'Submit');
 
     // Asserting results of merging.
-    foreach ($groups as $name => $terms) {
-      foreach ($terms as $term) {
+    foreach  ($groups as $group) {
+      foreach ($group as $term) {
         $this->drupalGet('taxonomy/term/' . $term->tid);
         $code = isset($term->merged) && $term->merged ? 404 : 200;
         $message = isset($term->merged) && $term->merged ? 'Term #' . $term->tid . ' has been successfully merged.' : 'Term #' . $term->tid . ' has been successfully untouched during merging.';
@@ -948,6 +973,33 @@ class DuplicatesTermMergeWebTestCase extends TermMergeWebTestCase {
       }
     }
     return $groups;
+  }
+
+  /**
+   * Supportive method.
+   *
+   * Manipulate supplied var $name and by the output of this function terms in a
+   * vocabulary are grouped as duplicates. This method should be identical to
+   * the function term_merge_duplicates_process_name(), test case replies on the
+   * fact that both manipulate the string in the identical way.
+   *
+   * @param string $name
+   *   String that needs to be manipulated
+   *
+   * @return string
+   *   Processed string (normally it implies making it upper case, stripping
+   *   down any special chars, etc.)
+   */
+  private function duplicateProcessName($name) {
+    // Making upper case.
+    $name = drupal_strtoupper($name);
+    // Trying transliteration, if available.
+    if (module_exists('transliteration')) {
+      $name = transliteration_get($name);
+      // Keeping only ASCII chars.
+      $name = preg_replace('#\W#', '', $name);
+    }
+    return $name;
   }
 }
 
@@ -1035,7 +1087,29 @@ class RedirectTermMergeWebTestCase extends TermMergeWebTestCase {
     ));
     $this->assertRedirectIntegration($terms, 'No redirects are made, if action is not instructed to make ones.');
 
-    // Testing 301 redirection.
+    // Testing 301 redirection. Besides redirecting 'taxonomy/term/[branch-tid]'
+    // to 'taxonomy/term/[trunk-tid]' and their path aliases we want to
+    // additionally assert that all existing redirects to branch term will be
+    // replaced with redirects to trunk term in Redirect module. Lastly, we also
+    // assert that 'taxonomy/term/[branch-tid]/feed' path and all pointing there
+    // redirects now point to 'taxonomy/term/[trunk-tid]/feed.
+    $redirect_source = $this->randomName();
+    $redirect = new stdClass();
+    redirect_object_prepare($redirect, array(
+      'source' => $redirect_source,
+      'redirect' => 'taxonomy/term/' . $terms['branch']->tid,
+    ));
+    redirect_hash($redirect);
+    redirect_save($redirect);
+
+    $redirect = new stdClass();
+    redirect_object_prepare($redirect, array(
+      'source' => $redirect_source . '/feed',
+      'redirect' => 'taxonomy/term/' . $terms['branch']->tid . '/feed',
+    ));
+    redirect_hash($redirect);
+    redirect_save($redirect);
+
     actions_do('term_merge_action', $terms['branch'], array(
       'term_trunk' => $terms['trunk']->tid,
       'redirect' => 301,
@@ -1043,6 +1117,11 @@ class RedirectTermMergeWebTestCase extends TermMergeWebTestCase {
 
     $terms['branch']->redirect = $terms['trunk'];
     $this->assertRedirectIntegration($terms, 'Redirects are made, if action is instructed to make ones.');
+
+    $this->drupalGet($redirect_source);
+    $this->assertUrl('taxonomy/term/' . $terms['trunk']->tid, array(), 'Redirect pointing to <em>taxonomy/term/[branch-tid]</em> now points to <em>taxonomy/term/[trunk-tid]</em>.');
+    $this->drupalGet($redirect_source . '/feed');
+    $this->assertUrl('taxonomy/term/' . $terms['trunk']->tid . '/feed', array(), 'Redirect pointing to <em>taxonomy/term/[branch-tid]/feed</em> now points to <em>taxonomy/term/[trunk-tid]/feed</em>.');
   }
 
   /**
@@ -1109,46 +1188,29 @@ class RedirectTermMergeWebTestCase extends TermMergeWebTestCase {
    *   Assert message to be shown on test results page
    */
   protected function assertRedirectIntegration($terms, $message) {
-    // Getting a list of set up redirects in Redirect module.
-    $response = $this->drupalGet('admin/config/search/redirect');
-    $matches = array();
-    preg_match('#\<table[^>]+class="redirect-list-tableselect[^"]*"[^>]*\>.*?\<tbody\>(.*?)\</tbody\>.*?\</table\>#si', $response, $matches);
-    $response = $matches[1];
-    $matches = array();
-    preg_match_all('#\<tr[^>]*\>.*?\<td[^>]*\>\<a[^>]*\>(.+?)\</a\>.*?\<a[^>]*\>(.+?)\</a\>\</td\>.*?\</tr\>#si', $response, $matches);
-    $redirects = array();
-    foreach ($matches[0] as $k => $v) {
-      $redirects[] = array(
-        'source' => $matches[1][$k],
-        'redirect' => $matches[2][$k],
-      );
-    }
     foreach ($terms as $term) {
       if (isset($term->redirect)) {
         $sources = array('taxonomy/term/' . $term->tid);
         // Additionally checking path alias.
-        if (!in_array(drupal_get_path_alias('taxonomy/term/' . $term->tid), $sources)) {
-          $sources[] = drupal_get_path_alias('taxonomy/term/' . $term->tid);
+        if (!in_array(drupal_get_path_alias($sources[0]), $sources)) {
+          $sources[] = drupal_get_path_alias($sources[0]);
         }
-        $redirect = drupal_get_path_alias('taxonomy/term/' . $term->redirect->tid);
         foreach ($sources as $source) {
-          $is_found = FALSE;
-          foreach ($redirects as $k => $v) {
-            if ($v['source'] == $source && $v['redirect'] == $redirect) {
-              unset($redirects[$k]);
-              $is_found = TRUE;
-              break;
-            }
-          }
-          if (!$is_found) {
-            $this->fail($message);
-            return;
-          }
+          $this->drupalGet($source);
+          $this->assertUrl('taxonomy/term/' . $term->redirect->tid, array(), $message);
+        }
+
+        // Additionally assert the 'taxonomy/term/*/feed' path.
+        $sources = array('taxonomy/term/' . $term->tid . '/feed');
+        if (!in_array(drupal_get_path_alias($sources[0]), $sources)) {
+          $sources[] = drupal_get_path_alias($sources[0]);
+        }
+        foreach ($sources as $source) {
+          $this->drupalGet($source);
+          $this->assertUrl('taxonomy/term/' . $term->redirect->tid . '/feed', array(), $message);
         }
       }
     }
-    // If we got here, then all expected redirections were found.
-    $this->pass($message);
   }
 
   /**
@@ -1249,7 +1311,7 @@ class SynonymsTermMergeWebTestCase extends TermMergeWebTestCase {
   }
 
   /**
-   * Test Term Merge batch in terms of integration with Redirect/Path modules.
+   * Test Term Merge batch in terms of integration with Synonyms module.
    */
   public function testTermMergeBatch() {
     // Trying to merge without synonyms adding.
@@ -1481,6 +1543,6 @@ class ViewsTermMergeWebTestCase extends TermMergeWebTestCase {
 
     $this->view->set_display('default');
     $filter = $this->view->display_handler->display->display_options['filters'][$columns['tid']]['value'];
-    $this->assertTrue(count($filter) == 1 && in_array($terms['trunk']->tid, array_keys($filter)), 'Views term reference filter gets uptdated to filter on trunk term instead of filtering on branch term if the branch term is instructed to be deleted during merging of terms.');
+    $this->assertTrue(count($filter) == 1 && in_array($terms['trunk']->tid, array_keys($filter)), 'Views term reference filter gets updated to filter on trunk term instead of filtering on branch term if the branch term is instructed to be deleted during merging of terms.');
   }
 }
