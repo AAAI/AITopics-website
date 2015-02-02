@@ -127,7 +127,7 @@ function _services_controller_execute_preserve_user_switch_anonymous($controller
   global $user;
   services_set_server_info('original_user', $user);
 
-  $preserve_session = strpos($controller['callback'], 'login') === FALSE && strpos($controller['callback'], 'logout') === FALSE;
+  $preserve_session = !is_string($controller['callback']) || (strpos($controller['callback'], 'login') === FALSE && strpos($controller['callback'], 'logout') === FALSE);
   services_set_server_info('preserve_session', $preserve_session);
   if ($preserve_session) {
     $original_session_state = drupal_save_session();
@@ -177,14 +177,21 @@ function _services_controller_execute_internals($controller, $args, $options) {
   $resource_name = array_shift($path);
   $options['version'] = _services_version_header_options() ? _services_version_header_options() : NULL;
   $options['resource'] = $resource_name;
+  //because index is never filled, we have to add this on an else, $remove_index is just a paranoid variable to make sure that futher code flow is not altered.
+  $remove_index = FALSE;
+
   if (isset($path[0])) {
     $options['method'] = $path[0];
+  } else{
+    $options['method'] = 'index';
+    $remove_index = TRUE;
   }
-
   if (!empty($options['version'])) {
     services_request_apply_version($controller, $options);
   }
-
+  if($remove_index){
+    unset($options['method']);
+  }
   drupal_alter('services_request_preprocess', $controller, $args, $options);
 
   // Log the arguments.
@@ -411,8 +418,16 @@ function _services_access_value($data, $fields) {
 function _services_authenticate_user($controller, $endpoint, $args, $options) {
   if (!isset($options['skip_authentication']) || !$options['skip_authentication']) {
     foreach ($endpoint->authentication as $auth_module => $auth_settings) {
-      if (!empty($auth_settings) && $auth_error = services_auth_invoke($auth_module, 'authenticate_call', $auth_settings, $controller, $args)) {
-        return services_error($auth_error, 401);
+      if (!empty($auth_settings)) {
+        // Add in the auth module's endpoint settings if present.
+        if (isset($controller['endpoint'][$auth_module])) {
+          if(is_array($auth_settings)) {
+              $auth_settings += $controller['endpoint'][$auth_module];
+          }
+        }
+        if ($auth_error = services_auth_invoke($auth_module, 'authenticate_call', $auth_settings, $controller, $args)) {
+          return services_error($auth_error, 401);
+        }
       }
     }
   }
@@ -445,6 +460,6 @@ function _services_run_access_callback($controller, $args) {
     global $user;
     return services_error(t('Access denied for user @user', array(
       '@user' => isset($user->name) ? $user->name : 'anonymous',
-    )), 401);
+    )), 403);
   }
 }

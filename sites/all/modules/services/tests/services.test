@@ -4,6 +4,10 @@ class ServicesWebTestCase extends DrupalWebTestCase {
 
   public function setUp() {
     $modules = func_get_args();
+    if (isset($modules[0]) && is_array($modules[0])) {
+      $modules = $modules[0];
+    }
+
     // Add the required module dependencies.
     array_unshift($modules, 'ctools', 'services', 'rest_server');
 
@@ -497,6 +501,20 @@ class ServicesWebTestCase extends DrupalWebTestCase {
           'register' => array(
             'enabled' => 1,
           ),
+          'request_new_password' => array(
+            'enabled' => 1,
+          ),
+        ),
+        'targeted_actions' => array(
+          'cancel' => array(
+            'enabled' => 1,
+          ),
+          'password_reset' => array(
+            'enabled' => 1,
+          ),
+          'resend_welcome_email' => array(
+            'enabled' => 1,
+          ),
         ),
       ),
     );
@@ -711,6 +729,17 @@ class ServicesWebTestCase extends DrupalWebTestCase {
           ),
           'register' => array(
             'enabled' => '1',
+          ),
+        ),
+        'targeted_actions' => array(
+          'cancel' => array(
+            'enabled' => 1,
+          ),
+          'password_reset' => array(
+            'enabled' => 1,
+          ),
+          'resend_welcome_email' => array(
+            'enabled' => 1,
           ),
         ),
       ),

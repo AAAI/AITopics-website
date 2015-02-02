@@ -147,7 +147,6 @@ function _user_resource_definition() {
           'access callback' => 'services_access_menu',
           'file' => array('type' => 'inc', 'module' => 'services', 'name' => 'resources/user_resource'),
         ),
-
         'logout' => array(
           'file' => array('type' => 'inc', 'module' => 'services', 'name' => 'resources/user_resource'),
           'help' => 'Logout a user session',
@@ -163,6 +162,70 @@ function _user_resource_definition() {
           'callback' => '_user_resource_get_token',
           'access callback' => 'services_access_menu',
           'help' => t('Returns the CSRF token.'),
+        ),
+        'request_new_password' => array(
+          'help' => 'Request a new password, given a user name or e-mail address',
+          'callback' => '_user_resource_request_new_password',
+          'args' => array(
+            array(
+              'name' => 'name',
+              'type' => 'string',
+              'description' => 'A valid user name or e-mail address',
+              'source' => array('data' => 'name'),
+              'optional' => FALSE,
+            ),
+          ),
+          'access callback' => 'services_access_menu',
+          'file' => array('type' => 'inc', 'module' => 'services', 'name' => 'resources/user_resource'),
+        ),
+      ),
+      'targeted_actions' => array(
+        'cancel' => array(
+          'help' => 'Cancel a user',
+          'callback' => '_user_resource_cancel',
+          'file' => array('type' => 'inc', 'module' => 'services', 'name' => 'resources/user_resource'),
+          'access callback' => '_user_resource_access',
+          'access arguments' => array('cancel'),
+          'access arguments append' => TRUE,
+          'args' => array(
+            array(
+              'name' => 'uid',
+              'optional' => FALSE,
+              'source' => array('path' => 0),
+              'type' => 'int',
+              'description' => 'The id of the user to cancel.',
+            ),
+          ),
+        ),
+        'password_reset' => array(
+          'access callback' => '_user_resource_access',
+          'access arguments' => array('password_reset'),
+          'access arguments append' => TRUE,
+          'callback' => '_user_resource_password_reset',
+          'args' => array(
+            array(
+              'name' => 'uid',
+              'optional' => FALSE,
+              'source' => array('path' => 0),
+              'type' => 'int',
+              'description' => 'The id of the user whose password to reset.',
+            ),
+          ),
+        ),
+        'resend_welcome_email' => array(
+          'access callback' => '_user_resource_access',
+          'access arguments' => array('resend_welcome_email'),
+          'access arguments append' => TRUE,
+          'callback' => '_user_resource_resend_welcome_email',
+          'args' => array(
+            array(
+              'name' => 'uid',
+              'optional' => FALSE,
+              'source' => array('path' => 0),
+              'type' => 'int',
+              'description' => 'The id of the user whose welcome email to resend.',
+            ),
+          ),
         ),
       ),
     ),
@@ -230,15 +293,36 @@ function _user_resource_create($account) {
   // with drupal_form_submit().
   module_load_include('inc', 'user', 'user.pages');
 
-  // register a new user
+  // Register a new user.
   $form_state['values'] = $account;
+
+  // Determine the password(s). Passwords may not be available as this callback
+  // is used for registration as well.
+  $pass1 = '';
+  $pass2 = '';
+  if (isset($account['pass'])) {
+    // For legacy usage, passwords come in as a single string. To match the
+    // actual form state value keys used by Drupal, we also can collect two
+    // passwords via an array.
+    if (is_array($account['pass'])) {
+      $pass1 = $account['pass']['pass1'];
+      $pass2 = $account['pass']['pass2'];
+    }
+    else {
+      $pass1 = $account['pass'];
+      $pass2 = $account['pass'];
+    }
+  }
   $form_state['values']['pass'] = array(
-    'pass1' => $account['pass'],
-    'pass2' => $account['pass'],
+    'pass1' => $pass1,
+    'pass2' => $pass2
   );
+
+  // Set the form state op.
   $form_state['values']['op'] = variable_get('services_user_create_button_resource_create', t('Create new account'));
 
   // execute the register form
+  $form_state['programmed_bypass_access_check'] = FALSE;
   drupal_form_submit('user_register_form', $form_state);
   // find and store the new user into the form_state
   if(isset($form_state['values']['uid'])) {
@@ -254,6 +338,7 @@ function _user_resource_create($account) {
     if ($uri = services_resource_uri(array('user', $user['uid']))) {
       $user['uri'] = $uri;
     }
+    _user_resource_update_services_user($user['uid'], time());
     return $user;
   }
 }
@@ -301,8 +386,8 @@ function _user_resource_update($uid, $account) {
     }
   }
 
-  // Prepare values of roles.
-  if (!isset($account['roles'])) {
+  // Prepare values of roles. Check user's permission before allowing changes to roles.
+  if (!isset($account['roles']) || !user_access('administer users')) {
     $account['roles'] = $account_loaded->roles;
   }
   foreach ($account['roles'] as $key => $value) {
@@ -319,14 +404,14 @@ function _user_resource_update($uid, $account) {
   }
 
   // If user is changing name, make sure they have permission.
-  if (isset($account['name']) && $account['name'] != $account_loaded->name && !(user_access('change own username') || !user_access('administer users'))) {
+  if (isset($account['name']) && $account['name'] != $account_loaded->name && !(user_access('change own username') || user_access('administer users'))) {
     return services_error(t('You are not allowed to change your username.'), 406);
   }
 
   $form_state['values']['op'] = variable_get('services_user_save_button_resource_update', t('Save'));
   $form_state['values']['#user_category'] = $category;
   $form_state['values']['#account'] = $account_loaded;
-
+  $form_state['programmed_bypass_access_check'] = FALSE;
   $ret = drupal_form_submit('user_profile_form', $form_state, $account_loaded, $category);
 
   // Error if needed.
@@ -334,10 +419,42 @@ function _user_resource_update($uid, $account) {
     return services_error(implode(" ", $errors), 406, array('form_errors' => $errors));
   }
   else {
+    $account = (object) $account;
     services_remove_user_data($account);
+    $account = (array) $account;
+    _user_resource_update_services_user($uid, time());
     return $account;
   }
 }
+
+function _user_resource_update_services_user($uid, $time) {
+  //Determine if a row exists, if not that means we are creating the user,
+  //If so that means we are updating it.
+  $result = db_select('services_user', 'su')
+    ->fields('su')
+    ->condition('uid', $uid,'=')
+    ->execute()
+    ->fetchAssoc();
+  //check the result
+  if (!$result) {
+    $id = db_insert('services_user')
+      ->fields(array(
+        'uid' => $uid,
+        'created' => $time,
+        'changed' => $time,
+      ))
+    ->execute();
+  } else {
+    db_update('services_user')
+      ->fields(array(
+          'uid' => $uid,
+          'changed' => $time,
+        )
+      )
+      ->execute();
+  }
+}
+
 
 /**
  * Delete a user.
@@ -357,6 +474,54 @@ function _user_resource_delete($uid) {
     return services_error(t('There is no user with ID @uid.', array('@uid' => $uid)), 404);
   }
   user_delete($uid);
+
+  // Everything went right.
+  return TRUE;
+}
+
+/**
+ * Cancel a user.
+ *
+ * @param $uid
+ *   UID of the user to be canceled.
+ *
+ * @see user_cancel()
+ */
+function _user_resource_cancel($uid) {
+  if ($uid == 1) {
+    return services_error(t('The admin user cannot be canceled.'), 403);
+  }
+  $account = user_load($uid);
+  if (empty($account)) {
+    return services_error(t('There is no user with ID @uid.', array('@uid' => $uid)), 404);
+  }
+  $edit = array(
+    'user_cancel_notify' => isset($account->data['user_cancel_notify']) ? $account->data['user_cancel_notify'] : variable_get('user_mail_status_canceled_notify', FALSE),
+  );
+  // This defult setting is defined under "admin/config/people/accounts".
+  $default_method = variable_get('user_cancel_method', 'user_cancel_block');
+
+  switch ($default_method) {
+    case 'user_cancel_block_unpublish':
+      // Unpublish nodes (current revisions).
+      module_load_include('inc', 'node', 'node.admin');
+      $nodes = db_select('node', 'n')->fields('n', array('nid'))->condition('uid', $account->uid)->execute()->fetchCol();
+      node_mass_update($nodes, array('status' => 0));
+      break;
+
+    case 'user_cancel_reassign':
+      // Anonymize nodes (current revisions).
+      module_load_include('inc', 'node', 'node.admin');
+      $nodes = db_select('node', 'n')->fields('n', array('nid'))->condition('uid', $account->uid)->execute()->fetchCol();
+      node_mass_update($nodes, array('uid' => 0));
+      // Anonymize old revisions.
+      db_update('node_revision')->fields(array('uid' => 0))->condition('uid', $account->uid)->execute();
+      // Clean history.
+      db_delete('history')->condition('uid', $account->uid)->execute();
+      break;
+  }
+
+  _user_cancel($edit, $account, $default_method);
 
   // Everything went right.
   return TRUE;
@@ -388,7 +553,26 @@ function _user_resource_login($username, $password) {
     return services_error(t('The username %name has not been activated or is blocked.', array('%name' => $username)), 403);
   }
 
-  $uid = user_authenticate($username, $password);
+  // Emulate drupal native flood control: check for flood condition.
+  $flood_state = array();
+  if (variable_get('services_flood_control_enabled', TRUE)) {
+    $flood_state = _user_resource_flood_control_precheck($username);
+  }
+
+  // Only authenticate if a flood condition was not detected.
+  if (empty($flood_state['flood_control_triggered'])) {
+    $uid = user_authenticate($username, $password);
+  }
+  else {
+    $uid = FALSE;
+  }
+
+  // Emulate drupal native flood control: register flood event, and throw error
+  // if a flood condition was previously detected
+  if (variable_get('services_flood_control_enabled', TRUE)) {
+    $flood_state['uid'] = $uid;
+    _user_resource_flood_control_postcheck($flood_state);
+  }
 
   if ($uid) {
     $user = user_load($uid);
@@ -398,10 +582,13 @@ function _user_resource_login($username, $password) {
       $return = new stdClass();
       $return->sessid = session_id();
       $return->session_name = session_name();
+      $return->token = drupal_get_token('services');
 
-      services_remove_user_data($user);
+      $account = clone $user;
 
-      $return->user = $user;
+      services_remove_user_data($account);
+
+      $return->user = $account;
 
       return $return;
     }
@@ -464,6 +651,98 @@ function _user_resource_logout_1_1() {
   $user = drupal_anonymous_user();
 
   return $user;
+}
+
+/**
+ * Request a new password given a user name or e-mail address.
+ *
+ * @param $name
+ *   The username or e-mail address of the requesting account.
+ *
+ * @see https://api.drupal.org/api/drupal/modules!user!user.pages.inc/function/user_pass_validate/7
+ * @see https://api.drupal.org/api/drupal/modules!user!user.pages.inc/function/user_pass_submit/7
+ */
+function _user_resource_request_new_password($name) {
+  $name = trim($name);
+  // Try to load by email.
+  $users = user_load_multiple(array(), array('mail' => $name, 'status' => '1'));
+  $account = reset($users);
+  if (!$account) {
+    // No success, try to load by name.
+    $users = user_load_multiple(array(), array('name' => $name, 'status' => '1'));
+    $account = reset($users);
+  }
+  if (!isset($account->uid)) {
+    return services_error(t('Sorry, %name is not recognized as a user name or an e-mail address.', array('%name' => $name)), 406);
+  }
+  // Mail one time login URL and instructions using current language.
+  global $language;
+  $mail = _user_mail_notify('password_reset', $account, $language);
+  if (!empty($mail)) {
+    watchdog('user', 'Password reset instructions mailed to %name at %email.', array('%name' => $account->name, '%email' => $account->mail));
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Send a password reset email for the specified user.
+ */
+function _user_resource_password_reset($uid) {
+  global $language;
+
+  $account = user_load($uid);
+  if (empty($account)) {
+    return services_error(t('There is no user with ID @uid.', array('@uid' => $uid)), 404);
+  }
+
+  // Mail one time login URL and instructions using current language.
+  $mail = _user_mail_notify('password_reset', $account, $language);
+  if (!empty($mail)) {
+    watchdog('user', 'Password reset instructions mailed to %name at %email.', array('%name' => $account->name, '%email' => $account->mail));
+  }
+  else {
+    watchdog('user', 'There was an error re-sending password reset instructions mailed to %name at %email', array('%name' => $account->name, '%email' => $account->mail));
+  }
+  // Everything went right.
+  return TRUE;
+}
+
+/**
+ * Send a welcome email for the specified user.
+ */
+function _user_resource_resend_welcome_email($uid) {
+  global $language;
+
+  $account = user_load($uid);
+  if (empty($account)) {
+    return services_error(t('There is no user with ID @uid.', array('@uid' => $uid)), 404);
+  }
+
+  $user_register = variable_get('user_register', 2);
+  switch ($user_register) {
+    case USER_REGISTER_ADMINISTRATORS_ONLY:
+      $op = 'register_admin_created';
+      break;
+    case USER_REGISTER_VISITORS:
+      $op = 'register_no_approval_required';
+      break;
+    case USER_REGISTER_VISITORS_ADMINISTRATIVE_APPROVAL:
+      $op = 'register_pending_approval';
+  }
+
+  // Mail the welcome emaiil using current language.
+  $mail = _user_mail_notify($op, $account, $language);
+  if (!empty($mail)) {
+    watchdog('user', 'Welcome message has been re-sent to %name at %email.', array('%name' => $account->name, '%email' => $account->mail));
+  }
+  else {
+    watchdog('user', 'There was an error re-sending welcome message to %name at %email', array('%name' => $account->name, '%email' => $account->mail));
+  }
+  // Everything went right.
+  return TRUE;
 }
 
 /**
@@ -532,7 +811,11 @@ function _user_resource_access($op = 'view', $args = array()) {
       else {
         return user_access('administer users');
       }
+    case 'password_reset':
+      return TRUE;
     case 'delete':
+    case 'cancel':
+    case 'resend_welcome_email':
       return user_access('administer users');
   }
 }
@@ -565,4 +848,101 @@ function _user_resource_login_update_1_1() {
 
 function _user_resource_get_token() {
   return array('token' => drupal_get_token('services'));
+}
+
+
+
+/**
+ * Emulate native Drupal flood control, phase 1.
+ *
+ * This function checks for a flood condition, and determines the identifier
+ * for user based flood checks. This is done prior to user authentication.
+ *
+ * @param string $username
+ *   The name of the user who is attempting to log in.
+ * @return array
+ *   An array containing zero or more of the following keys:
+ *   - flood_control_triggered: either 'user' or 'ip' if a flood condition
+ *     was detected.
+ *   - flood_control_user_identifier: the identifier to use to register
+ *     user-based flood events.
+ *
+ * @see _user_resource_flood_control_postcheck().
+ * @see user_login_authenticate_validate().
+ */
+function _user_resource_flood_control_precheck($username) {
+  $flood_state = array();
+  // Do not allow any login from the current user's IP if the limit has been
+  // reached. Default is 50 failed attempts allowed in one hour. This is
+  // independent of the per-user limit to catch attempts from one IP to log
+  // in to many different user accounts.  We have a reasonably high limit
+  // since there may be only one apparent IP for all users at an institution.
+   if (!flood_is_allowed('failed_login_attempt_ip', variable_get('user_failed_login_ip_limit', 50), variable_get('user_failed_login_ip_window', 3600))) {
+    $flood_state['flood_control_triggered'] = 'ip';
+   }
+  else {
+    $account = db_query("SELECT * FROM {users} WHERE name = :name AND status = 1", array(':name' => $username))->fetchObject();
+    if ($account) {
+      if (variable_get('user_failed_login_identifier_uid_only', FALSE)) {
+        // Register flood events based on the uid only, so they apply for any
+        // IP address. This is the most secure option.
+        $identifier = $account->uid;
+      }
+      else {
+        // The default identifier is a combination of uid and IP address. This
+        // is less secure but more resistant to denial-of-service attacks that
+        // could lock out all users with public user names.
+        $identifier = $account->uid . '-' . ip_address();
+      }
+      $flood_state['flood_control_user_identifier'] = $identifier;
+
+      // Don't allow login if the limit for this user has been reached.
+      // Default is to allow 5 failed attempts every 6 hours.
+      if (!flood_is_allowed('failed_login_attempt_user', variable_get('user_failed_login_user_limit', 5), variable_get('user_failed_login_user_window', 21600), $identifier)) {
+        $flood_state['flood_control_triggered'] = 'user';
+      }
+     }
+  }
+  return $flood_state;
+}
+
+/**
++ * Emulate native Drupal flood control, phase 2.
++ *
++ * This function records a failed login attempt, and triggers an error if a
++ * flood condition was previously detected.
++ *
++ * @param array $flood_state
++ *   An array of flood information as returned by
++ *   _user_resource_flood_control_precheck().
++ *
++ * @throws ServicesException
++ *   If a flood condition was previously detected.
++ *
++ * @see _user_resource_flood_control_precheck().
++ * @see user_login_final_validate().
++ */
+function _user_resource_flood_control_postcheck($flood_state) {
+  if (empty($flood_state['uid'])) {
+    // Always register an IP-based failed login event.
+    flood_register_event('failed_login_attempt_ip', variable_get('user_failed_login_ip_window', 3600));
+    // Register a per-user failed login event.
+    if (isset($flood_state['flood_control_user_identifier'])) {
+      flood_register_event('failed_login_attempt_user', variable_get('user_failed_login_user_window', 21600), $flood_state['flood_control_user_identifier']);
+    }
+    if (isset($flood_state['flood_control_triggered'])) {
+      if ($flood_state['flood_control_triggered'] == 'user') {
+        services_error(t('Account is temporarily blocked.'), 406);
+      }
+      else {
+        // We did not find a uid, so the limit is IP-based.
+        services_error(t('This IP address is temporarily blocked.'), 406);
+      }
+    }
+  }
+  elseif (isset($flood_state['flood_control_user_identifier'])) {
+    // Clear past failures for this user so as not to block a user who might
+    // log in and out more than once in an hour.
+    flood_clear_event('failed_login_attempt_user', $flood_state['flood_control_user_identifier']);
+  }
 }
