@@ -6,3 +6,4 @@ sites/*/files
 sites/*/private
 
 cache/
+semiauto_email.html
