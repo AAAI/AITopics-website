@@ -124,7 +124,6 @@ if(arg(0) == 'tributes' || arg(0) == 'interviews' || arg(0) == 'persons') { $ite
 
     <?php print render($page['tertiary_content']); ?> <!-- /tertiary-content -->
 
-    <!--
     <footer id="footer" role="contentinfo"><div id="footer-inner" class="clearfix">
 
     <?php if ($page['four_first'] || $page['four_second'] || $page['four_third'] || $page['four_fourth']): ?>
@@ -138,7 +137,6 @@ if(arg(0) == 'tributes' || arg(0) == 'interviews' || arg(0) == 'persons') { $ite
 
     <?php print render($page['footer']); ?>
     </div></footer>
-    -->
 
   </div> <!-- /page -->
 </div> <!-- /texture overlay -->
